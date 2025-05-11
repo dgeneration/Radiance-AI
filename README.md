@@ -63,3 +63,36 @@ Designed with a focus on user privacy, data security, and medical accuracy, Radi
   - sonar-deep-research: For comprehensive medical analysis
   - sonar-pro: For specialized medical roles
   - sonar-reasoning-pro: For specialist doctor analysis
+
+## Core Functionality
+
+### Diagnosis System
+
+The core of Radiance AI is its diagnosis system, which:
+
+1. Collects user symptoms, age, gender, duration, and medical history
+2. Sends this data to the Perplexity Sonar API with specialized medical prompts
+3. Processes the AI response to extract:
+   - Primary diagnosis with description and ICD code
+   - Differential diagnoses with likelihood
+   - Medical reasoning and evidence
+   - Treatment recommendations
+   - Test recommendations
+   - Lifestyle advice
+4. Presents this information in a user-friendly format
+5. Saves the diagnosis to the user's history
+
+### Chain Diagnosis System
+
+The enhanced chain diagnosis system provides a comprehensive health assessment through multiple specialized AI roles:
+
+1. **Medical Analyst**: Analyzes uploaded medical reports and images
+2. **General Physician**: Provides initial diagnosis based on symptoms and medical analyst data
+3. **Specialist Doctor**: Offers specialized insights based on the general physician's recommendation
+4. **Pathologist**: Analyzes test results and provides pathological insights
+5. **Nutritionist**: Recommends dietary changes based on the diagnosis
+6. **Pharmacist**: Suggests medications and potential interactions
+7. **Follow-up Specialist**: Recommends follow-up actions and monitoring
+8. **Radiance AI (Summarizer)**: Combines all insights into a comprehensive care plan
+
+Each role uses a specific Perplexity Sonar model optimized for its function, with structured JSON outputs for consistent data handling.
