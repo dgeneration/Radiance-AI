@@ -96,3 +96,11 @@ The enhanced chain diagnosis system provides a comprehensive health assessment t
 8. **Radiance AI (Summarizer)**: Combines all insights into a comprehensive care plan
 
 Each role uses a specific Perplexity Sonar model optimized for its function, with structured JSON outputs for consistent data handling.
+
+## Disclaimer
+
+Radiance AI is designed as a preliminary health assessment tool and should not replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for medical concerns.
+
+---
+
+© 2025 Radiance AI. All rights reserved.
