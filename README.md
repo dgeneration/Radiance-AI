@@ -1,2 +1,7 @@
-# Radiance-AI-New
-Radiance AI is a smart health web app that analyzes symptoms and delivers trusted, research-backed diagnoses using AI. Built with Perplexity Sonar, it offers ICD codes, explainable results, and dual views for patients and doctors — making healthcare insights fast, clear, and reliable.
+# 🧠 Radiance AI - Intelligent Health Companion
+
+## Project Overview
+
+Radiance AI is an advanced AI-powered health diagnosis platform that leverages cutting-edge artificial intelligence to provide users with preliminary health assessments. The application uses the Perplexity Sonar API to analyze user-reported symptoms and medical data, offering detailed diagnostic insights, treatment recommendations, and medical guidance.
+
+Designed with a focus on user privacy, data security, and medical accuracy, Radiance AI serves as a preliminary health assessment tool that can help users understand potential health concerns before consulting with healthcare professionals.
