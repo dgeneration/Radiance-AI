@@ -58,9 +58,12 @@ This document tracks the progress of tasks outlined in the Radiance AI build pla
 - ✅ Apply dark theme using Tailwind
 - ✅ Use color palette:
   - Background: `#0E0E10`
-  - Surface: `#1C1C20`
-  - Accent: `#00C6D7`, `#1DE9B6`
-  - Text: `#E0E0E0`, Muted: `#9E9E9E`
+  - Surface/Card: `#1C1C20`
+  - Primary: `#00C6D7`
+  - Accent: `#1DE9B6`
+  - Text: `#E0E0E0`
+  - Muted Text: `#9E9E9E`
+  - Border: `rgba(255, 255, 255, 0.1)`
 
 ### ✅ 1.3 Augment
 - ✅ Add `augment.json` with agent definitions
