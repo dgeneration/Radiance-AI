@@ -141,12 +141,12 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 - ✅ Add language selection dropdown with flags
 
 ### 🔹 4.2 Geo-based Help
-- ⬜ Detect user's country/location
-- ⬜ Suggest nearest hospitals (use static dataset)
+- 🛑 Detect user's country/location
+- 🛑 Suggest nearest hospitals (use static dataset)
 
 ### 🔹 4.3 Role-Based View
-- ⬜ Switch between Patient View and Doctor View
-- ⬜ Doctor View includes more clinical info (e.g., ICD, citations, detail)
+- 🛑 Switch between Patient View and Doctor View
+- 🛑 Doctor View includes more clinical info (e.g., ICD, citations, detail)
 
 ---
 
