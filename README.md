@@ -25,3 +25,23 @@ Designed with a focus on user privacy, data security, and medical accuracy, Radi
   - Follow-up Specialist
   - Radiance AI (Summarizer)
 - Each role provides specialized insights for comprehensive care
+
+### 👤 User Profiles & Health Data
+- Secure user authentication and profile management
+- Store personal health information and medical history
+- Track health metrics and preferences
+- Limit system for editing personal details (one-time edits for critical fields)
+
+### 📊 Diagnosis History
+- Save and track all previous diagnoses
+- Review past health assessments
+- Monitor health changes over time
+
+### 🌐 Multilingual Support
+- Access the platform in multiple languages
+- Google Translate integration for global accessibility
+
+### 📱 Responsive Design
+- Professional dark-themed interface
+- Fully responsive across all devices
+- Smooth animations and transitions
