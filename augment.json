@@ -1,0 +1,32 @@
+{
+    "project": "Radiance AI",
+    "description": "AI-powered health diagnosis platform using Perplexity Sonar",
+    "agents": [
+      {
+        "name": "frontend-dev",
+        "role": "Frontend Developer",
+        "goal": "Build the UI using Next.js, TailwindCSS, and shadcn/ui"
+      },
+      {
+        "name": "backend-dev",
+        "role": "Backend/API Developer",
+        "goal": "Connect Perplexity Sonar API and Supabase for auth and data"
+      },
+      {
+        "name": "designer",
+        "role": "UI/UX Designer",
+        "goal": "Ensure a clean, dark-themed medical interface"
+      },
+      {
+        "name": "docs-agent",
+        "role": "Documentation Writer",
+        "goal": "Generate README, usage instructions, and setup guides"
+      },
+      {
+        "name": "test-agent",
+        "role": "QA Tester",
+        "goal": "Write unit tests and ensure accessibility & mobile responsiveness"
+      }
+    ]
+  }
+  
