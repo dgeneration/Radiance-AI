@@ -45,3 +45,21 @@ Designed with a focus on user privacy, data security, and medical accuracy, Radi
 - Professional dark-themed interface
 - Fully responsive across all devices
 - Smooth animations and transitions
+
+## Technology Stack
+
+### Frontend
+- **Next.js**: React framework for server-side rendering and static site generation
+- **TypeScript**: Type-safe JavaScript for robust code
+- **TailwindCSS**: Utility-first CSS framework for styling
+- **shadcn/ui**: Component library for consistent UI elements
+
+### Backend & Data
+- **Supabase**: Backend-as-a-Service for authentication and database
+  - Authentication system
+  - PostgreSQL database
+  - Storage for medical files and images
+- **Perplexity Sonar API**: Advanced AI models for medical analysis
+  - sonar-deep-research: For comprehensive medical analysis
+  - sonar-pro: For specialized medical roles
+  - sonar-reasoning-pro: For specialist doctor analysis
