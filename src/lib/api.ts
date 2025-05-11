@@ -141,7 +141,7 @@ export async function getDiagnosis(symptomData: SymptomFormData): Promise<{
       },
       body: JSON.stringify({
         // Use the deep research model for comprehensive medical analysis
-        model: "sonar-deep-research",
+        model: "sonar-reasoning-pro", // Changed to sonar-research",
         messages: [
           {
             role: "system",
