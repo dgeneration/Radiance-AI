@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FileMetadata, getUserFiles, deleteFile } from '@/utils/supabase/file-storage';
+import { FileMetadata, getUserFiles, deleteFile, getSignedUrl, downloadFile } from '@/utils/supabase/file-storage';
 import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,8 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [previewFile, setPreviewFile] = useState<FileMetadata | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
 
   // Load files on component mount
@@ -100,13 +102,30 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
     if (previewFile.type.startsWith('image/')) {
       return (
         <div className="relative h-full w-full flex items-center justify-center">
-          <Image
-            src={previewFile.public_url || ''}
-            alt={previewFile.name}
-            width={600}
-            height={400}
-            className="max-h-[70vh] w-auto object-contain"
-          />
+          {previewBlob ? (
+            // Use regular img tag for blob URLs since Next.js Image doesn't support them
+            <img
+              src={previewBlob}
+              alt={previewFile.name}
+              className="max-h-[70vh] w-auto object-contain"
+            />
+          ) : (
+            <Image
+              src={previewUrl || previewFile.public_url || ''}
+              alt={previewFile.name}
+              width={600}
+              height={400}
+              className="max-h-[70vh] w-auto object-contain"
+              onError={async (e) => {
+                // If loading the image fails, try to download it directly and create a blob URL
+                const blob = await downloadFile(previewFile.path);
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  setPreviewBlob(url);
+                }
+              }}
+            />
+          )}
         </div>
       );
     }
@@ -124,7 +143,24 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
           size="lg"
           icon={<Download className="h-5 w-5" />}
           iconPosition="left"
-          onClick={() => window.open(previewFile.public_url || '', '_blank')}
+          onClick={async () => {
+            // Try to download the file directly
+            const blob = await downloadFile(previewFile.path);
+            if (blob) {
+              // Create a download link
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = previewFile.name;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            } else {
+              // Fallback to opening the URL
+              window.open(previewUrl || previewFile.public_url || '', '_blank');
+            }
+          }}
         >
           Download File
         </ProfessionalButton>
@@ -215,7 +251,20 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
       )}
 
       {/* File Preview Dialog */}
-      <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+      <Dialog
+        open={!!previewFile}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Clean up blob URL to avoid memory leaks
+            if (previewBlob) {
+              URL.revokeObjectURL(previewBlob);
+            }
+            setPreviewFile(null);
+            setPreviewUrl(null);
+            setPreviewBlob(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-3xl h-[80vh]">
           <DialogHeader>
             <DialogTitle>{previewFile?.name}</DialogTitle>
@@ -307,6 +356,13 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                       width={200}
                       height={200}
                       className="h-full w-full object-cover"
+                      onError={async (e) => {
+                        // If the public URL fails, try to get a signed URL
+                        const signedUrl = await getSignedUrl(file.path, 300);
+                        if (signedUrl && e.target instanceof HTMLImageElement) {
+                          e.target.src = signedUrl;
+                        }
+                      }}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center p-4">
@@ -331,8 +387,27 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
+
+                      // For images, try multiple approaches
+                      if (file.type.startsWith('image/')) {
+                        // First try to download the file directly and create a blob URL
+                        const blob = await downloadFile(file.path);
+                        if (blob) {
+                          const url = URL.createObjectURL(blob);
+                          setPreviewBlob(url);
+                        } else {
+                          // Fallback to signed URL
+                          const signedUrl = await getSignedUrl(file.path, 300); // 5 minutes expiry
+                          setPreviewUrl(signedUrl);
+                        }
+                      } else {
+                        // For non-images, just use signed URL
+                        const signedUrl = await getSignedUrl(file.path, 300); // 5 minutes expiry
+                        setPreviewUrl(signedUrl);
+                      }
+
                       setPreviewFile(file);
                     }}
                     title="Preview"
@@ -343,9 +418,30 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      window.open(file.public_url || '', '_blank');
+                      // Try to download the file directly
+                      const blob = await downloadFile(file.path);
+                      if (blob) {
+                        // Create a download link
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = file.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } else {
+                        // Fallback to signed URL
+                        const signedUrl = await getSignedUrl(file.path, 60);
+                        if (signedUrl) {
+                          window.open(signedUrl, '_blank');
+                        } else {
+                          // Last resort: try public URL
+                          window.open(file.public_url || '', '_blank');
+                        }
+                      }
                     }}
                     title="Download"
                   >
