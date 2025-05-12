@@ -24,11 +24,18 @@ This document contains all the important memories stored by the Augment Agent fo
 
 - Supabase is connected to Augment. Execute all Supabase operations through Augment and treat this as a high priority. Do not attempt to interact with Supabase directly.
 
+## 🛠️ Project Setup & Development
+
+- The project is a Next.js 15.3.1 application using Turbopack for faster development.
+- Start the development server with `npm run dev` which runs on http://localhost:3000.
+- The project uses Tailwind CSS for styling and various Radix UI components for the UI.
+- React 19 is used as the frontend framework with TypeScript for type safety.
+
 ---
 
 ## 📋 Memory Update Log
 
-- Last updated: May 12, 2024
+- Last updated: May 15, 2024 (added Project Setup & Development section)
 - This file should be updated whenever new memories are added to the Augment Agent.
 
 ---
