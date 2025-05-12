@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { FileMetadata, getUserFiles, deleteFile, getSignedUrl, downloadFile } from '@/utils/supabase/file-storage';
-import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload } from 'lucide-react';
+import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { FileUploadDropzone } from './file-upload-dropzone';
 import { ProfessionalButton } from '@/components/ui/professional-button';
-import { AnimatedCard } from '@/components/dashboard';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -89,16 +88,12 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
     return matchesSearch;
   });
 
-  const getFileIcon = (file: FileMetadata) => {
-    if (file.type.startsWith('image/')) {
-      return <ImageIcon className="h-6 w-6 text-primary" />;
-    }
-    return <FileText className="h-6 w-6 text-primary" />;
-  };
+  // We'll remove the unused function
 
   const renderFilePreview = () => {
     if (!previewFile) return null;
 
+    // Handle image files
     if (previewFile.type.startsWith('image/')) {
       return (
         <div className="relative h-full w-full flex items-center justify-center">
@@ -116,7 +111,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
               width={600}
               height={400}
               className="max-h-[70vh] w-auto object-contain"
-              onError={async (e) => {
+              onError={async () => {
                 // If loading the image fails, try to download it directly and create a blob URL
                 const blob = await downloadFile(previewFile.path);
                 if (blob) {
@@ -130,7 +125,141 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
       );
     }
 
-    // For non-image files, show a download link
+    // Handle PDF files
+    if (previewFile.type === 'application/pdf' || previewFile.name.toLowerCase().endsWith('.pdf')) {
+      const pdfUrl = previewUrl || previewFile.public_url;
+
+      return (
+        <div className="relative h-full w-full flex flex-col">
+          {pdfUrl ? (
+            <>
+              <div className="w-full h-[65vh] bg-card/50 rounded-lg border border-primary/10 overflow-hidden">
+                <iframe
+                  src={`${pdfUrl}#toolbar=1&navpanes=1`}
+                  className="w-full h-full"
+                  title={previewFile.name}
+                />
+              </div>
+              <div className="mt-4 flex justify-center gap-4">
+                <ProfessionalButton
+                  variant="outline"
+                  size="sm"
+                  icon={<Eye className="h-4 w-4" />}
+                  iconPosition="left"
+                  onClick={() => window.open(pdfUrl, '_blank')}
+                >
+                  Open in New Tab
+                </ProfessionalButton>
+
+                <ProfessionalButton
+                  variant="primary"
+                  size="sm"
+                  icon={<Download className="h-4 w-4" />}
+                  iconPosition="left"
+                  onClick={async () => {
+                    // Try to download the file directly
+                    const blob = await downloadFile(previewFile.path);
+                    if (blob) {
+                      // Create a download link
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = previewFile.name;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    } else {
+                      // Fallback to opening the URL
+                      window.open(pdfUrl, '_blank');
+                    }
+                  }}
+                >
+                  Download
+                </ProfessionalButton>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <FileText className="h-20 w-20 text-primary mb-4" />
+              <p className="text-lg font-medium mb-2">{previewFile.name}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Unable to preview this PDF file.
+              </p>
+              <ProfessionalButton
+                variant="primary"
+                size="lg"
+                icon={<Download className="h-5 w-5" />}
+                iconPosition="left"
+                onClick={async () => {
+                  // Try to download the file directly
+                  const blob = await downloadFile(previewFile.path);
+                  if (blob) {
+                    // Create a download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = previewFile.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }
+                }}
+              >
+                Download File
+              </ProfessionalButton>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Handle text files
+    if (previewFile.type === 'text/plain' ||
+        previewFile.name.toLowerCase().endsWith('.txt') ||
+        previewFile.name.toLowerCase().endsWith('.md') ||
+        previewFile.name.toLowerCase().endsWith('.json') ||
+        previewFile.name.toLowerCase().endsWith('.csv')) {
+
+      return (
+        <div className="relative h-full w-full flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm font-medium">{previewFile.name}</p>
+            <ProfessionalButton
+              variant="outline"
+              size="sm"
+              icon={<Download className="h-4 w-4" />}
+              iconPosition="left"
+              onClick={async () => {
+                // Try to download the file directly
+                const blob = await downloadFile(previewFile.path);
+                if (blob) {
+                  // Create a download link
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = previewFile.name;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                } else {
+                  // Fallback to opening the URL
+                  window.open(previewUrl || previewFile.public_url || '', '_blank');
+                }
+              }}
+            >
+              Download
+            </ProfessionalButton>
+          </div>
+
+          <TextFilePreview filePath={previewFile.path} />
+        </div>
+      );
+    }
+
+    // For other file types, show a download link
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <FileText className="h-20 w-20 text-primary mb-4" />
@@ -164,6 +293,66 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
         >
           Download File
         </ProfessionalButton>
+      </div>
+    );
+  };
+
+  // Component to fetch and display text file content
+  const TextFilePreview = ({ filePath }: { filePath: string }) => {
+    const [content, setContent] = useState<string>('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+      const fetchTextContent = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+
+          // Try to download the file directly
+          const blob = await downloadFile(filePath);
+          if (!blob) {
+            throw new Error('Failed to download file');
+          }
+
+          // Read the blob as text
+          const text = await blob.text();
+          setContent(text);
+        } catch (err: any) {
+          console.error('Error fetching text content:', err);
+          setError(err.message || 'Failed to load text content');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchTextContent();
+    }, [filePath]);
+
+    if (loading) {
+      return (
+        <div className="w-full h-[50vh] bg-card/50 rounded-lg border border-primary/10 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="w-full h-[50vh] bg-card/50 rounded-lg border border-primary/10 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">Error loading text content</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full h-[50vh] bg-card/50 rounded-lg border border-primary/10 overflow-auto">
+        <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-words text-foreground">
+          {content}
+        </pre>
       </div>
     );
   };
@@ -265,9 +454,26 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
           }
         }}
       >
-        <DialogContent className="sm:max-w-3xl h-[80vh]">
+        <DialogContent className="sm:max-w-4xl h-[85vh] max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle>{previewFile?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {previewFile?.type.startsWith('image/') && (
+                <ImageIcon className="h-5 w-5 text-primary" />
+              )}
+              {(previewFile?.type === 'application/pdf' || previewFile?.name.toLowerCase().endsWith('.pdf')) && (
+                <FileText className="h-5 w-5 text-red-500" />
+              )}
+              {(previewFile?.type === 'text/plain' || previewFile?.name.toLowerCase().endsWith('.txt')) && (
+                <FileText className="h-5 w-5 text-primary" />
+              )}
+              {previewFile?.name.toLowerCase().endsWith('.json') && (
+                <FileJson className="h-5 w-5 text-yellow-500" />
+              )}
+              {(previewFile?.name.toLowerCase().endsWith('.md') || previewFile?.name.toLowerCase().endsWith('.csv')) && (
+                <FileCode className="h-5 w-5 text-green-500" />
+              )}
+              <span>{previewFile?.name}</span>
+            </DialogTitle>
             <DialogClose className="absolute right-4 top-4">
               <X className="h-4 w-4" />
             </DialogClose>
@@ -330,7 +536,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
           const isImage = file.type.startsWith('image/');
 
           return (
-            <AnimatedCard
+            <div
               key={file.id}
               className={`relative overflow-hidden rounded-lg border ${
                 isSelected ? 'border-primary' : 'border-primary/10'
@@ -366,9 +572,20 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center p-4">
-                      <FileText className="h-12 w-12 text-primary/70" />
+                      {/* Show different icons based on file type */}
+                      {file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf') ? (
+                        <FileText className="h-12 w-12 text-red-500/70" />
+                      ) : file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt') ? (
+                        <FileText className="h-12 w-12 text-primary/70" />
+                      ) : file.name.toLowerCase().endsWith('.json') ? (
+                        <FileJson className="h-12 w-12 text-yellow-500/70" />
+                      ) : file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.csv') ? (
+                        <FileCode className="h-12 w-12 text-green-500/70" />
+                      ) : (
+                        <FileText className="h-12 w-12 text-primary/70" />
+                      )}
                       <span className="mt-2 text-xs text-muted-foreground uppercase">
-                        {file.type.split('/')[1]}
+                        {file.name.split('.').pop() || file.type.split('/')[1]}
                       </span>
                     </div>
                   )}
@@ -461,7 +678,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                   </Button>
                 </div>
               </div>
-            </AnimatedCard>
+            </div>
           );
         })}
       </div>
