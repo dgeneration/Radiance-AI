@@ -297,7 +297,7 @@ export default async function DashboardPage() {
                   </div>
                 </Link>
 
-                <Link href="/test-medical-analyst" className="group col-span-1 sm:col-span-2 md:col-span-2">
+                <Link href="/test/medical-analyst" className="group col-span-1 sm:col-span-2 md:col-span-2">
                   <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -306,7 +306,7 @@ export default async function DashboardPage() {
                       <h4 className="font-semibold">Test Medical Analyst AI</h4>
                     </div>
                     <p className="text-sm text-muted-foreground mb-auto">
-                      Directly test the Medical Analyst AI component with your own medical reports
+                      Directly test the Medical Analyst AI component with your own medical reports and view raw API requests/responses
                     </p>
                     <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
                       Test now

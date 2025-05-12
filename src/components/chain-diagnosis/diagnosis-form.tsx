@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { CheckCircle, AlertCircle, ServerIcon, Loader2, ArrowDownWideNarrow } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -14,221 +18,757 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Brain } from 'lucide-react';
+import { ProfessionalButton } from '@/components/ui/professional-button';
 import { AnimatedSection } from '@/components/animations';
+import {
+  FaUser,
+  FaVenusMars,
+  FaBirthdayCake,
+  FaStethoscope,
+  FaClock,
+  FaNotesMedical,
+  FaArrowRight,
+  FaHistory,
+  FaBrain,
+  FaMapMarkerAlt,
+  FaWeight,
+  FaRulerVertical,
+  FaUtensils,
+  FaPills,
+  FaAllergies,
+  FaNotesMedical as FaMedicalNotes,
+  FaEdit,
+  FaInfoCircle
+} from 'react-icons/fa';
 
 // Form schema
 const formSchema = z.object({
-  symptoms: z.string().min(3, {
-    message: "Please describe your symptoms in more detail",
+  symptoms: z.string().min(5, {
+    message: "Please describe your symptoms in more detail.",
   }),
-  age: z.string().min(1, {
-    message: "Age is required",
+  durationNumber: z.string().min(1, {
+    message: "Please specify the number.",
   }),
-  gender: z.string().min(1, {
-    message: "Gender is required",
+  durationUnit: z.string({
+    required_error: "Please select a time unit.",
   }),
-  duration: z.string().min(1, {
-    message: "Duration is required",
-  }),
-  medicalHistory: z.string().optional(),
 });
 
 interface ChainDiagnosisFormProps {
   userId: string;
-  userProfile: any;
 }
 
-export function ChainDiagnosisForm({ userId, userProfile }: ChainDiagnosisFormProps) {
-  const { startNewSession, isLoading } = useChainDiagnosis();
+// Define the user profile type
+type UserProfile = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  country: string;
+  state: string;
+  city: string;
+  zip_code: string;
+  gender: string;
+  birth_year: number;
+  health_history?: string | null;
+  medical_conditions?: string | null;
+  allergies?: string | null;
+  medications?: string | null;
+  height?: number | null;
+  weight?: number | null;
+  dietary_preference?: string | null;
+};
+
+export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
+  const { startNewSession, isLoading, error: sessionError } = useChainDiagnosis();
   const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState<FileMetadata[]>([]);
-  
+  const [error, setError] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isProfileExpanded, setIsProfileExpanded] = useState(true);
+  const [isTestingApi, setIsTestingApi] = useState(false);
+  const [isTestingStreaming, setIsTestingStreaming] = useState(false);
+  const [apiTestResult, setApiTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [streamingTestResult, setStreamingTestResult] = useState<string>('');
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        setIsLoadingProfile(true);
+        const supabase = createClient();
+
+        // Get the user's profile
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        if (profile) {
+          console.log("Fetched user profile:", profile);
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error("Error in fetchUserProfile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    }
+
+    fetchUserProfile();
+  }, [userId]);
+
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       symptoms: "",
-      age: userProfile?.age?.toString() || "",
-      gender: userProfile?.gender || "",
-      duration: "",
-      medicalHistory: userProfile?.health_history || "",
+      durationNumber: "",
+      durationUnit: "days",
     },
   });
-  
+
+  // Test the API connection
+  const testApiConnection = async () => {
+    try {
+      setIsTestingApi(true);
+      setApiTestResult(null);
+
+      const response = await fetch('/api/test-chain-diagnosis-api');
+      const data = await response.json();
+
+      if (data.success) {
+        setApiTestResult({
+          success: true,
+          message: `API connection successful! Model: ${data.model || 'sonar-pro'}`
+        });
+      } else {
+        setApiTestResult({
+          success: false,
+          message: `API connection failed: ${data.error || 'Unknown error'}`
+        });
+      }
+    } catch (error) {
+      console.error('Error testing API connection:', error);
+      setApiTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'An unknown error occurred'
+      });
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
+
+  // Test streaming functionality
+  const testStreaming = async () => {
+    try {
+      setIsTestingStreaming(true);
+      setStreamingTestResult('');
+
+      const response = await fetch('/api/test-streaming');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null, cannot stream');
+      }
+
+      // Process the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullResponse = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            console.log('Test stream complete');
+            break;
+          }
+
+          // Decode the chunk and add to buffer
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+
+          // Process complete lines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || '';
+                if (content) {
+                  fullResponse += content;
+                  setStreamingTestResult(prev => prev + content);
+                }
+              } catch (e) {
+                console.error('Error parsing test streaming response:', e);
+              }
+            }
+          }
+        }
+      } catch (streamError) {
+        console.error('Error processing test stream:', streamError);
+        setApiTestResult({
+          success: false,
+          message: `Streaming test failed: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`
+        });
+      }
+    } catch (error) {
+      console.error('Error testing streaming:', error);
+      setApiTestResult({
+        success: false,
+        message: `Streaming test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    } finally {
+      setIsTestingStreaming(false);
+    }
+  };
+
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      setError(null);
+
+      // Combine duration number and unit
+      const duration = `${values.durationNumber} ${values.durationUnit}`;
+
+      // Get age and gender from user profile
+      const age = userProfile?.birth_year
+        ? (new Date().getFullYear() - userProfile.birth_year).toString()
+        : '';
+
+      const gender = userProfile?.gender || '';
+
+      // Prepare medical history from user profile
+      const medicalHistoryParts = [];
+
+      if (userProfile?.medical_conditions) {
+        medicalHistoryParts.push(`Medical Conditions: ${userProfile.medical_conditions}`);
+      }
+
+      if (userProfile?.allergies) {
+        medicalHistoryParts.push(`Allergies: ${userProfile.allergies}`);
+      }
+
+      if (userProfile?.medications) {
+        medicalHistoryParts.push(`Current Medications: ${userProfile.medications}`);
+      }
+
+      if (userProfile?.health_history) {
+        medicalHistoryParts.push(`Health History: ${userProfile.health_history}`);
+      }
+
+      // Add health metrics if available
+      if (userProfile?.height && userProfile?.weight) {
+        const bmi = (userProfile.weight / ((userProfile.height / 100) * (userProfile.height / 100))).toFixed(1);
+        medicalHistoryParts.push(`Health Metrics: Height: ${userProfile.height} cm, Weight: ${userProfile.weight} kg, BMI: ${bmi}`);
+      } else {
+        if (userProfile?.height) {
+          medicalHistoryParts.push(`Height: ${userProfile.height} cm`);
+        }
+        if (userProfile?.weight) {
+          medicalHistoryParts.push(`Weight: ${userProfile.weight} kg`);
+        }
+      }
+
+      if (userProfile?.dietary_preference) {
+        medicalHistoryParts.push(`Dietary Preference: ${userProfile.dietary_preference}`);
+      }
+
+      const medicalHistory = medicalHistoryParts.length > 0
+        ? medicalHistoryParts.join('\n\n')
+        : '';
+
+      // Create enhanced symptom data object with all profile information
+      const symptomData = {
+        symptoms: values.symptoms,
+        age: age,
+        gender: gender,
+        duration: duration,
+        medicalHistory: medicalHistory,
+        // Include location information if available
+        location: userProfile?.city && userProfile?.country
+          ? `${userProfile.city}, ${userProfile.state}, ${userProfile.country}`
+          : undefined,
+        name: userProfile?.first_name && userProfile?.last_name
+          ? `${userProfile.first_name} ${userProfile.last_name}`
+          : undefined
+      };
+
       const sessionId = await startNewSession(
         userId,
-        userProfile,
-        values,
+        userProfile || null,
+        symptomData,
         selectedFiles
       );
-      
+
       if (sessionId) {
         router.push(`/dashboard/chain-diagnosis/${sessionId}`);
       }
     } catch (error) {
       console.error('Error starting chain diagnosis session:', error);
+      setError('An unexpected error occurred. Please try again.');
     }
   };
-  
+
   return (
     <AnimatedSection>
       <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/20 rounded-full">
-              <Brain className="h-5 w-5 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
+              <FaBrain className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <CardTitle>Multi-Agent Chain Diagnosis</CardTitle>
+              <CardTitle className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                Multi-Agent Chain Diagnosis
+              </CardTitle>
               <CardDescription>
                 Get a comprehensive analysis from 8 specialized AI roles
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="symptoms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Symptoms</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Describe your symptoms in detail"
-                        className="min-h-[100px] bg-background/50"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Separate multiple symptoms with commas
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Age</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Age"
-                          className="bg-background/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gender</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-background/50">
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="duration"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duration</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 3 days, 2 weeks"
-                          className="bg-background/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="medicalHistory"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Medical History (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Any relevant medical history, conditions, or medications"
-                        className="min-h-[80px] bg-background/50"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="space-y-2">
-                <FormLabel>Medical Reports (Optional)</FormLabel>
-                <FileSelector
-                  userId={userId}
-                  onFilesSelected={setSelectedFiles}
-                  selectedFiles={selectedFiles}
-                  multiple={true}
-                />
-                <FormDescription>
-                  Attach medical reports, test results, or images for more accurate analysis
-                </FormDescription>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90"
-                disabled={isLoading}
+          {isLoadingProfile ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">Loading your information...</span>
+            </div>
+          ) : userProfile && (
+            <div className="bg-card/50 backdrop-blur-sm border border-primary/10 p-6 rounded-xl shadow-md mb-8">
+              <div
+                className="flex items-center justify-between gap-3 mb-4 cursor-pointer"
+                onClick={() => setIsProfileExpanded(!isProfileExpanded)}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting Diagnosis...
-                  </>
-                ) : (
-                  "Start Chain Diagnosis"
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <FaUser className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Your Profile Information</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {isProfileExpanded ? 'Click to collapse' : 'Click to expand'}
+                    </p>
+                  </div>
+                </div>
+                <motion.div
+                  animate={{ rotate: isProfileExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-primary/70"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </motion.div>
+              </div>
+
+              <AnimatePresence>
+                {isProfileExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-sm text-muted-foreground mb-5">
+                      We're using your profile information for diagnosis. Your age and gender will be included automatically.
+                    </p>
+
+                    <div className="mb-6">
+                      <h4 className="text-base font-medium mb-3 bg-gradient-to-r from-primary/80 to-primary/80 bg-clip-text text-transparent">Personal Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                          <FaUser className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Name</p>
+                            <p className="font-medium">{userProfile?.first_name || ''} {userProfile?.last_name || ''}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                          <FaMapMarkerAlt className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Location</p>
+                            <p className="font-medium">{userProfile?.city || 'Not specified'}{userProfile?.state ? `, ${userProfile.state}` : ''}{userProfile?.country ? `, ${userProfile.country}` : ''}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                          <FaVenusMars className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Gender</p>
+                            <p className="font-medium capitalize">{userProfile?.gender || 'Not specified'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                          <FaBirthdayCake className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Age</p>
+                            <p className="font-medium">{userProfile?.birth_year ? `${new Date().getFullYear() - userProfile.birth_year} years (${userProfile.birth_year})` : 'Not specified'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h4 className="text-base font-medium mb-3 bg-gradient-to-r from-accent/80 to-accent/80 bg-clip-text text-transparent">Health Metrics</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-accent/5">
+                        <FaRulerVertical className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">Height</p>
+                          <p className="font-medium">{userProfile?.height ? `${userProfile.height} cm` : 'Not specified'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-accent/5">
+                        <FaWeight className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">Weight</p>
+                          <p className="font-medium">{userProfile?.weight ? `${userProfile.weight} kg` : 'Not specified'}</p>
+                        </div>
+                      </div>
+                      {userProfile?.height && userProfile?.weight && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-accent/5">
+                          <FaStethoscope className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">BMI</p>
+                            <p className="font-medium">
+                              {(userProfile?.weight && userProfile?.height) ? (userProfile.weight / ((userProfile.height / 100) * (userProfile.height / 100))).toFixed(1) : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-accent/5">
+                        <FaUtensils className="text-accent/70 w-5 h-5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">Dietary Preference</p>
+                          <p className="font-medium capitalize">{userProfile?.dietary_preference || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <FaMedicalNotes className="text-primary/70 w-5 h-5" />
+                        <h4 className="text-base font-medium">Medical Information</h4>
+                      </div>
+                      <ProfessionalButton
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        icon={<FaEdit />}
+                        iconPosition="left"
+                      >
+                        <Link href="/dashboard/profile">Edit Health Info</Link>
+                      </ProfessionalButton>
+                    </div>
+
+                    {userProfile?.allergies || userProfile?.medications || userProfile?.medical_conditions || userProfile?.health_history ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {userProfile?.allergies && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                            <FaAllergies className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">Allergies</p>
+                              <p className="font-medium line-clamp-2">{userProfile?.allergies}</p>
+                            </div>
+                          </div>
+                        )}
+                        {userProfile?.medications && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                            <FaPills className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">Medications</p>
+                              <p className="font-medium line-clamp-2">{userProfile?.medications}</p>
+                            </div>
+                          </div>
+                        )}
+                        {userProfile?.medical_conditions && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                            <FaMedicalNotes className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">Medical Conditions</p>
+                              <p className="font-medium line-clamp-2">{userProfile?.medical_conditions}</p>
+                            </div>
+                          </div>
+                        )}
+                        {userProfile?.health_history && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-card/50 border border-primary/5">
+                            <FaHistory className="text-primary/70 w-5 h-5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">Health History</p>
+                              <p className="font-medium line-clamp-2">{userProfile?.health_history}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 bg-card/50 backdrop-blur-sm rounded-xl border border-primary/5">
+                        <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                          You haven't added any health information yet. This information helps us provide more accurate diagnoses.
+                        </p>
+                        <ProfessionalButton
+                          asChild
+                          variant="primary"
+                          size="default"
+                          icon={<FaNotesMedical className="h-5 w-5" />}
+                          iconPosition="left"
+                        >
+                          <Link href="/dashboard/profile">
+                            Add Health Information
+                          </Link>
+                        </ProfessionalButton>
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </Button>
-            </form>
-          </Form>
+              </AnimatePresence>
+            </div>
+          )}
+
+          <div className="bg-card/50 backdrop-blur-sm border border-primary/10 p-6 rounded-xl shadow-md mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center">
+                <FaStethoscope className="w-5 h-5 text-accent" />
+              </div>
+              <h3 className="text-lg font-medium bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">Symptom Details</h3>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="symptoms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-medium flex items-center gap-2">
+                        <FaNotesMedical className="text-accent/70 w-4 h-4" />
+                        Symptoms
+                      </FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe your symptoms in detail..."
+                            className="resize-none min-h-[180px] bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="mt-2">
+                          Be as specific as possible about what you're experiencing.
+                        </FormDescription>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormItem>
+                  <FormLabel className="text-base font-medium flex items-center gap-2">
+                    <FaClock className="text-accent/70 w-4 h-4" />
+                    Duration of Symptoms
+                  </FormLabel>
+                  <div className="flex gap-3">
+                    <FormField
+                      control={form.control}
+                      name="durationNumber"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              placeholder="Number"
+                              className="bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="durationUnit"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20">
+                                <SelectValue placeholder="Unit" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="days">Days</SelectItem>
+                              <SelectItem value="weeks">Weeks</SelectItem>
+                              <SelectItem value="months">Months</SelectItem>
+                              <SelectItem value="years">Years</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormDescription>
+                    How long have you been experiencing these symptoms?
+                  </FormDescription>
+                </FormItem>
+
+                {/* Age, gender, and medical history are automatically included from the user profile */}
+                <div className="bg-card/50 backdrop-blur-sm border border-primary/5 p-4 rounded-lg mb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <FaInfoCircle className="text-accent/70 w-4 h-4" />
+                    <p className="text-sm font-medium text-accent/90">Information from your profile</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your age, gender, and medical information from your profile will be automatically included in the diagnosis.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <FormLabel className="text-base font-medium flex items-center gap-2">
+                    <FaNotesMedical className="text-accent/70 w-4 h-4" />
+                    Medical Reports (Optional)
+                  </FormLabel>
+                  <FileSelector
+                    userId={userId}
+                    onFilesSelected={setSelectedFiles}
+                    selectedFiles={selectedFiles}
+                    multiple={true}
+                  />
+                  <FormDescription>
+                    Attach medical reports, test results, or images for more accurate analysis.
+                  </FormDescription>
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl text-sm shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                        <span className="text-destructive font-bold text-xs">!</span>
+                      </div>
+                      <span className="font-medium">Error</span>
+                    </div>
+                    <p className="mt-2 ml-7">{error}</p>
+                  </div>
+                )}
+
+                {sessionError && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                        <span className="text-amber-700 dark:text-amber-400 font-bold text-xs">!</span>
+                      </div>
+                      <span className="font-medium">Warning</span>
+                    </div>
+                    <p className="mt-2 ml-7">{sessionError}</p>
+                  </div>
+                )}
+
+                {/* API Test Result */}
+                {apiTestResult && (
+                  <div className={`p-4 rounded-lg mb-4 ${apiTestResult.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                    <div className="flex items-center gap-2">
+                      {apiTestResult.success ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                      )}
+                      <p className={`text-sm font-medium ${apiTestResult.success ? 'text-green-500' : 'text-red-500'}`}>
+                        {apiTestResult.message}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-between items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={testApiConnection}
+                    disabled={isTestingApi || isTestingStreaming}
+                    className="border-primary/20 hover:bg-primary/5"
+                  >
+                    {isTestingApi ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Testing API...
+                      </>
+                    ) : (
+                      <>
+                        <ServerIcon className="mr-2 h-4 w-4" />
+                        Test API Connection
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={testStreaming}
+                    disabled={isTestingApi || isTestingStreaming}
+                    className="border-primary/20 hover:bg-primary/5"
+                  >
+                    {isTestingStreaming ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Testing Streaming...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
+                        Test Streaming
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Streaming Test Result */}
+                {streamingTestResult && (
+                  <div className="mt-4 p-4 bg-muted/10 border border-muted/20 rounded-lg">
+                    <h4 className="text-sm font-medium mb-2">Streaming Test Result:</h4>
+                    <pre className="text-xs whitespace-pre-wrap bg-card/50 p-3 rounded-md overflow-x-auto">
+                      {streamingTestResult}
+                      {isTestingStreaming && <span className="inline-block ml-1 animate-pulse">▌</span>}
+                    </pre>
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-center items-center">
+                  <ProfessionalButton
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    icon={<FaArrowRight className="w-5 h-5" />}
+                    iconPosition="right"
+                    disabled={isLoading}
+                    className="h-16 px-10 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mx-auto"
+                  >
+                    {isLoading ? "Starting Diagnosis..." : "Start Chain Diagnosis"}
+                  </ProfessionalButton>
+                </div>
+              </form>
+            </Form>
+          </div>
         </CardContent>
-        
+
         <CardFooter className="flex flex-col text-xs text-muted-foreground border-t border-border/50 pt-4">
           <p>
             The Multi-Agent Chain Diagnosis System uses 8 specialized AI roles to provide a comprehensive health analysis.

@@ -36,6 +36,7 @@ export interface ChainDiagnosisUserInput {
     name?: string;
     type?: string;
     text?: string;
+    image_url?: string; // URL for medical images to be analyzed
   };
 }
 
@@ -49,6 +50,12 @@ export interface BaseAIResponse {
 // 1. Medical Analyst AI Response
 export interface MedicalAnalystResponse extends BaseAIResponse {
   report_type_analyzed: string;
+  // Optional image analysis field for when an image URL is provided
+  image_analysis?: {
+    image_description: string;
+    visible_findings: string[];
+    possible_abnormalities: string[];
+  };
   key_findings_from_report: string[];
   abnormalities_highlighted: string[];
   clinical_correlation_points_for_gp: string[];
@@ -222,9 +229,9 @@ export interface RadianceAISummarizerResponse {
 }
 
 // Combined type for any AI response in the chain
-export type ChainAIResponse = 
-  | MedicalAnalystResponse 
-  | GeneralPhysicianResponse 
+export type ChainAIResponse =
+  | MedicalAnalystResponse
+  | GeneralPhysicianResponse
   | SpecialistDoctorResponse
   | PathologistResponse
   | NutritionistResponse
@@ -246,6 +253,17 @@ export interface ChainDiagnosisSession {
   pharmacist_response?: PharmacistResponse;
   follow_up_specialist_response?: FollowUpSpecialistResponse;
   summarizer_response?: RadianceAISummarizerResponse;
+
+  // Raw API responses for debugging and analysis
+  raw_medical_analyst_response?: string;
+  raw_general_physician_response?: string;
+  raw_specialist_doctor_response?: string;
+  raw_pathologist_response?: string;
+  raw_nutritionist_response?: string;
+  raw_pharmacist_response?: string;
+  raw_follow_up_specialist_response?: string;
+  raw_summarizer_response?: string;
+
   status: 'in_progress' | 'completed' | 'error';
   current_step: number;
   error_message?: string;

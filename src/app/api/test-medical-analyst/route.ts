@@ -102,10 +102,11 @@ Respond in JSON format with the following structure:
     }, null, 2);
 
     // Make the API request
-    const apiKey = process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+    const apiKey = process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
 
     if (!apiKey) {
-      console.error('Perplexity API key is not configured');
+      console.error('Perplexity API key is not configured. Check your environment variables.');
+      console.log('Available environment variables:', Object.keys(process.env).filter(key => key.includes('PERPLEXITY')));
 
       // Return a mock response for testing purposes
       const mockResponse: MedicalAnalystResponse = {

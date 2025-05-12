@@ -20,14 +20,8 @@ export default async function ChainDiagnosisPage() {
     redirect("/auth/login?redirectUrl=/dashboard/chain-diagnosis");
   }
 
-  // Get user profile data
-  const { data: profileData } = await supabase
-    .from("user_profiles")
-    .select("*")
-    .eq("user_id", userData.user.id)
-    .single();
-
-  const userProfile = profileData || {};
+  // We'll let the client component fetch the user profile
+  // This matches how the diagnosis symptom form works
 
   return (
     <ChainDiagnosisProvider>
@@ -42,13 +36,13 @@ export default async function ChainDiagnosisPage() {
               Multi-Agent Chain Diagnosis System
             </h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our advanced system uses 8 specialized AI roles to provide a comprehensive health analysis, 
+              Our advanced system uses 8 specialized AI roles to provide a comprehensive health analysis,
               from initial assessment to follow-up recommendations.
             </p>
           </div>
 
-          <ChainDiagnosisForm userId={userData.user.id} userProfile={userProfile} />
-          
+          <ChainDiagnosisForm userId={userData.user.id} />
+
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -84,7 +78,7 @@ export default async function ChainDiagnosisPage() {
                 description: "Creates a comprehensive final report"
               }
             ].map((role, index) => (
-              <div 
+              <div
                 key={index}
                 className="bg-card/30 backdrop-blur-sm border border-primary/10 rounded-lg p-4 hover:shadow-md transition-all"
               >
@@ -93,7 +87,7 @@ export default async function ChainDiagnosisPage() {
               </div>
             ))}
           </div>
-          
+
           <div className="mt-8 p-4 bg-card/30 border border-border/40 rounded-md">
             <p className="text-sm text-muted-foreground">
               <strong>Note:</strong> This system is for informational purposes only and is not a substitute for professional medical advice.

@@ -5,9 +5,8 @@ import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import { MedicalAnalystResponse } from '@/types/chain-diagnosis';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, TestTube, FileText, AlertCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Loader2, TestTube, FileText, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { cn } from '@/lib/utils';
 
@@ -17,53 +16,56 @@ interface MedicalAnalystViewProps {
 }
 
 export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewProps) {
-  const { 
-    currentSession, 
-    streamingContent, 
-    isStreaming, 
+  const {
+    currentSession,
+    streamingContent,
+    isStreaming,
     isLoading,
     error
   } = useChainDiagnosis();
-  
+
   const [parsedResponse, setParsedResponse] = useState<MedicalAnalystResponse | null>(null);
   const [activeTab, setActiveTab] = useState('findings');
   const [showRawJson, setShowRawJson] = useState(false);
-  
+
   // Parse the streaming content or use the stored response
   useEffect(() => {
     try {
-      // If we have streaming content, try to parse it
+      // First priority: use the stored response from the session if available
+      if (currentSession?.medical_analyst_response) {
+        console.log('Using stored medical analyst response from session');
+        setParsedResponse(currentSession.medical_analyst_response);
+        return;
+      }
+
+      // Second priority: try to parse streaming content if available
       if (streamingContent.medicalAnalyst) {
         try {
           // Try to extract JSON from the content
           const jsonMatch = streamingContent.medicalAnalyst.match(/```json\s*([\s\S]*?)\s*```/);
-          
+
           if (jsonMatch && jsonMatch[1]) {
+            console.log('Parsed JSON from markdown code block');
             const parsed = JSON.parse(jsonMatch[1]);
             setParsedResponse(parsed);
             return;
           }
-          
+
           // Try to parse the entire content as JSON
+          console.log('Attempting to parse entire streaming content as JSON');
           const parsed = JSON.parse(streamingContent.medicalAnalyst);
           setParsedResponse(parsed);
         } catch (e) {
-          // If parsing fails, just use the stored response
-          if (currentSession?.medical_analyst_response) {
-            setParsedResponse(currentSession.medical_analyst_response);
-          }
+          console.error('Error parsing streaming content:', e);
         }
-      } else if (currentSession?.medical_analyst_response) {
-        // If no streaming content, use the stored response
-        setParsedResponse(currentSession.medical_analyst_response);
       }
     } catch (e) {
       console.error('Error parsing Medical Analyst response:', e);
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
-  
-  // If no medical report is present, show a message
-  if (!currentSession?.user_input.medical_report?.text) {
+
+  // If no medical report or image is present, show a message
+  if (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url) {
     return (
       <AnimatedSection>
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
@@ -78,27 +80,27 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               <div>
                 <CardTitle>Medical Analyst AI</CardTitle>
                 <CardDescription>
-                  No medical report to analyze
+                  No medical report or image to analyze
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent>
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-amber-500 mb-1">No Medical Report Provided</p>
                 <p className="text-sm text-muted-foreground">
-                  The Medical Analyst AI requires a medical report to analyze. Since no report was provided, 
+                  The Medical Analyst AI requires a medical report or image to analyze. Since no report or image was provided,
                   this step will be skipped and the diagnosis will proceed directly to the General Physician AI.
                 </p>
               </div>
             </div>
           </CardContent>
-          
+
           <CardFooter>
-            <Button 
+            <Button
               onClick={onContinue}
               className="w-full bg-primary hover:bg-primary/90"
               disabled={isLoading}
@@ -117,7 +119,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
       </AnimatedSection>
     );
   }
-  
+
   // If we're still loading and have no parsed response, show a loading state
   if (isLoading && !parsedResponse && isActive) {
     return (
@@ -136,7 +138,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -151,7 +153,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
       </AnimatedSection>
     );
   }
-  
+
   // If we have an error, show an error state
   if (error && isActive) {
     return (
@@ -170,16 +172,16 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent>
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <p className="text-sm text-destructive mb-2 font-medium">Error Message:</p>
               <p className="text-sm text-muted-foreground">{error}</p>
             </div>
           </CardContent>
-          
+
           <CardFooter>
-            <Button 
+            <Button
               onClick={onContinue}
               className="w-full"
               variant="outline"
@@ -191,7 +193,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
       </AnimatedSection>
     );
   }
-  
+
   // Main view with parsed response
   return (
     <AnimatedSection>
@@ -215,7 +217,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 </CardDescription>
               </div>
             </div>
-            
+
             {isStreaming && isActive && (
               <div className="flex items-center gap-2 text-primary text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -224,7 +226,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           {/* Report Type */}
           {parsedResponse?.report_type_analyzed && (
@@ -235,7 +237,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               </span>
             </div>
           )}
-          
+
           {/* Tabs for different sections */}
           <Tabs defaultValue="findings" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3">
@@ -243,7 +245,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               <TabsTrigger value="abnormalities">Abnormalities</TabsTrigger>
               <TabsTrigger value="correlation">Clinical Correlation</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="findings" className="space-y-4 pt-4">
               {parsedResponse?.key_findings_from_report?.length ? (
                 <ul className="space-y-2">
@@ -266,7 +268,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="abnormalities" className="space-y-4 pt-4">
               {parsedResponse?.abnormalities_highlighted?.length ? (
                 <ul className="space-y-2">
@@ -289,7 +291,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 </div>
               )}
             </TabsContent>
-            
+
             <TabsContent value="correlation" className="space-y-4 pt-4">
               {parsedResponse?.clinical_correlation_points_for_gp?.length ? (
                 <ul className="space-y-2">
@@ -313,7 +315,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               )}
             </TabsContent>
           </Tabs>
-          
+
           {/* Raw JSON toggle */}
           <div className="pt-2">
             <Button
@@ -334,7 +336,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 </>
               )}
             </Button>
-            
+
             {showRawJson && (
               <div className="mt-2 bg-background/50 p-3 rounded-md border border-border/50 overflow-x-auto">
                 <pre className="text-xs text-muted-foreground">
@@ -343,7 +345,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
               </div>
             )}
           </div>
-          
+
           {/* Disclaimer */}
           {parsedResponse?.disclaimer && (
             <div className="bg-background/50 p-3 rounded-md border border-border/50 text-xs text-muted-foreground">
@@ -352,9 +354,9 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
             </div>
           )}
         </CardContent>
-        
+
         <CardFooter>
-          <Button 
+          <Button
             onClick={onContinue}
             className="w-full bg-primary hover:bg-primary/90"
             disabled={isLoading || (isActive && isStreaming)}

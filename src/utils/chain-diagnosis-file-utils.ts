@@ -101,16 +101,37 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
 
     // For simplicity, we'll just use the first file
     const file = files[0];
-    
+
     // Process the file to extract text
     const extractedText = await processMedicalReportFile(file);
 
-    return {
-      url: file.public_url || '',
+    // Check if the file is an image
+    const isImage = file.type.toLowerCase().includes('image');
+    const publicUrl = file.public_url || '';
+
+    console.log('File metadata:', {
+      id: file.id,
+      name: file.name,
+      type: file.type,
+      isImage,
+      publicUrl,
+      path: file.path
+    });
+
+    // For image files, only include the image_url field to avoid confusion
+    // This ensures the AI focuses on analyzing the image directly
+    const result = isImage ? {
+      image_url: publicUrl
+    } : {
+      url: publicUrl,
       name: file.name,
       type: file.type,
       text: extractedText
     };
+
+    console.log('Returning medical report data:', result);
+
+    return result;
   } catch (error) {
     console.error('Error preparing medical report data:', error);
     return undefined;
@@ -131,10 +152,25 @@ export async function convertToChainDiagnosisInput(
   symptomData: any,
   selectedFiles?: FileMetadata[]
 ): Promise<ChainDiagnosisUserInput> {
+  // Get the authenticated user ID to ensure it matches
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Use the authenticated user ID if available, otherwise use the provided userId
+  const authenticatedUserId = user?.id || userId;
+
+  if (user && user.id !== userId) {
+    console.warn('Provided userId does not match authenticated user. Using authenticated user ID instead.');
+  }
+
   // Process medical report files if provided
+  console.log('Processing selected files:', selectedFiles);
+
   const medicalReport = selectedFiles && selectedFiles.length > 0
     ? await prepareMedicalReportData(selectedFiles)
     : undefined;
+
+  console.log('Prepared medical report data:', medicalReport);
 
   // Parse symptoms into an array
   const symptomsList = symptomData.symptoms
@@ -158,7 +194,7 @@ export async function convertToChainDiagnosisInput(
   // Construct the Chain Diagnosis user input
   return {
     user_details: {
-      id: userId,
+      id: authenticatedUserId, // Use the authenticated user ID
       first_name: userProfile.first_name || '',
       last_name: userProfile.last_name || '',
       country: userProfile.country || '',

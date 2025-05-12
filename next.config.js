@@ -7,6 +7,7 @@ const nextConfig = {
     },
   },
   images: {
+    domains: ['lvqnpykgqaoncbkuhedk.supabase.co', 'www.radiologyinfo.org', 'placehold.co', 'cdn.pixabay.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -17,6 +18,21 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'lvqnpykgqaoncbkuhedk.supabase.co',
         pathname: '/storage/v1/object/sign/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.radiologyinfo.org',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.pixabay.com',
+        pathname: '/**',
       },
     ],
   },
