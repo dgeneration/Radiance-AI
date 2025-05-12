@@ -74,8 +74,7 @@ export default function SymptomForm() {
   const [error, setError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [apiStatus, setApiStatus] = useState<{apiKeySet: boolean, apiUrl: string} | null>(null);
-  const [isCheckingApi, setIsCheckingApi] = useState(true);
+  // Removed API status check
   const [selectedFiles, setSelectedFiles] = useState<FileMetadata[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
@@ -111,30 +110,7 @@ export default function SymptomForm() {
     },
   });
 
-  // Check API status on component mount
-  useEffect(() => {
-    async function checkApiStatus() {
-      try {
-        setIsCheckingApi(true);
-        const response = await fetch('/api/test-env');
-        if (response.ok) {
-          const data = await response.json();
-          setApiStatus({
-            apiKeySet: data.apiKeySet,
-            apiUrl: data.apiUrl
-          });
-        } else {
-          console.error('Failed to check API status');
-        }
-      } catch (error) {
-        console.error('Error checking API status:', error);
-      } finally {
-        setIsCheckingApi(false);
-      }
-    }
-
-    checkApiStatus();
-  }, []);
+  // API status check removed
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -556,42 +532,7 @@ export default function SymptomForm() {
               </div>
             )}
 
-            <div className="bg-card/50 backdrop-blur-sm border border-primary/10 p-6 rounded-xl shadow-md mb-8">
-              {isCheckingApi ? (
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                  <span className="text-primary font-medium">Checking API status...</span>
-                </div>
-              ) : apiStatus?.apiKeySet ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-green-800 dark:text-green-300">Active: Perplexity Sonar Deep Research</h4>
-                    <p className="text-sm text-green-700 dark:text-green-400">
-                      Your symptoms will be analyzed using advanced AI and evidence-based medical research.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-amber-800 dark:text-amber-300">Demo Mode</h4>
-                    <p className="text-sm text-amber-700 dark:text-amber-400">
-                      The diagnosis will be generated based on pattern matching rather than a real AI model.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* API status check removed */}
 
             <div className="mt-10 flex justify-center items-center">
               <ProfessionalButton

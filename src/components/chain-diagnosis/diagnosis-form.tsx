@@ -5,14 +5,14 @@ import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
-import { CheckCircle, AlertCircle, ServerIcon, Loader2, ArrowDownWideNarrow } from 'lucide-react';
+// Removed unused imports
 import { motion, AnimatePresence } from 'framer-motion';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { FileSelector } from '@/components/file-upload/file-selector';
 import { FileMetadata } from '@/utils/supabase/file-storage';
-import { Button } from '@/components/ui/button';
+// Removed unused Button import
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -86,10 +86,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isProfileExpanded, setIsProfileExpanded] = useState(true);
-  const [isTestingApi, setIsTestingApi] = useState(false);
-  const [isTestingStreaming, setIsTestingStreaming] = useState(false);
-  const [apiTestResult, setApiTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [streamingTestResult, setStreamingTestResult] = useState<string>('');
+  // Test states removed
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -135,111 +132,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
     },
   });
 
-  // Test the API connection
-  const testApiConnection = async () => {
-    try {
-      setIsTestingApi(true);
-      setApiTestResult(null);
-
-      const response = await fetch('/api/test-chain-diagnosis-api');
-      const data = await response.json();
-
-      if (data.success) {
-        setApiTestResult({
-          success: true,
-          message: `API connection successful! Model: ${data.model || 'sonar-pro'}`
-        });
-      } else {
-        setApiTestResult({
-          success: false,
-          message: `API connection failed: ${data.error || 'Unknown error'}`
-        });
-      }
-    } catch (error) {
-      console.error('Error testing API connection:', error);
-      setApiTestResult({
-        success: false,
-        message: error instanceof Error ? error.message : 'An unknown error occurred'
-      });
-    } finally {
-      setIsTestingApi(false);
-    }
-  };
-
-  // Test streaming functionality
-  const testStreaming = async () => {
-    try {
-      setIsTestingStreaming(true);
-      setStreamingTestResult('');
-
-      const response = await fetch('/api/test-streaming');
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error('Response body is null, cannot stream');
-      }
-
-      // Process the streaming response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullResponse = '';
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            console.log('Test stream complete');
-            break;
-          }
-
-          // Decode the chunk and add to buffer
-          const chunk = decoder.decode(value, { stream: true });
-          buffer += chunk;
-
-          // Process complete lines
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6).trim();
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content || '';
-                if (content) {
-                  fullResponse += content;
-                  setStreamingTestResult(prev => prev + content);
-                }
-              } catch (e) {
-                console.error('Error parsing test streaming response:', e);
-              }
-            }
-          }
-        }
-      } catch (streamError) {
-        console.error('Error processing test stream:', streamError);
-        setApiTestResult({
-          success: false,
-          message: `Streaming test failed: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`
-        });
-      }
-    } catch (error) {
-      console.error('Error testing streaming:', error);
-      setApiTestResult({
-        success: false,
-        message: `Streaming test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    } finally {
-      setIsTestingStreaming(false);
-    }
-  };
+  // Test functions removed
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -682,74 +575,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                   </div>
                 )}
 
-                {/* API Test Result */}
-                {apiTestResult && (
-                  <div className={`p-4 rounded-lg mb-4 ${apiTestResult.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                    <div className="flex items-center gap-2">
-                      {apiTestResult.success ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <p className={`text-sm font-medium ${apiTestResult.success ? 'text-green-500' : 'text-red-500'}`}>
-                        {apiTestResult.message}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-6 flex justify-between items-center gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={testApiConnection}
-                    disabled={isTestingApi || isTestingStreaming}
-                    className="border-primary/20 hover:bg-primary/5"
-                  >
-                    {isTestingApi ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Testing API...
-                      </>
-                    ) : (
-                      <>
-                        <ServerIcon className="mr-2 h-4 w-4" />
-                        Test API Connection
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={testStreaming}
-                    disabled={isTestingApi || isTestingStreaming}
-                    className="border-primary/20 hover:bg-primary/5"
-                  >
-                    {isTestingStreaming ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Testing Streaming...
-                      </>
-                    ) : (
-                      <>
-                        <ArrowDownWideNarrow className="mr-2 h-4 w-4" />
-                        Test Streaming
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {/* Streaming Test Result */}
-                {streamingTestResult && (
-                  <div className="mt-4 p-4 bg-muted/10 border border-muted/20 rounded-lg">
-                    <h4 className="text-sm font-medium mb-2">Streaming Test Result:</h4>
-                    <pre className="text-xs whitespace-pre-wrap bg-card/50 p-3 rounded-md overflow-x-auto">
-                      {streamingTestResult}
-                      {isTestingStreaming && <span className="inline-block ml-1 animate-pulse">▌</span>}
-                    </pre>
-                  </div>
-                )}
+                {/* Test UI elements removed */}
 
                 <div className="mt-6 flex justify-center items-center">
                   <ProfessionalButton

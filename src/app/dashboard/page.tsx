@@ -297,41 +297,7 @@ export default async function DashboardPage() {
                   </div>
                 </Link>
 
-                <Link href="/test/medical-analyst" className="group col-span-1 sm:col-span-2 md:col-span-2">
-                  <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <TestTube className="w-5 h-5 text-primary" />
-                      </div>
-                      <h4 className="font-semibold">Test Medical Analyst AI</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-auto">
-                      Directly test the Medical Analyst AI component with your own medical reports and view raw API requests/responses
-                    </p>
-                    <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
-                      Test now
-                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-
-                <Link href="/simplified-chain-diagnosis" className="group col-span-1 sm:col-span-2 md:col-span-2">
-                  <div className="bg-card/50 p-5 rounded-xl border border-accent/5 hover:border-accent/20 hover:bg-accent/5 transition-all duration-300 h-full flex flex-col">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <FaBrain className="w-5 h-5 text-accent" />
-                      </div>
-                      <h4 className="font-semibold">Simplified Chain Diagnosis</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-auto">
-                      Try the simplified version of the Chain Diagnosis System that works without database
-                    </p>
-                    <div className="mt-4 text-accent font-medium text-sm flex items-center gap-2">
-                      Try it now
-                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
+                {/* Test links removed */}
               </div>
             </div>
           </AnimatedSection>
