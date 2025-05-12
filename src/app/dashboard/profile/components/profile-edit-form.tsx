@@ -205,6 +205,16 @@ export default function ProfileEditForm({
     }
   }, [selectedCountry, selectedState]);
 
+  // Helper function to check if a field has reached its edit limit
+  const hasReachedEditLimit = (field: keyof UserProfile) => {
+    // Check if the field has an edit count property
+    const editCountField = `${field}_edit_count` as keyof UserProfile;
+    const editCount = initialProfile[editCountField] as number | null | undefined;
+
+    // If edit count is 1 or more, the field has reached its limit
+    return editCount !== null && editCount !== undefined && editCount >= 1;
+  };
+
   // Handle form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -227,22 +237,6 @@ export default function ProfileEditForm({
 
       // Update personal information fields with edit limit checks
       if (!isEditingHealthInfo) {
-        // Helper function to check if a field has reached its edit limit
-        const hasReachedEditLimit = (field: keyof UserProfile) => {
-          // Only check personal details fields (not health metrics or location)
-          const personalDetailsFields = ['first_name', 'last_name', 'gender', 'birth_year'];
-
-          if (!personalDetailsFields.includes(field)) {
-            return false;
-          }
-
-          // Check if the field has an edit count property
-          const editCountField = `${field}_edit_count` as keyof UserProfile;
-          const editCount = initialProfile[editCountField] as number | null | undefined;
-
-          // If edit count is 1 or more, the field has reached its limit
-          return editCount !== null && editCount !== undefined && editCount >= 1;
-        };
 
         // Update personal details fields with edit limit checks
         const personalDetailsFields = ['first_name', 'last_name', 'gender', 'birth_year'];
@@ -368,6 +362,42 @@ export default function ProfileEditForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {!isEditingHealthInfo && (
               <>
+                {/* Show warning for fields that have reached their edit limit */}
+                {(hasReachedEditLimit('first_name') ||
+                  hasReachedEditLimit('last_name') ||
+                  hasReachedEditLimit('country') ||
+                  hasReachedEditLimit('state') ||
+                  hasReachedEditLimit('city') ||
+                  hasReachedEditLimit('zip_code') ||
+                  hasReachedEditLimit('gender') ||
+                  hasReachedEditLimit('birth_year') ||
+                  hasReachedEditLimit('height') ||
+                  hasReachedEditLimit('weight') ||
+                  hasReachedEditLimit('dietary_preference')) && (
+                  <div className="mb-6">
+                    <Alert className="bg-amber-500/10 border-amber-500/20 text-amber-500">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Edit Limit Reached</AlertTitle>
+                      <AlertDescription>
+                        Some personal information fields can only be edited once. The following fields have reached their edit limit:
+                        <ul className="list-disc pl-5 mt-2">
+                          {hasReachedEditLimit('first_name') && <li>First Name</li>}
+                          {hasReachedEditLimit('last_name') && <li>Last Name</li>}
+                          {hasReachedEditLimit('country') && <li>Country</li>}
+                          {hasReachedEditLimit('state') && <li>State</li>}
+                          {hasReachedEditLimit('city') && <li>City</li>}
+                          {hasReachedEditLimit('zip_code') && <li>Zip Code</li>}
+                          {hasReachedEditLimit('gender') && <li>Gender</li>}
+                          {hasReachedEditLimit('birth_year') && <li>Birth Year</li>}
+                          {hasReachedEditLimit('height') && <li>Height</li>}
+                          {hasReachedEditLimit('weight') && <li>Weight</li>}
+                          {hasReachedEditLimit('dietary_preference') && <li>Dietary Preference</li>}
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+
                 <div className="bg-card/50 backdrop-blur-sm border border-primary/10 p-5 rounded-xl shadow-md mb-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
@@ -398,11 +428,7 @@ export default function ProfileEditForm({
                                 {...field}
                               />
                             </FormControl>
-                            {hasReachedLimit && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                You can only edit this field once.
-                              </p>
-                            )}
+
                             <FormMessage />
                           </FormItem>
                         );
@@ -430,11 +456,7 @@ export default function ProfileEditForm({
                                 {...field}
                               />
                             </FormControl>
-                            {hasReachedLimit && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                You can only edit this field once.
-                              </p>
-                            )}
+
                             <FormMessage />
                           </FormItem>
                         );
@@ -474,11 +496,7 @@ export default function ProfileEditForm({
                                 <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
                               </SelectContent>
                             </Select>
-                            {hasReachedLimit && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                You can only edit this field once.
-                              </p>
-                            )}
+
                             <FormMessage />
                           </FormItem>
                         );
@@ -507,11 +525,7 @@ export default function ProfileEditForm({
                                 {...field}
                               />
                             </FormControl>
-                            {hasReachedLimit && (
-                              <p className="text-xs text-amber-500 mt-1">
-                                You can only edit this field once.
-                              </p>
-                            )}
+
                             <FormMessage />
                           </FormItem>
                         );

@@ -161,41 +161,7 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
             </ProfessionalButton>
           </div>
 
-          {/* Show warning for fields that have reached their edit limit */}
-          {(hasReachedEditLimit('first_name') ||
-            hasReachedEditLimit('last_name') ||
-            hasReachedEditLimit('country') ||
-            hasReachedEditLimit('state') ||
-            hasReachedEditLimit('city') ||
-            hasReachedEditLimit('zip_code') ||
-            hasReachedEditLimit('gender') ||
-            hasReachedEditLimit('birth_year') ||
-            hasReachedEditLimit('height') ||
-            hasReachedEditLimit('weight') ||
-            hasReachedEditLimit('dietary_preference')) && (
-            <div className="mb-6">
-              <Alert className="bg-amber-500/10 border-amber-500/20 text-amber-500">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Edit Limit Reached</AlertTitle>
-                <AlertDescription>
-                  Some personal information fields can only be edited once. The following fields have reached their edit limit:
-                  <ul className="list-disc pl-5 mt-2">
-                    {hasReachedEditLimit('first_name') && <li>First Name</li>}
-                    {hasReachedEditLimit('last_name') && <li>Last Name</li>}
-                    {hasReachedEditLimit('country') && <li>Country</li>}
-                    {hasReachedEditLimit('state') && <li>State</li>}
-                    {hasReachedEditLimit('city') && <li>City</li>}
-                    {hasReachedEditLimit('zip_code') && <li>Zip Code</li>}
-                    {hasReachedEditLimit('gender') && <li>Gender</li>}
-                    {hasReachedEditLimit('birth_year') && <li>Birth Year</li>}
-                    {hasReachedEditLimit('height') && <li>Height</li>}
-                    {hasReachedEditLimit('weight') && <li>Weight</li>}
-                    {hasReachedEditLimit('dietary_preference') && <li>Dietary Preference</li>}
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
+
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <AnimatedCard delay={0.3}>
