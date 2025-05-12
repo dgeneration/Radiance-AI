@@ -152,18 +152,18 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 
 ## 🤖 Phase 5: Multi-Agent Chain Diagnosis System
 
-### 🔹 5.1 System Architecture
-- ⬜ Design the chain diagnosis flow with 8 specialized AI roles
-- ⬜ Create standardized API payload structure for all roles
-- ⬜ Implement streaming API support for real-time UI updates
-- ⬜ Set up file management system for medical reports/images
-- ⬜ Use system prompts from `refined_role_prompt.md` for each AI role
+### ✅ 5.1 System Architecture
+- ✅ Design the chain diagnosis flow with 8 specialized AI roles
+- ✅ Create standardized API payload structure for all roles
+- ✅ Implement streaming API support for real-time UI updates
+- ✅ Set up file management system for medical reports/images
+- ✅ Use system prompts from `refined_role_prompt.md` for each AI role
 
-### 🔹 5.2 Medical Analyst AI
-- ⬜ Configure API component using sonar-deep-research model
-- ⬜ Implement conditional logic based on medical report presence
-- ⬜ Create UI for displaying streaming Medical Analyst results
-- ⬜ Add storage and retrieval of Medical Analyst responses
+### ✅ 5.2 Medical Analyst AI
+- ✅ Configure API component using sonar-deep-research model
+- ✅ Implement conditional logic based on medical report presence
+- ✅ Create UI for displaying streaming Medical Analyst results
+- ✅ Add storage and retrieval of Medical Analyst responses
 
 ### 🔹 5.3 General Physician AI
 - ⬜ Configure API component using sonar-pro model
@@ -233,7 +233,7 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 
 ## Notes
 - Last updated: May 12, 2024
-- Current focus: Phase 4.2 - Geo-based Help and Phase 5.1 - Chain Diagnosis System Architecture
+- Current focus: Phase 5.3 - General Physician AI
 - The Multi-Agent Chain Diagnosis System will use the following Perplexity Sonar models:
   - Medical Analyst: sonar-deep-research
   - General Physician: sonar-pro

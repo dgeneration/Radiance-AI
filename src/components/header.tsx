@@ -69,6 +69,16 @@ export function Header({ user }: HeaderProps) {
                 Diagnosis
               </Link>
               <Link
+                href="/dashboard/chain-diagnosis"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
+                  pathname.startsWith('/dashboard/chain-diagnosis')
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
+                }`}
+              >
+                Chain Diagnosis
+              </Link>
+              <Link
                 href="/dashboard/history"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
                   pathname === '/dashboard/history'

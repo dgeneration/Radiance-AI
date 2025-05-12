@@ -6,7 +6,8 @@ import { SubNavbar } from "@/components/sub-navbar";
 import { ProfessionalButton } from "@/components/ui/professional-button";
 import { AnimatedSection, AnimatedIcon, FloatingElement } from "@/components/animations";
 import { GradientHeading } from "@/components/ui/gradient-heading";
-import { FaArrowRight, FaUser, FaHistory, FaEnvelope, FaIdCard, FaSignInAlt } from "react-icons/fa";
+import { FaArrowRight, FaUser, FaHistory, FaEnvelope, FaIdCard, FaSignInAlt, FaBrain } from "react-icons/fa";
+import { TestTube } from "lucide-react";
 import { MdHealthAndSafety, MdOutlineVerified } from "react-icons/md";
 
 export const metadata: Metadata = {
@@ -223,7 +224,7 @@ export default async function DashboardPage() {
                 Quick Navigation
               </GradientHeading>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <Link href="/diagnosis" className="group">
                   <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
                     <div className="flex items-center gap-4 mb-3">
@@ -242,18 +243,36 @@ export default async function DashboardPage() {
                   </div>
                 </Link>
 
-                <Link href="/dashboard/history" className="group">
+                <Link href="/dashboard/chain-diagnosis" className="group">
                   <div className="bg-card/50 p-5 rounded-xl border border-accent/5 hover:border-accent/20 hover:bg-accent/5 transition-all duration-300 h-full flex flex-col">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <FaHistory className="w-5 h-5 text-accent" />
+                        <FaBrain className="w-5 h-5 text-accent" />
+                      </div>
+                      <h4 className="font-semibold">Chain Diagnosis</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-auto">
+                      Get a comprehensive analysis from 8 specialized AI roles
+                    </p>
+                    <div className="mt-4 text-accent font-medium text-sm flex items-center gap-2">
+                      Try it now
+                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/dashboard/history" className="group">
+                  <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <FaHistory className="w-5 h-5 text-primary" />
                       </div>
                       <h4 className="font-semibold">Diagnosis History</h4>
                     </div>
                     <p className="text-sm text-muted-foreground mb-auto">
                       View your past diagnoses and track your health over time
                     </p>
-                    <div className="mt-4 text-accent font-medium text-sm flex items-center gap-2">
+                    <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
                       View history
                       <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -261,18 +280,54 @@ export default async function DashboardPage() {
                 </Link>
 
                 <Link href="/dashboard/profile" className="group">
-                  <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
+                  <div className="bg-card/50 p-5 rounded-xl border border-accent/5 hover:border-accent/20 hover:bg-accent/5 transition-all duration-300 h-full flex flex-col">
                     <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <FaUser className="w-5 h-5 text-primary" />
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <FaUser className="w-5 h-5 text-accent" />
                       </div>
                       <h4 className="font-semibold">Profile Settings</h4>
                     </div>
                     <p className="text-sm text-muted-foreground mb-auto">
                       Update your personal and health information
                     </p>
-                    <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
+                    <div className="mt-4 text-accent font-medium text-sm flex items-center gap-2">
                       Manage profile
+                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/test-medical-analyst" className="group col-span-1 sm:col-span-2 md:col-span-2">
+                  <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <TestTube className="w-5 h-5 text-primary" />
+                      </div>
+                      <h4 className="font-semibold">Test Medical Analyst AI</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-auto">
+                      Directly test the Medical Analyst AI component with your own medical reports
+                    </p>
+                    <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
+                      Test now
+                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/simplified-chain-diagnosis" className="group col-span-1 sm:col-span-2 md:col-span-2">
+                  <div className="bg-card/50 p-5 rounded-xl border border-accent/5 hover:border-accent/20 hover:bg-accent/5 transition-all duration-300 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <FaBrain className="w-5 h-5 text-accent" />
+                      </div>
+                      <h4 className="font-semibold">Simplified Chain Diagnosis</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-auto">
+                      Try the simplified version of the Chain Diagnosis System that works without database
+                    </p>
+                    <div className="mt-4 text-accent font-medium text-sm flex items-center gap-2">
+                      Try it now
                       <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>

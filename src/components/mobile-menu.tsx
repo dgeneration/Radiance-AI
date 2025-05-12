@@ -7,7 +7,9 @@ import {
   FaHome,
   FaStethoscope,
   FaHistory,
-  FaUser
+  FaUser,
+  FaBrain,
+  FaListAlt
 } from "react-icons/fa";
 
 export function MobileMenu() {
@@ -25,13 +27,25 @@ export function MobileMenu() {
       name: "Diagnosis",
       path: "/diagnosis",
       icon: <FaStethoscope className="h-5 w-5" />,
-      activePattern: /^\/diagnosis/
+      activePattern: /^\/diagnosis$/
+    },
+    {
+      name: "Chain Dx",
+      path: "/dashboard/chain-diagnosis",
+      icon: <FaBrain className="h-5 w-5" />,
+      activePattern: /^\/dashboard\/chain-diagnosis$/
     },
     {
       name: "History",
       path: "/dashboard/history",
       icon: <FaHistory className="h-5 w-5" />,
-      activePattern: /^\/dashboard\/history/
+      activePattern: /^\/dashboard\/history$/
+    },
+    {
+      name: "Chain Hx",
+      path: "/dashboard/chain-diagnosis/history",
+      icon: <FaListAlt className="h-5 w-5" />,
+      activePattern: /^\/dashboard\/chain-diagnosis\/history$/
     },
     {
       name: "Profile",
