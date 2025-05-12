@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileMetadata, getUserFiles, deleteFile, getSignedUrl, downloadFile } from '@/utils/supabase/file-storage';
-import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode } from 'lucide-react';
+import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode, CheckCircle, FolderIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { AnimatedSection, AnimatedIcon, FloatingElement } from '@/components/animations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,11 +30,40 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [newlyUploadedFiles, setNewlyUploadedFiles] = useState<string[]>([]);
+  const [showUploadSuccess, setShowUploadSuccess] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   // Load files on component mount
   useEffect(() => {
     loadFiles();
   }, [userId]);
+
+  // Create refs for newly uploaded files
+  const newFileRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
+  // Scroll to newly uploaded files when they appear
+  useEffect(() => {
+    // Only attempt to scroll if we have newly uploaded files and refs
+    if (newlyUploadedFiles.length > 0 && Object.keys(newFileRefs.current).length > 0) {
+      // Small delay to ensure the DOM has updated
+      const scrollTimeout = setTimeout(() => {
+        // Find the first newly uploaded file that has a ref
+        const fileId = newlyUploadedFiles.find(id => newFileRefs.current[id]);
+
+        if (fileId && newFileRefs.current[fileId]) {
+          // Scroll to the file
+          newFileRefs.current[fileId]?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 100);
+
+      // Clean up the timeout
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [newlyUploadedFiles, files]);
 
   const loadFiles = async () => {
     setLoading(true);
@@ -42,7 +73,29 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   };
 
   const handleUploadComplete = (newFiles: FileMetadata[]) => {
+    // Add the new files to the beginning of the list
     setFiles(prev => [...newFiles, ...prev]);
+
+    // Clear any existing refs
+    newFileRefs.current = {};
+
+    // Track the IDs of newly uploaded files
+    setNewlyUploadedFiles(newFiles.map(file => file.id));
+
+    // Show success message
+    setShowUploadSuccess(true);
+
+    // Set active tab to 'all' to ensure new files are visible
+    setActiveTab('all');
+
+    // Close the upload dialog
+    setUploadDialogOpen(false);
+
+    // Clear the "newly uploaded" status after 5 seconds
+    setTimeout(() => {
+      setNewlyUploadedFiles([]);
+      setShowUploadSuccess(false);
+    }, 5000);
   };
 
   const handleDeleteFile = async (fileId: string) => {
@@ -358,60 +411,133 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search files..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+    <div className="space-y-6 relative">
+      {/* Background decorative elements */}
+      <FloatingElement
+        className="absolute top-10 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 -z-10"
+        duration={15}
+        xOffset={20}
+        yOffset={30}
+      />
+      <FloatingElement
+        className="absolute bottom-10 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl opacity-30 -z-10"
+        duration={18}
+        xOffset={-20}
+        yOffset={-30}
+        delay={1}
+      />
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <ProfessionalButton
-              variant="primary"
-              size="default"
-              icon={<Upload className="h-4 w-4" />}
-              iconPosition="left"
-            >
-              Upload Files
-            </ProfessionalButton>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Upload Files</DialogTitle>
-            </DialogHeader>
-            <FileUploadDropzone
-              userId={userId}
-              onUploadComplete={(newFiles) => {
-                handleUploadComplete(newFiles);
-              }}
-              multiple={true}
+      <AnimatedSection direction="down" delay={0.1}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-card/50 backdrop-blur-sm border-primary/10 focus:border-primary/30 transition-all duration-300"
             />
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All Files</TabsTrigger>
-          <TabsTrigger value="images">Images</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-4">
-          {renderFileGrid(filteredFiles)}
-        </TabsContent>
-        <TabsContent value="images" className="mt-4">
-          {renderFileGrid(filteredFiles)}
-        </TabsContent>
-        <TabsContent value="documents" className="mt-4">
-          {renderFileGrid(filteredFiles)}
-        </TabsContent>
-      </Tabs>
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <ProfessionalButton
+                variant="primary"
+                size="default"
+                icon={<Upload className="h-4 w-4" />}
+                iconPosition="left"
+                onClick={() => setUploadDialogOpen(true)}
+                className="shadow-lg hover:shadow-primary/20 transition-all duration-300"
+              >
+                Upload Files
+              </ProfessionalButton>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md bg-card/90 backdrop-blur-md border-primary/20">
+              <DialogHeader>
+                <DialogTitle className="m-0 p-0">
+                  <span className="font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-xl md:text-2xl">
+                    Upload Files
+                  </span>
+                </DialogTitle>
+                <DialogClose className="absolute right-4 top-4">
+                  <X className="h-4 w-4" />
+                </DialogClose>
+              </DialogHeader>
+              <FileUploadDropzone
+                userId={userId}
+                onUploadComplete={(newFiles) => {
+                  handleUploadComplete(newFiles);
+                }}
+                multiple={true}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </AnimatedSection>
+
+      {/* Success message for file upload */}
+      {showUploadSuccess && (
+        <AnimatedSection direction="up" delay={0.1}>
+          <motion.div
+            className="bg-gradient-to-r from-green-500/10 to-primary/10 border border-green-500/30 rounded-xl p-5 flex items-center gap-4 animate-fadeIn shadow-lg backdrop-blur-sm"
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <AnimatedIcon
+              icon={<CheckCircle className="h-6 w-6 text-green-500" />}
+              className="p-2 bg-green-500/10 rounded-full"
+              pulseEffect={true}
+            />
+            <div>
+              <p className="font-medium text-green-500 text-lg">
+                {newlyUploadedFiles.length === 1
+                  ? '1 file uploaded successfully!'
+                  : `${newlyUploadedFiles.length} files uploaded successfully!`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Your files are now available in the file manager.
+              </p>
+            </div>
+          </motion.div>
+        </AnimatedSection>
+      )}
+
+      <AnimatedSection direction="up" delay={0.2}>
+        <div className="bg-card/30 backdrop-blur-sm p-1 rounded-xl border border-primary/10 shadow-lg">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 bg-card/50 p-1">
+              <TabsTrigger
+                value="all"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                All Files
+              </TabsTrigger>
+              <TabsTrigger
+                value="images"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                Images
+              </TabsTrigger>
+              <TabsTrigger
+                value="documents"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
+              >
+                Documents
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="all" className="mt-4 px-2 pb-2">
+              {renderFileGrid(filteredFiles)}
+            </TabsContent>
+            <TabsContent value="images" className="mt-4 px-2 pb-2">
+              {renderFileGrid(filteredFiles)}
+            </TabsContent>
+            <TabsContent value="documents" className="mt-4 px-2 pb-2">
+              {renderFileGrid(filteredFiles)}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </AnimatedSection>
 
       {selectable && selectedFiles.length > 0 && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-card/90 backdrop-blur-md border border-primary/20 rounded-lg shadow-lg p-4 z-50">
@@ -454,33 +580,45 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
           }
         }}
       >
-        <DialogContent className="sm:max-w-4xl h-[85vh] max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {previewFile?.type.startsWith('image/') && (
-                <ImageIcon className="h-5 w-5 text-primary" />
-              )}
-              {(previewFile?.type === 'application/pdf' || previewFile?.name.toLowerCase().endsWith('.pdf')) && (
-                <FileText className="h-5 w-5 text-red-500" />
-              )}
-              {(previewFile?.type === 'text/plain' || previewFile?.name.toLowerCase().endsWith('.txt')) && (
-                <FileText className="h-5 w-5 text-primary" />
-              )}
-              {previewFile?.name.toLowerCase().endsWith('.json') && (
-                <FileJson className="h-5 w-5 text-yellow-500" />
-              )}
-              {(previewFile?.name.toLowerCase().endsWith('.md') || previewFile?.name.toLowerCase().endsWith('.csv')) && (
-                <FileCode className="h-5 w-5 text-green-500" />
-              )}
-              <span>{previewFile?.name}</span>
-            </DialogTitle>
-            <DialogClose className="absolute right-4 top-4">
+        <DialogContent className="sm:max-w-4xl h-[85vh] max-h-[85vh] bg-card/90 backdrop-blur-md border-primary/20 shadow-xl">
+          <DialogHeader className="border-b border-primary/10 pb-3">
+            <div className="flex items-center gap-3">
+              <AnimatedIcon
+                icon={
+                  previewFile?.type.startsWith('image/') ? (
+                    <ImageIcon className="h-6 w-6 text-primary" />
+                  ) : previewFile?.type === 'application/pdf' || previewFile?.name.toLowerCase().endsWith('.pdf') ? (
+                    <FileText className="h-6 w-6 text-red-500" />
+                  ) : previewFile?.type === 'text/plain' || previewFile?.name.toLowerCase().endsWith('.txt') ? (
+                    <FileText className="h-6 w-6 text-primary" />
+                  ) : previewFile?.name.toLowerCase().endsWith('.json') ? (
+                    <FileJson className="h-6 w-6 text-yellow-500" />
+                  ) : previewFile?.name.toLowerCase().endsWith('.md') || previewFile?.name.toLowerCase().endsWith('.csv') ? (
+                    <FileCode className="h-6 w-6 text-green-500" />
+                  ) : (
+                    <FileText className="h-6 w-6 text-primary" />
+                  )
+                }
+                className="p-2 bg-card/50 rounded-full"
+              />
+              <DialogTitle className="m-0 p-0">
+                <span className="font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-xl md:text-2xl">
+                  {previewFile?.name}
+                </span>
+              </DialogTitle>
+            </div>
+            <DialogClose className="absolute right-4 top-4 hover:bg-card/50 transition-colors duration-200">
               <X className="h-4 w-4" />
             </DialogClose>
           </DialogHeader>
-          <div className="flex-1 overflow-auto">
+          <motion.div
+            className="flex-1 overflow-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {renderFilePreview()}
-          </div>
+          </motion.div>
         </DialogContent>
       </Dialog>
     </div>
@@ -489,67 +627,105 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   function renderFileGrid(files: FileMetadata[]) {
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="ml-3 text-muted-foreground">Loading files...</span>
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary"></div>
+            <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center">
+              <div className="h-6 w-6 rounded-full bg-card"></div>
+            </div>
+          </div>
+          <span className="mt-4 text-muted-foreground font-medium">Loading your files...</span>
         </div>
       );
     }
 
     if (files.length === 0) {
       return (
-        <div className="text-center py-12 bg-card/50 backdrop-blur-sm rounded-xl border border-primary/5">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-6">
-            {searchQuery ? 'No files match your search' : 'No files uploaded yet'}
+        <div className="text-center py-16 bg-gradient-to-b from-card/50 to-card/30 backdrop-blur-sm rounded-xl border border-primary/10 shadow-lg">
+          <AnimatedIcon
+            icon={<FolderIcon className="h-16 w-16 text-primary/70" />}
+            className="mx-auto mb-6 p-4 bg-primary/5 rounded-full"
+            pulseEffect={true}
+          />
+          <div className="mb-3">
+            <span className="font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-xl md:text-2xl">
+              {searchQuery ? 'No files match your search' : 'Your file collection is empty'}
+            </span>
+          </div>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            {searchQuery
+              ? 'Try adjusting your search or upload new files.'
+              : 'Upload your first file to get started. You can upload images, PDFs, and text files.'}
           </p>
-          <Dialog>
-            <DialogTrigger asChild>
-              <ProfessionalButton
-                variant="primary"
-                size="lg"
-                icon={<Upload className="h-5 w-5" />}
-                iconPosition="left"
-              >
-                Upload Your First File
-              </ProfessionalButton>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Upload Files</DialogTitle>
-              </DialogHeader>
-              <FileUploadDropzone
-                userId={userId}
-                onUploadComplete={handleUploadComplete}
-                multiple={true}
-              />
-            </DialogContent>
-          </Dialog>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ProfessionalButton
+              variant="primary"
+              size="lg"
+              icon={<Upload className="h-5 w-5" />}
+              iconPosition="left"
+              onClick={() => setUploadDialogOpen(true)}
+              className="shadow-lg hover:shadow-primary/20 transition-all duration-300"
+            >
+              Upload Your First File
+            </ProfessionalButton>
+          </motion.div>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {files.map((file) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {files.map((file, index) => {
           const isSelected = selectedFiles.some(f => f.id === file.id);
           const isImage = file.type.startsWith('image/');
+          const isNewlyUploaded = newlyUploadedFiles.includes(file.id);
+
+          // We'll use the ref callback to store references to newly uploaded files
 
           return (
-            <div
+            <motion.div
+              ref={isNewlyUploaded ? (el) => { newFileRefs.current[file.id] = el; } : undefined}
               key={file.id}
-              className={`relative overflow-hidden rounded-lg border ${
-                isSelected ? 'border-primary' : 'border-primary/10'
-              } bg-card/50 backdrop-blur-sm transition-all duration-200 ${
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.4,
+                delay: index * 0.05,
+                ease: [0.25, 0.1, 0.25, 1.0]
+              }}
+              whileHover={{
+                y: -5,
+                boxShadow: isNewlyUploaded
+                  ? '0 20px 25px -5px rgba(16, 185, 129, 0.15)'
+                  : '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                scale: 1.02
+              }}
+              className={`relative overflow-hidden rounded-xl border ${
+                isSelected ? 'border-primary' : isNewlyUploaded ? 'border-green-500' : 'border-primary/10'
+              } bg-card/70 backdrop-blur-sm transition-all duration-300 ${
+                isNewlyUploaded ? 'shadow-lg shadow-green-500/10 animate-fadeIn animate-highlight' : 'shadow-md'
+              } ${
                 selectable ? 'cursor-pointer' : ''
               }`}
               onClick={() => selectable && toggleFileSelection(file)}
             >
+              {/* Selection indicator */}
               {selectable && (
                 <div className={`absolute top-2 right-2 z-10 h-5 w-5 rounded-full border ${
                   isSelected ? 'bg-primary border-primary' : 'bg-background border-muted-foreground'
                 } flex items-center justify-center`}>
                   {isSelected && <Check className="h-3 w-3 text-white" />}
+                </div>
+              )}
+
+              {/* "New" badge for newly uploaded files */}
+              {isNewlyUploaded && (
+                <div className="absolute top-2 left-2 z-10 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                  NEW
                 </div>
               )}
 
@@ -600,85 +776,94 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                   </p>
                 </div>
 
-                <div className="mt-3 flex justify-between">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={async (e) => {
-                      e.stopPropagation();
+                <div className="mt-4 flex justify-between">
+                  <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-primary/5 hover:bg-primary/10 text-primary hover:text-primary"
+                      onClick={async (e) => {
+                        e.stopPropagation();
 
-                      // For images, try multiple approaches
-                      if (file.type.startsWith('image/')) {
-                        // First try to download the file directly and create a blob URL
-                        const blob = await downloadFile(file.path);
-                        if (blob) {
-                          const url = URL.createObjectURL(blob);
-                          setPreviewBlob(url);
+                        // For images, try multiple approaches
+                        if (file.type.startsWith('image/')) {
+                          // First try to download the file directly and create a blob URL
+                          const blob = await downloadFile(file.path);
+                          if (blob) {
+                            const url = URL.createObjectURL(blob);
+                            setPreviewBlob(url);
+                          } else {
+                            // Fallback to signed URL
+                            const signedUrl = await getSignedUrl(file.path, 300); // 5 minutes expiry
+                            setPreviewUrl(signedUrl);
+                          }
                         } else {
-                          // Fallback to signed URL
+                          // For non-images, just use signed URL
                           const signedUrl = await getSignedUrl(file.path, 300); // 5 minutes expiry
                           setPreviewUrl(signedUrl);
                         }
-                      } else {
-                        // For non-images, just use signed URL
-                        const signedUrl = await getSignedUrl(file.path, 300); // 5 minutes expiry
-                        setPreviewUrl(signedUrl);
-                      }
 
-                      setPreviewFile(file);
-                    }}
-                    title="Preview"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                        setPreviewFile(file);
+                      }}
+                      title="Preview"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      // Try to download the file directly
-                      const blob = await downloadFile(file.path);
-                      if (blob) {
-                        // Create a download link
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = file.name;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                      } else {
-                        // Fallback to signed URL
-                        const signedUrl = await getSignedUrl(file.path, 60);
-                        if (signedUrl) {
-                          window.open(signedUrl, '_blank');
+                  <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-accent/5 hover:bg-accent/10 text-accent hover:text-accent"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        // Try to download the file directly
+                        const blob = await downloadFile(file.path);
+                        if (blob) {
+                          // Create a download link
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = file.name;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
                         } else {
-                          // Last resort: try public URL
-                          window.open(file.public_url || '', '_blank');
+                          // Fallback to signed URL
+                          const signedUrl = await getSignedUrl(file.path, 60);
+                          if (signedUrl) {
+                            window.open(signedUrl, '_blank');
+                          } else {
+                            // Last resort: try public URL
+                            window.open(file.public_url || '', '_blank');
+                          }
                         }
-                      }
-                    }}
-                    title="Download"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                      }}
+                      title="Download"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFile(file.id);
-                    }}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-red-500/5 hover:bg-red-500/10 text-red-500 hover:text-red-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFile(file.id);
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
