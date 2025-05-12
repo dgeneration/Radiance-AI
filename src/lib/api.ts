@@ -421,7 +421,15 @@ function formatPrompt(data: SymptomFormData): string {
     prompt += `\n- Medical History: ${data.medicalHistory}`;
   }
 
-  prompt += `\n\nBased on these symptoms, provide a detailed medical diagnosis with ICD code, explanation, and reasoning. Consider differential diagnoses and recommend appropriate tests and treatments. Format your response as JSON.`;
+  if (data.fileUrls && data.fileUrls.length > 0) {
+    prompt += `\n\nMedical Files:`;
+    data.fileUrls.forEach((url, index) => {
+      prompt += `\n- File ${index + 1}: ${url}`;
+    });
+    prompt += `\n\nPlease analyze the provided medical files (images or documents) if relevant to the diagnosis.`;
+  }
+
+  prompt += `\n\nBased on these symptoms${data.fileUrls && data.fileUrls.length > 0 ? ' and medical files' : ''}, provide a detailed medical diagnosis with ICD code, explanation, and reasoning. Consider differential diagnoses and recommend appropriate tests and treatments. Format your response as JSON.`;
 
   return prompt;
 }

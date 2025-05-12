@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { processDiagnosisForm } from "@/app/actions";
 import { SymptomFormData } from "@/types/diagnosis";
 import { createClient } from "@/utils/supabase/client";
+import { FileMetadata } from "@/utils/supabase/file-storage";
+import { FileSelector } from "@/components/file-upload/file-selector";
 import Link from "next/link";
 import {
   FaUser,
@@ -74,6 +76,8 @@ export default function SymptomForm() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [apiStatus, setApiStatus] = useState<{apiKeySet: boolean, apiUrl: string} | null>(null);
   const [isCheckingApi, setIsCheckingApi] = useState(true);
+  const [selectedFiles, setSelectedFiles] = useState<FileMetadata[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
   // Define the form schema with Zod
@@ -149,6 +153,9 @@ export default function SymptomForm() {
           return;
         }
 
+        // Set the user ID for file uploads
+        setUserId(user.id);
+
         // Get the user's profile
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
@@ -218,13 +225,17 @@ export default function SymptomForm() {
         ? medicalHistoryParts.join('\n\n')
         : '';
 
+      // Prepare file URLs if files are selected
+      const fileUrls = selectedFiles.map(file => file.public_url).filter(Boolean) as string[];
+
       // Convert form values to the expected format
       const formData: SymptomFormData = {
         symptoms: values.symptoms,
         age: age,
         gender: gender,
         duration: duration,
-        medicalHistory: medicalHistory
+        medicalHistory: medicalHistory,
+        fileUrls: fileUrls.length > 0 ? fileUrls : undefined
       };
 
       // Call the server action to process the form
@@ -428,7 +439,23 @@ export default function SymptomForm() {
                   </FormDescription>
                 </FormItem>
 
-
+                {userId && (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium flex items-center gap-2">
+                      <FaNotesMedical className="text-accent/70 w-4 h-4" />
+                      Medical Files
+                    </FormLabel>
+                    <FileSelector
+                      userId={userId}
+                      selectedFiles={selectedFiles}
+                      onFilesSelected={setSelectedFiles}
+                      multiple={true}
+                    />
+                    <FormDescription>
+                      Attach medical reports, test results, or images to help with diagnosis.
+                    </FormDescription>
+                  </FormItem>
+                )}
               </div>
             </div>
 

@@ -41,6 +41,7 @@ export async function processDiagnosisForm(formData: SymptomFormData) {
             gender: formData.gender,
             duration: formData.duration,
             medical_history: formData.medicalHistory || null,
+            file_urls: formData.fileUrls || null,
             diagnosis: diagnosis.primaryDiagnosis.name,
             reasoning: diagnosis.reasoning,
             icd_code: diagnosis.primaryDiagnosis.icdCode,

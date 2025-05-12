@@ -5,6 +5,7 @@ export interface SymptomFormData {
   gender: string;
   duration: string;
   medicalHistory?: string;
+  fileUrls?: string[];
 }
 
 // Diagnosis result from the API

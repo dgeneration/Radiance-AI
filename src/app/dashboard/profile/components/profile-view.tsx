@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Edit, User, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen } from "lucide-react";
 import { FaNotesMedical } from "react-icons/fa";
 import { ProfessionalButton } from "@/components/ui/professional-button";
 
@@ -146,19 +147,30 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
               </h2>
               <p className="text-muted-foreground">Your basic profile details</p>
             </div>
-            <ProfessionalButton
-              variant="primary"
-              size="default"
-              icon={<Edit className="h-4 w-4" />}
-              iconPosition="left"
-              className="mt-4 md:mt-0"
-              onClick={() => {
-                setIsEditing(true);
-                setIsEditingHealthInfo(false);
-              }}
-            >
-              Edit Profile
-            </ProfessionalButton>
+            <div className="flex flex-col md:flex-row gap-3 mt-4 md:mt-0">
+              <Link href="/dashboard/profile/files">
+                <ProfessionalButton
+                  variant="outline"
+                  size="default"
+                  icon={<FolderOpen className="h-4 w-4" />}
+                  iconPosition="left"
+                >
+                  File Manager
+                </ProfessionalButton>
+              </Link>
+              <ProfessionalButton
+                variant="primary"
+                size="default"
+                icon={<Edit className="h-4 w-4" />}
+                iconPosition="left"
+                onClick={() => {
+                  setIsEditing(true);
+                  setIsEditingHealthInfo(false);
+                }}
+              >
+                Edit Profile
+              </ProfessionalButton>
+            </div>
           </div>
 
 

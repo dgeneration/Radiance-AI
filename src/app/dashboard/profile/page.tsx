@@ -32,7 +32,7 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <SubNavbar title="User Profile" />
+      <SubNavbar title="User Profile" showProfileNav={true} />
       <div className="relative overflow-hidden py-10 px-4">
         {/* Background gradient effect */}
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-background to-accent/5 z-0"></div>
