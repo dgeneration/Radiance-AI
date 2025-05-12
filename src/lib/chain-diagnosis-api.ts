@@ -54,18 +54,13 @@ export async function initializeChainDiagnosisSession(
     // Only initialize the database on first run or if explicitly needed
     // This avoids unnecessary initialization on every request
     if (!globalThis.dbInitialized) {
-      console.log('First run detected, checking database initialization...');
       try {
         await initChainDiagnosisDb();
         globalThis.dbInitialized = true;
-        console.log('Database initialization check completed.');
       } catch (dbInitError) {
         // Suppress the error to avoid console noise
-        console.log('Note: Database initialization check completed with some warnings.');
         globalThis.dbInitialized = true; // Still mark as initialized to avoid repeated attempts
       }
-    } else {
-      console.log('Database already initialized, skipping initialization check.');
     }
 
     // Store the session in Supabase
@@ -78,13 +73,9 @@ export async function initializeChainDiagnosisSession(
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         userId = user.id; // Use authenticated user ID if available
-        console.log('Using authenticated user ID:', userId);
-      } else {
-        console.warn('User is not authenticated, using provided user ID:', userId);
       }
     } catch (authError) {
-      console.error('Error getting authenticated user:', authError);
-      console.warn('Continuing with provided user ID:', userId);
+      // Continue with provided user ID if authentication fails
     }
 
     // Create a session ID and session object
@@ -102,50 +93,34 @@ export async function initializeChainDiagnosisSession(
     let databaseInsertSuccessful = false;
 
     try {
-      console.log('Attempting to insert session into database...');
-
       // First attempt to insert with the authenticated client
       const { error } = await supabase
         .from('chain_diagnosis_sessions')
         .insert(session);
 
       if (error) {
-        console.error('Error storing chain diagnosis session:', error);
-
         // If the error is related to the table not existing, try to initialize again
         if (error.message && (
             error.message.includes('does not exist') ||
             error.message.includes('relation') ||
             error.code === '42P01')) {
-          console.log('Table might not exist, trying to initialize again...');
 
           // Skip reinitialization since we know the table exists
           // Just try inserting again with better error handling
           try {
-            console.log('Retrying session insert without reinitialization...');
-
             const { error: retryError } = await supabase
               .from('chain_diagnosis_sessions')
               .insert(session);
 
-            if (retryError) {
-              // Don't log the full error, just a user-friendly message
-              console.log('Could not store session in database. Using in-memory session instead.');
-              console.warn('Will continue with in-memory session');
-            } else {
+            if (!retryError) {
               databaseInsertSuccessful = true;
-              console.log('Session inserted successfully on retry');
             }
           } catch (retryError) {
-            // Suppress the error to avoid console noise
-            console.log('Could not store session in database. Using in-memory session instead.');
-            console.warn('Will continue with in-memory session');
+            // Silently continue with in-memory session
           }
         }
         // If we get an RLS policy violation, it means the user_id doesn't match auth.uid()
         else if (error.message && error.message.includes('violates row-level security policy')) {
-          console.log('Note: RLS policy check detected. This is normal if you are not authenticated.');
-
           // Simplified auth check and retry
           try {
             // Get the current user without refreshing the session
@@ -153,7 +128,6 @@ export async function initializeChainDiagnosisSession(
 
             if (currentUser) {
               // If we have a user, update the session user_id and try again
-              console.log('Using authenticated user ID for session:', currentUser.id);
               session.user_id = currentUser.id;
 
               // Try one more time with the correct user ID
@@ -161,45 +135,24 @@ export async function initializeChainDiagnosisSession(
                 .from('chain_diagnosis_sessions')
                 .insert(session);
 
-              if (finalAttemptError) {
-                // Don't log the full error, just a user-friendly message
-                console.log('Could not store session in database. Using in-memory session instead.');
-              } else {
+              if (!finalAttemptError) {
                 databaseInsertSuccessful = true;
-                console.log('Session inserted successfully with authenticated user ID');
               }
-            } else {
-              // If no user is authenticated, just continue with in-memory session
-              console.log('No authenticated user found. Using in-memory session.');
             }
           } catch (authError) {
-            // Suppress the error to avoid console noise
-            console.log('Could not verify authentication. Using in-memory session.');
+            // Silently continue with in-memory session
           }
-        } else {
-          // Don't log the full error, just a user-friendly message
-          console.log('Could not store session in database. Using in-memory session instead.');
         }
       } else {
         databaseInsertSuccessful = true;
-        console.log('Session inserted successfully on first attempt');
       }
     } catch (insertError) {
-      // Suppress the error to avoid console noise
-      console.log('Could not store session in database. Using in-memory session instead.');
+      // Silently continue with in-memory session
     }
 
-    if (databaseInsertSuccessful) {
-      console.log('Successfully stored session in database with ID:', session.id);
-    } else {
-      console.log('Using in-memory session with ID:', session.id);
-      // Use a more user-friendly message
-      console.log('Note: This session is temporary and will not persist between page refreshes.');
-    }
-
+    // Session is ready to use, either from database or in-memory
     return session;
   } catch (error) {
-    console.error('Error in initializeChainDiagnosisSession:', error);
     throw error;
   }
 }
@@ -226,24 +179,13 @@ async function makePerplexityRequest(
     const apiKey = process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
 
     if (!apiKey) {
-      console.error('Perplexity API key is not configured. Check your environment variables.');
       throw new Error('Perplexity API key is not configured');
     }
 
-    console.log(`Making API request to Perplexity using model: ${model}`);
-    console.log(`API Key status: ${apiKey ? 'API key is set' : 'API key is missing'}`);
-    console.log(`API Key prefix: ${apiKey ? apiKey.substring(0, 5) + '...' : 'N/A'}`);
-    console.log(`API Key length: ${apiKey ? apiKey.length : 0}`);
-    console.log(`Streaming mode: ${streaming ? 'enabled' : 'disabled'}`);
-
     // For client-side requests, we need to use the API route
     if (typeof window !== 'undefined') {
-      console.log('Running in browser environment, using API route');
-
       // If streaming is enabled, handle it differently
       if (streaming && onStreamingResponse) {
-        console.log('Setting up client-side streaming...');
-
         const response = await fetch('/api/perplexity', {
           method: 'POST',
           headers: {
@@ -260,7 +202,6 @@ async function makePerplexityRequest(
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`API route error: ${response.status} - ${errorText}`);
           throw new Error(`API route error: ${response.status} - ${errorText}`);
         }
 
@@ -279,7 +220,6 @@ async function makePerplexityRequest(
             const { done, value } = await reader.read();
 
             if (done) {
-              console.log('Client-side stream complete, final response length:', fullResponse.length);
               // Final call with complete response
               onStreamingResponse(fullResponse, true);
               break;
@@ -288,8 +228,6 @@ async function makePerplexityRequest(
             // Decode the chunk and add to buffer
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
-
-            console.log('Client received chunk, size:', chunk.length);
 
             // Process complete lines
             const lines = buffer.split('\n');
@@ -305,17 +243,15 @@ async function makePerplexityRequest(
                   const content = parsed.choices?.[0]?.delta?.content || '';
                   if (content) {
                     fullResponse += content;
-                    console.log('Client streaming content chunk:', content.length);
                     onStreamingResponse(content, false);
                   }
                 } catch (e) {
-                  console.error('Error parsing client streaming response:', e, 'Line:', data);
+                  // Silently handle parsing errors
                 }
               }
             }
           }
         } catch (streamError) {
-          console.error('Error processing client stream:', streamError);
           // If streaming fails, still try to return what we have
           if (fullResponse) {
             onStreamingResponse(fullResponse, true);
@@ -362,7 +298,6 @@ async function makePerplexityRequest(
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`API route error: ${response.status} - ${errorText}`);
           throw new Error(`API route error: ${response.status} - ${errorText}`);
         }
 
@@ -374,8 +309,6 @@ async function makePerplexityRequest(
     let requestBody;
 
     if (hasImageUrl) {
-      console.log('Using image URL format for Perplexity API');
-
       // For image URLs, we need to use a different format
       // The content is already an array of objects with type "text" or "image_url"
       const parsedUserPrompt = typeof userPrompt === 'string' ? JSON.parse(userPrompt) : userPrompt;
@@ -397,8 +330,6 @@ async function makePerplexityRequest(
         top_p: 0.95,
         stream: streaming
       };
-
-      console.log('Request with image URL:', JSON.stringify(requestBody, null, 2));
     } else {
       // For text-only requests, use the standard format
       requestBody = {
@@ -435,7 +366,6 @@ async function makePerplexityRequest(
     }
 
     if (streaming && response.body && onStreamingResponse) {
-      console.log('Processing streaming response...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -446,7 +376,6 @@ async function makePerplexityRequest(
           const { done, value } = await reader.read();
 
           if (done) {
-            console.log('Stream complete, final response length:', fullResponse.length);
             // Final call with complete response
             onStreamingResponse(fullResponse, true);
             break;
@@ -455,9 +384,6 @@ async function makePerplexityRequest(
           // Decode the chunk and add to buffer
           const chunk = decoder.decode(value, { stream: true });
           buffer += chunk;
-
-          console.log('Received chunk, size:', chunk.length);
-          console.log('Current buffer size:', buffer.length);
 
           // Process complete lines
           const lines = buffer.split('\n');
@@ -473,17 +399,15 @@ async function makePerplexityRequest(
                 const content = parsed.choices[0]?.delta?.content || '';
                 if (content) {
                   fullResponse += content;
-                  console.log('Streaming content chunk:', content.length);
                   onStreamingResponse(content, false);
                 }
               } catch (e) {
-                console.error('Error parsing streaming response:', e);
+                // Silently handle parsing errors
               }
             }
           }
         }
       } catch (streamError) {
-        console.error('Error processing stream:', streamError);
         // If streaming fails, still try to return what we have
         if (fullResponse) {
           onStreamingResponse(fullResponse, true);
@@ -516,7 +440,6 @@ async function makePerplexityRequest(
       return await response.json();
     }
   } catch (error) {
-    console.error('Error in makePerplexityRequest:', error);
     throw error;
   }
 }
@@ -528,21 +451,16 @@ async function makePerplexityRequest(
  */
 function parseJsonResponse<T>(content: string): T {
   try {
-    console.log('Parsing JSON response, content preview:', content.substring(0, 100) + '...');
-
     // Clean up the content by removing any XML-like tags
     let cleanedContent = content.replace(/<[^>]*>.*?<\/[^>]*>/gs, '').replace(/<[^>]*>/g, '').trim();
-    console.log('Cleaned content preview:', cleanedContent.substring(0, 100) + '...');
 
     // Try to extract JSON object from the content
     const jsonMatch = cleanedContent.match(/```json\s*([\s\S]*?)\s*```/);
 
     if (jsonMatch && jsonMatch[1]) {
-      console.log('Found JSON in code block, preview:', jsonMatch[1].substring(0, 100) + '...');
       try {
         return JSON.parse(jsonMatch[1]);
       } catch (codeBlockError) {
-        console.error('Error parsing JSON from code block:', codeBlockError);
         // Continue to other methods
       }
     }
@@ -550,19 +468,15 @@ function parseJsonResponse<T>(content: string): T {
     // Try to find JSON object in the text (sometimes it's not in a code block)
     const jsonObjectMatch = cleanedContent.match(/(\{[\s\S]*\})/);
     if (jsonObjectMatch && jsonObjectMatch[1]) {
-      console.log('Found JSON object in text, preview:', jsonObjectMatch[1].substring(0, 100) + '...');
       try {
         return JSON.parse(jsonObjectMatch[1]);
       } catch (innerError) {
-        console.error('Error parsing JSON object from text:', innerError);
         // Continue to other methods
       }
     }
 
     // If we have a Markdown response, try to convert it to JSON
     if (cleanedContent.startsWith('#') || cleanedContent.includes('\n## ')) {
-      console.log('Detected Markdown response, converting to JSON...');
-
       // Extract key information from the Markdown
       const title = cleanedContent.match(/^#\s+(.*?)(?:\n|$)/)?.[1] || 'Unknown Analysis';
 
@@ -607,19 +521,15 @@ function parseJsonResponse<T>(content: string): T {
         }
       };
 
-      console.log('Created structured JSON from Markdown');
       return markdownJson as unknown as T;
     }
 
     // Try to parse the entire cleaned content as JSON
-    console.log('Attempting to parse entire cleaned content as JSON');
     try {
       // First try to parse as is
       try {
         return JSON.parse(cleanedContent);
       } catch (initialError) {
-        console.log('Initial JSON parsing failed, attempting to fix common JSON syntax errors...');
-
         // Try to fix common JSON syntax errors
         let fixedJson = cleanedContent;
 
@@ -664,12 +574,9 @@ function parseJsonResponse<T>(content: string): T {
 
         // Fix 8: Specifically target the error at position 2227 (line 23)
         // This is likely a missing comma or an extra property
-        console.log('Checking for specific error around position 2227...');
 
         // Try to identify and fix the specific issue around position 2227
         if (fixedJson.length > 2200) {
-          const problemArea = fixedJson.substring(2200, 2250);
-          console.log('Problem area around position 2227:', problemArea);
 
           // Look for common syntax errors in this area
           // 1. Missing comma between properties
@@ -683,15 +590,11 @@ function parseJsonResponse<T>(content: string): T {
                      fixedJson.substring(2200).replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
         }
 
-        console.log('Attempting to parse fixed JSON...');
         return JSON.parse(fixedJson);
       }
     } catch (finalError) {
-      console.error('Error parsing entire content as JSON even after fixes:', finalError);
-
       // Try one more approach: extract what looks like a JSON object
       try {
-        console.log('Attempting to extract and parse what looks like a JSON object...');
 
         // First, try to find a complete JSON object with balanced braces
         let braceCount = 0;
@@ -717,11 +620,10 @@ function parseJsonResponse<T>(content: string): T {
 
         if (startIndex !== -1 && endIndex !== -1) {
           const extractedJson = cleanedContent.substring(startIndex, endIndex);
-          console.log('Extracted balanced JSON object, attempting to parse...');
           try {
             return JSON.parse(extractedJson);
           } catch (balancedError) {
-            console.error('Failed to parse balanced JSON object:', balancedError);
+            // Continue to next approach
           }
         }
 
@@ -730,16 +632,14 @@ function parseJsonResponse<T>(content: string): T {
         const match = cleanedContent.match(jsonObjectRegex);
         if (match && match[0]) {
           const extractedJson = match[0];
-          console.log('Extracted potential JSON object using regex, attempting to parse...');
           try {
             return JSON.parse(extractedJson);
           } catch (regexError) {
-            console.error('Failed to parse regex-extracted JSON:', regexError);
+            // Continue to next approach
           }
         }
 
         // Last resort: Try to manually reconstruct a valid JSON object
-        console.log('Attempting to manually reconstruct a valid JSON object...');
 
         // Extract key-value pairs using regex
         const keyValuePairs: Record<string, any> = {};
@@ -776,18 +676,15 @@ function parseJsonResponse<T>(content: string): T {
 
         // If we extracted any key-value pairs, return them as a reconstructed object
         if (Object.keys(keyValuePairs).length > 0) {
-          console.log('Manually reconstructed JSON object with keys:', Object.keys(keyValuePairs));
           return keyValuePairs as unknown as T;
         }
       } catch (extractError) {
-        console.error('Failed to extract and parse JSON object:', extractError);
+        // Silently handle extraction errors
       }
 
       throw finalError; // Re-throw to be caught by the outer catch
     }
   } catch (error) {
-    console.error('Error parsing JSON response:', error);
-    console.log('Content preview for debugging:', content.substring(0, 300) + '...');
 
     // Create a fallback response with the raw content for debugging
     const fallbackResponse = {
@@ -824,11 +721,9 @@ async function updateChainDiagnosisSession(
       .eq('id', sessionId);
 
     if (error) {
-      console.error('Error updating chain diagnosis session:', error);
       throw new Error('Failed to update chain diagnosis session');
     }
   } catch (error) {
-    console.error('Error in updateChainDiagnosisSession:', error);
     throw error;
   }
 }
@@ -923,32 +818,11 @@ export async function processMedicalAnalyst(
   onStreamingResponse?: StreamingResponseHandler
 ): Promise<MedicalAnalystResponse | null> {
   try {
-    console.log('Starting Medical Analyst processing for session:', sessionId);
-    console.log('Streaming mode:', streaming ? 'enabled' : 'disabled');
-    console.log('User input summary:', {
-      age: userInput.user_details.age,
-      gender: userInput.user_details.gender,
-      symptoms_count: userInput.symptoms_info.symptoms_list.length,
-      has_medical_report: !!userInput.medical_report?.text
-    });
-
     // Check if we have a medical report or an image URL
     const hasReport = !!userInput.medical_report?.text;
     const hasImageUrl = !!userInput.medical_report?.image_url;
 
-    console.log('Medical Analyst Input:', {
-      hasReport,
-      hasImageUrl,
-      reportText: userInput.medical_report?.text ? userInput.medical_report.text.substring(0, 100) + '...' : 'None',
-      imageUrl: userInput.medical_report?.image_url || 'None',
-      reportType: userInput.medical_report?.type || 'None',
-      reportName: userInput.medical_report?.name || 'None',
-      reportUrl: userInput.medical_report?.url || 'None'
-    });
-
     if (!hasReport && !hasImageUrl) {
-      console.log('No medical report or image URL provided, skipping Medical Analyst AI step');
-
       // Update the session to skip directly to General Physician (step 1)
       await updateChainDiagnosisSession(sessionId, {
         current_step: 1,
@@ -956,16 +830,7 @@ export async function processMedicalAnalyst(
         medical_analyst_response: null
       });
 
-      console.log('Skipped Medical Analyst step, proceeding to General Physician');
       return null;
-    }
-
-    if (hasImageUrl) {
-      console.log('Image URL found:', userInput.medical_report?.image_url);
-    }
-
-    if (hasReport) {
-      console.log('Medical report found, proceeding with analysis');
     }
 
     // Enhanced system prompt for Medical Analyst
@@ -1025,12 +890,10 @@ Respond in JSON format with the following structure:
 
     if (hasImageUrl) {
       // For image URLs, we need to use the specific format required by Perplexity
-      console.log('Preparing image URL format with URL:', userInput.medical_report.image_url);
 
       // Check if the image URL is valid
       if (!userInput.medical_report.image_url || !userInput.medical_report.image_url.startsWith('http')) {
-        console.error('Invalid image URL format:', userInput.medical_report.image_url);
-        console.log('Image URL must start with http:// or https://');
+        throw new Error('Invalid image URL format. Image URL must start with http:// or https://');
       }
 
       userPromptContent = [
@@ -1057,9 +920,7 @@ Please provide a detailed analysis of the medical image, including:
         }
       ];
 
-      console.log('Image URL request format:', JSON.stringify(userPromptContent, null, 2));
-
-      console.log('Using image URL format for Perplexity API');
+      // Image URL format prepared for Perplexity API
     } else {
       // For text-only reports, use the standard format
       userPromptContent = JSON.stringify({
@@ -1077,24 +938,19 @@ Please provide a detailed analysis of the medical image, including:
       }, null, 2);
     }
 
-    // Store the user prompt for debugging
+    // Prepare the user prompt
     const userPrompt = userPromptContent;
 
     // Make the API request with streaming support
-    console.log('Making API request to Perplexity for Medical Analyst...');
-    console.log('Using model: sonar-deep-research');
-
     let response;
     try {
       // Disable streaming for image URLs
       if (hasImageUrl) {
-        console.log('Image URL detected, disabling streaming for better compatibility');
         streaming = false;
       }
 
       // First try with streaming enabled (if not disabled)
       if (streaming) {
-        console.log('Attempting streaming request...');
         try {
           response = await makePerplexityRequest(
             'sonar-deep-research',
@@ -1105,16 +961,10 @@ Please provide a detailed analysis of the medical image, including:
             hasImageUrl
           );
 
-          console.log('Received streaming response from Perplexity API');
-          console.log('Response structure:', Object.keys(response));
-
           if (!response.choices || !response.choices[0]) {
-            console.warn('Invalid streaming response structure, will try non-streaming fallback');
             throw new Error('Invalid streaming response structure');
           }
         } catch (streamingError) {
-          console.warn('Streaming request failed, falling back to non-streaming request:', streamingError);
-
           // If streaming fails, fall back to non-streaming
           if (onStreamingResponse) {
             onStreamingResponse('Streaming failed, falling back to standard request...', false);
@@ -1129,8 +979,6 @@ Please provide a detailed analysis of the medical image, including:
             undefined,
             hasImageUrl
           );
-
-          console.log('Received non-streaming fallback response');
 
           // Notify about the complete response
           if (onStreamingResponse) {
@@ -1147,66 +995,49 @@ Please provide a detailed analysis of the medical image, including:
           undefined,
           hasImageUrl
         );
-
-        console.log('Received standard response from Perplexity API');
       }
 
-      console.log('Response structure:', Object.keys(response));
-
       if (!response.choices || !response.choices[0]) {
-        console.error('Invalid response structure from Perplexity API:', response);
         throw new Error('Invalid response structure from Perplexity API');
       }
 
     } catch (apiError) {
-      console.error('Error making Perplexity API request:', apiError);
       throw new Error(`Perplexity API request failed: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
     }
 
     const content = response.choices[0].message.content;
-    console.log('Response content length:', content.length);
-    console.log('Response content preview:', content.substring(0, 100) + '...');
 
     // Parse the response with better error handling
     let parsedResponse: MedicalAnalystResponse;
     try {
-      console.log('Attempting to parse Medical Analyst response...');
       parsedResponse = parseJsonResponse<MedicalAnalystResponse>(content);
-      console.log('Successfully parsed response, checking required fields...');
 
       // Validate and ensure all required fields are present
       if (!parsedResponse.role_name) {
-        console.log('Adding missing role_name field');
         parsedResponse.role_name = "Medical Analyst AI (Radiance AI)";
       }
 
       if (!parsedResponse.report_type_analyzed) {
-        console.log('Adding missing report_type_analyzed field');
         parsedResponse.report_type_analyzed = userInput.medical_report.type || 'Medical Report';
       }
 
       if (!parsedResponse.key_findings_from_report || !Array.isArray(parsedResponse.key_findings_from_report)) {
-        console.log('Adding missing or fixing key_findings_from_report field');
         parsedResponse.key_findings_from_report = ["See full analysis in the reference data"];
       }
 
       if (!parsedResponse.abnormalities_highlighted || !Array.isArray(parsedResponse.abnormalities_highlighted)) {
-        console.log('Adding missing or fixing abnormalities_highlighted field');
         parsedResponse.abnormalities_highlighted = [];
       }
 
       if (!parsedResponse.clinical_correlation_points_for_gp || !Array.isArray(parsedResponse.clinical_correlation_points_for_gp)) {
-        console.log('Adding missing or fixing clinical_correlation_points_for_gp field');
         parsedResponse.clinical_correlation_points_for_gp = ["Please review the full analysis"];
       }
 
       if (!parsedResponse.disclaimer) {
-        console.log('Adding missing disclaimer field');
         parsedResponse.disclaimer = "This analysis is provided for informational purposes only and is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for diagnosis and treatment.";
       }
 
       if (!parsedResponse.reference_data_for_next_role) {
-        console.log('Adding missing reference_data_for_next_role field');
         parsedResponse.reference_data_for_next_role = {
           analyst_summary: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
           raw_findings_ref: content.substring(0, 1000) + (content.length > 1000 ? '...' : '')
@@ -1214,22 +1045,15 @@ Please provide a detailed analysis of the medical image, including:
       } else {
         // Ensure the nested fields exist
         if (!parsedResponse.reference_data_for_next_role.analyst_summary) {
-          console.log('Adding missing analyst_summary field');
           parsedResponse.reference_data_for_next_role.analyst_summary = content.substring(0, 500) + (content.length > 500 ? '...' : '');
         }
 
         if (!parsedResponse.reference_data_for_next_role.raw_findings_ref) {
-          console.log('Adding missing raw_findings_ref field');
           parsedResponse.reference_data_for_next_role.raw_findings_ref = content.substring(0, 1000) + (content.length > 1000 ? '...' : '');
         }
       }
 
-      console.log('All required fields are present and valid');
-
     } catch (error) {
-      console.error('Error parsing Medical Analyst response:', error);
-      console.log('Creating fallback response with the raw content');
-
       // Create a fallback response that includes the raw content
       parsedResponse = {
         role_name: "Medical Analyst AI (Radiance AI)",
@@ -1254,8 +1078,6 @@ Please provide a detailed analysis of the medical image, including:
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processMedicalAnalyst:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1293,10 +1115,7 @@ export async function processGeneralPhysician(
       no_medical_report: !userInput.medical_report?.text && !userInput.medical_report?.image_url
     };
 
-    console.log('General Physician Input:', {
-      hasAnalystData: !!medicalAnalystResponse,
-      noMedicalReport: !userInput.medical_report?.text && !userInput.medical_report?.image_url
-    });
+    // Prepare input for General Physician
 
     const userPrompt = JSON.stringify(promptData, null, 2);
 
@@ -1320,8 +1139,6 @@ export async function processGeneralPhysician(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processGeneralPhysician:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1390,8 +1207,6 @@ export async function processSpecialistDoctor(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processSpecialistDoctor:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1456,8 +1271,6 @@ export async function processPathologist(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processPathologist:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',

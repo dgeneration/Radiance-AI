@@ -103,17 +103,15 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
           .single();
 
         if (profileError) {
-          console.error("Error fetching user profile:", profileError);
           setIsLoadingProfile(false);
           return;
         }
 
         if (profile) {
-          console.log("Fetched user profile:", profile);
           setUserProfile(profile);
         }
       } catch (error) {
-        console.error("Error in fetchUserProfile:", error);
+        // Silently handle errors
       } finally {
         setIsLoadingProfile(false);
       }
@@ -216,7 +214,6 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
         router.push(`/dashboard/chain-diagnosis/${sessionId}`);
       }
     } catch (error) {
-      console.error('Error starting chain diagnosis session:', error);
       setError('An unexpected error occurred. Please try again.');
     }
   };

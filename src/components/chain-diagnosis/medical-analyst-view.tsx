@@ -6,7 +6,7 @@ import { MedicalAnalystResponse } from '@/types/chain-diagnosis';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, TestTube, FileText, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, TestTube, FileText, AlertCircle } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { cn } from '@/lib/utils';
 
@@ -26,14 +26,12 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
 
   const [parsedResponse, setParsedResponse] = useState<MedicalAnalystResponse | null>(null);
   const [activeTab, setActiveTab] = useState('findings');
-  const [showRawJson, setShowRawJson] = useState(false);
 
   // Parse the streaming content or use the stored response
   useEffect(() => {
     try {
       // First priority: use the stored response from the session if available
       if (currentSession?.medical_analyst_response) {
-        console.log('Using stored medical analyst response from session');
         setParsedResponse(currentSession.medical_analyst_response);
         return;
       }
@@ -45,22 +43,20 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           const jsonMatch = streamingContent.medicalAnalyst.match(/```json\s*([\s\S]*?)\s*```/);
 
           if (jsonMatch && jsonMatch[1]) {
-            console.log('Parsed JSON from markdown code block');
             const parsed = JSON.parse(jsonMatch[1]);
             setParsedResponse(parsed);
             return;
           }
 
           // Try to parse the entire content as JSON
-          console.log('Attempting to parse entire streaming content as JSON');
           const parsed = JSON.parse(streamingContent.medicalAnalyst);
           setParsedResponse(parsed);
         } catch (e) {
-          console.error('Error parsing streaming content:', e);
+          // Silently handle parsing errors
         }
       }
     } catch (e) {
-      console.error('Error parsing Medical Analyst response:', e);
+      // Silently handle parsing errors
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
 
@@ -316,35 +312,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
             </TabsContent>
           </Tabs>
 
-          {/* Raw JSON toggle */}
-          <div className="pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => setShowRawJson(!showRawJson)}
-            >
-              {showRawJson ? (
-                <>
-                  <ChevronUp className="h-3 w-3 mr-1" />
-                  Hide Raw JSON
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3 w-3 mr-1" />
-                  Show Raw JSON
-                </>
-              )}
-            </Button>
-
-            {showRawJson && (
-              <div className="mt-2 bg-background/50 p-3 rounded-md border border-border/50 overflow-x-auto">
-                <pre className="text-xs text-muted-foreground">
-                  {JSON.stringify(parsedResponse, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
+          {/* Raw JSON toggle removed */}
 
           {/* Disclaimer */}
           {parsedResponse?.disclaimer && (

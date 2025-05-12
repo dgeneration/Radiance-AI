@@ -19,7 +19,6 @@ export async function extractTextFromPdf(fileUrl: string): Promise<string> {
     // This is a placeholder - in a real implementation, you would parse the PDF
     return "This is extracted text from the PDF file. In a real implementation, you would use a PDF parsing library like pdf.js or a server-side solution.";
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
     return '';
   }
 }
@@ -41,7 +40,6 @@ export async function extractTextFromImage(fileUrl: string): Promise<string> {
     // This is a placeholder - in a real implementation, you would use OCR
     return "This is extracted text from the image file. In a real implementation, you would use an OCR service like Tesseract.js or a cloud OCR API.";
   } catch (error) {
-    console.error('Error extracting text from image:', error);
     return '';
   }
 }
@@ -60,7 +58,6 @@ export async function processMedicalReportFile(file: FileMetadata): Promise<stri
       .createSignedUrl(file.path, 60);
 
     if (error || !data?.signedUrl) {
-      console.error('Error creating signed URL:', error);
       return '';
     }
 
@@ -83,7 +80,6 @@ export async function processMedicalReportFile(file: FileMetadata): Promise<stri
       return `Unsupported file type: ${fileType}`;
     }
   } catch (error) {
-    console.error('Error processing medical report file:', error);
     return '';
   }
 }
@@ -109,14 +105,7 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
     const isImage = file.type.toLowerCase().includes('image');
     const publicUrl = file.public_url || '';
 
-    console.log('File metadata:', {
-      id: file.id,
-      name: file.name,
-      type: file.type,
-      isImage,
-      publicUrl,
-      path: file.path
-    });
+    // Prepare file metadata for the Chain Diagnosis System
 
     // For image files, only include the image_url field to avoid confusion
     // This ensures the AI focuses on analyzing the image directly
@@ -129,11 +118,8 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
       text: extractedText
     };
 
-    console.log('Returning medical report data:', result);
-
     return result;
   } catch (error) {
-    console.error('Error preparing medical report data:', error);
     return undefined;
   }
 }
@@ -159,18 +145,10 @@ export async function convertToChainDiagnosisInput(
   // Use the authenticated user ID if available, otherwise use the provided userId
   const authenticatedUserId = user?.id || userId;
 
-  if (user && user.id !== userId) {
-    console.warn('Provided userId does not match authenticated user. Using authenticated user ID instead.');
-  }
-
   // Process medical report files if provided
-  console.log('Processing selected files:', selectedFiles);
-
   const medicalReport = selectedFiles && selectedFiles.length > 0
     ? await prepareMedicalReportData(selectedFiles)
     : undefined;
-
-  console.log('Prepared medical report data:', medicalReport);
 
   // Parse symptoms into an array
   const symptomsList = symptomData.symptoms

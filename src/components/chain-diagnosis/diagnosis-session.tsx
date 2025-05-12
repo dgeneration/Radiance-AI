@@ -35,11 +35,9 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Force progress view when streaming is active, and switch to detailed view when complete
   useEffect(() => {
     if (isStreaming) {
-      console.log('Forcing progress view because streaming is active');
       setViewMode('progress');
     } else if (currentSession?.medical_analyst_response) {
       // When streaming is complete and we have a medical analyst response, switch to detailed view
-      console.log('Streaming complete, switching to detailed view');
       // Use a small timeout to ensure the UI has time to update with the latest data
       setTimeout(() => {
         setViewMode('detailed');
@@ -50,17 +48,9 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Additional effect to check for medical analyst response changes
   useEffect(() => {
     if (currentSession?.medical_analyst_response && !isStreaming) {
-      console.log('Medical Analyst response detected, switching to detailed view');
       setViewMode('detailed');
     }
   }, [currentSession?.medical_analyst_response, isStreaming]);
-
-  // Force refresh function for debugging
-  const forceRefresh = () => {
-    console.log('Forcing refresh of session component');
-    // This will trigger a re-render
-    setViewMode(prev => prev === 'progress' ? 'progress' : 'progress');
-  };
 
   // Load the session when the component mounts
   useEffect(() => {
@@ -272,49 +262,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
         <AnimatedSection delay={0.2}>
           <ChainDiagnosisStreamingContent />
 
-          {/* Debug information - only visible in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 p-4 border border-yellow-500/20 rounded-lg bg-yellow-500/5">
-              <h3 className="text-sm font-medium text-yellow-500 mb-2">Debug Information</h3>
-              <div className="text-xs space-y-1 text-yellow-500/70">
-                <p>Current Step: {currentStep}</p>
-                <p>Is Streaming: {isStreaming ? 'Yes' : 'No'}</p>
-                <p>View Mode: {viewMode}</p>
-                <p>Session ID: {sessionId}</p>
-                <p>Session Status: {currentSession?.status || 'Unknown'}</p>
-
-                {/* Debug buttons */}
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={forceRefresh}
-                    className="text-[10px] px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 rounded"
-                  >
-                    Force Refresh
-                  </button>
-                  <button
-                    onClick={() => setViewMode('progress')}
-                    className="text-[10px] px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 rounded"
-                  >
-                    Set Progress View
-                  </button>
-                  <button
-                    onClick={() => setViewMode('detailed')}
-                    className="text-[10px] px-2 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 rounded"
-                  >
-                    Set Detailed View
-                  </button>
-                </div>
-
-                {/* Add direct debug output of streaming content */}
-                <details className="mt-2">
-                  <summary className="cursor-pointer font-medium">Raw Response Content</summary>
-                  <div className="mt-2 p-2 bg-black/20 rounded text-[10px] max-h-[200px] overflow-auto">
-                    {JSON.stringify(currentSession?.medical_analyst_response || {}, null, 2)}
-                  </div>
-                </details>
-              </div>
-            </div>
-          )}
+          {/* Debug information removed */}
         </AnimatedSection>
       )}
     </div>

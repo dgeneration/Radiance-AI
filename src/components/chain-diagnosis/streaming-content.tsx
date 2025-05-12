@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { Loader2, ChevronDown, ChevronUp, Brain, User, Stethoscope, TestTube, Apple, Pill, Calendar, FileText, RefreshCw } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Brain, User, Stethoscope, TestTube, Apple, Pill, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection } from '@/components/animations';
@@ -69,18 +69,15 @@ function RoleContent({ title, icon, content, isStreaming, isActive }: RoleConten
         <div className="p-4 bg-card/30 backdrop-blur-sm">
           {content ? (
             <div className="prose prose-sm dark:prose-invert max-w-none">
-              {/* Display raw content for debugging */}
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">
-                  Content length: {content.length} characters
-                </div>
-                {isActive && isStreaming && (
+              {/* Content status indicator */}
+              {isActive && isStreaming && (
+                <div className="mb-2 flex items-center justify-end">
                   <div className="flex items-center gap-2 text-xs text-primary">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>Receiving data...</span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Always show the content, with special handling for JSON */}
               <pre className="whitespace-pre-wrap font-mono text-xs bg-card/50 p-4 rounded-md overflow-x-auto">
@@ -98,7 +95,6 @@ function RoleContent({ title, icon, content, isStreaming, isActive }: RoleConten
                       }
                     } catch (e) {
                       // If JSON parsing fails, just return the cleaned content
-                      console.log('Failed to parse JSON in content:', e);
                     }
                   }
 
@@ -211,25 +207,8 @@ export function ChainDiagnosisStreamingContent() {
     }
   ];
 
-  // Log streaming state for debugging
-  console.log('ChainDiagnosisStreamingContent rendering:', {
-    isStreaming,
-    currentStep,
-    medicalAnalystContent: streamingContent.medicalAnalyst ? streamingContent.medicalAnalyst.length : 0,
-    hasSession: !!currentSession
-  });
-
-  // Force refresh function
-  const [refreshKey, setRefreshKey] = useState(0);
-  const forceRefresh = () => {
-    console.log('Forcing refresh of streaming content');
-    setRefreshKey(prev => prev + 1);
-  };
-
-  // Extract the medical analyst content for direct display
-  const medicalAnalystContent = streamingContent.medicalAnalyst || '';
-  const medicalAnalystContentPreview = medicalAnalystContent.substring(0, 500) +
-    (medicalAnalystContent.length > 500 ? '...' : '');
+  // Simple refresh key for component updates if needed
+  const [refreshKey] = useState(0);
 
   return (
     <AnimatedSection className="space-y-4" key={refreshKey}>
@@ -243,35 +222,11 @@ export function ChainDiagnosisStreamingContent() {
             </div>
           )}
 
-          {/* Force refresh button - only in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={forceRefresh}
-              className="text-xs h-8 px-2 border-primary/20"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Refresh UI
-            </Button>
-          )}
+          {/* Development tools removed */}
         </div>
       </div>
 
-      {/* Direct debug output of streaming content - only in development */}
-      {process.env.NODE_ENV === 'development' && medicalAnalystContent && (
-        <div className="mb-6 p-4 border border-primary/20 rounded-lg bg-primary/5">
-          <h3 className="text-sm font-medium text-primary mb-2">Medical Analyst Raw Content</h3>
-          <div className="text-xs bg-black/20 p-3 rounded max-h-[200px] overflow-auto">
-            <pre className="whitespace-pre-wrap font-mono text-[10px]">
-              {medicalAnalystContentPreview}
-            </pre>
-          </div>
-          <p className="text-xs mt-2 text-muted-foreground">
-            Content length: {medicalAnalystContent.length} characters
-          </p>
-        </div>
-      )}
+      {/* Debug output removed */}
 
       <div className="space-y-4">
         {roleComponents.map((role) => (
