@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FileMetadata, getUserFiles, deleteFile, getSignedUrl, downloadFile } from '@/utils/supabase/file-storage';
-import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode, CheckCircle, FolderIcon } from 'lucide-react';
+import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { AnimatedSection, AnimatedIcon, FloatingElement } from '@/components/animations';
+import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -412,20 +412,6 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
 
   return (
     <div className="space-y-6 relative">
-      {/* Background decorative elements */}
-      <FloatingElement
-        className="absolute top-10 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 -z-10"
-        duration={15}
-        xOffset={20}
-        yOffset={30}
-      />
-      <FloatingElement
-        className="absolute bottom-10 left-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl opacity-30 -z-10"
-        duration={18}
-        xOffset={-20}
-        yOffset={-30}
-        delay={1}
-      />
 
       <AnimatedSection direction="down" delay={0.1}>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
