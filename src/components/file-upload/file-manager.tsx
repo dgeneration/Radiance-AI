@@ -642,11 +642,6 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
     if (files.length === 0) {
       return (
         <div className="text-center py-16 bg-gradient-to-b from-card/50 to-card/30 backdrop-blur-sm rounded-xl border border-primary/10 shadow-lg">
-          <AnimatedIcon
-            icon={<FolderIcon className="h-16 w-16 text-primary/70" />}
-            className="mx-auto mb-6 p-4 bg-primary/5 rounded-full"
-            pulseEffect={true}
-          />
           <div className="mb-3">
             <span className="font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-xl md:text-2xl">
               {searchQuery ? 'No files match your search' : 'Your file collection is empty'}
