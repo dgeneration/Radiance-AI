@@ -15,11 +15,8 @@ export const metadata: Metadata = {
   description: "An error occurred during authentication",
 };
 
-export default function AuthErrorPage({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function AuthErrorPage({ searchParams }: any) {
   const errorMessage =
     typeof searchParams?.message === "string"
       ? searchParams.message

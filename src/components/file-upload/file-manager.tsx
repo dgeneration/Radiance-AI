@@ -152,7 +152,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
         <div className="relative h-full w-full flex items-center justify-center">
           {previewBlob ? (
             // Use regular img tag for blob URLs since Next.js Image doesn't support them
-            <img
+            <Image
               src={previewBlob}
               alt={previewFile.name}
               className="max-h-[70vh] w-auto object-contain"
