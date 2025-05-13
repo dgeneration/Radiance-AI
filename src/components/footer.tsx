@@ -277,7 +277,7 @@ export function Footer() {
                 </Link>
               </motion.li>
               <motion.li variants={itemVariants}>
-                <Link href="/auth/register" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="/auth/signup" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <FaArrowRight size={10} className="text-primary/70 group-hover:translate-x-1 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Create Account</span>
                 </Link>
@@ -289,7 +289,7 @@ export function Footer() {
                 </Link>
               </motion.li>
               <motion.li variants={itemVariants}>
-                <Link href="/settings" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <FaArrowRight size={10} className="text-primary/70 group-hover:translate-x-1 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Settings</span>
                 </Link>
