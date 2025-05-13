@@ -9,21 +9,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation"; // Import useSearchParams from next/navigation
 
 export const metadata: Metadata = {
   title: "Authentication Error | Radiance AI",
   description: "An error occurred during authentication",
 };
 
-type Props = {
-  searchParams?: {
-    message?: string;
-  };
-};
-
-export default function AuthErrorPage({ searchParams }: Props) {
-  const errorMessage =
-    searchParams?.message || "An error occurred during authentication";
+export default function AuthErrorPage() {
+  const searchParams = useSearchParams(); // Hook for getting search parameters
+  const errorMessage = searchParams?.get("message") || "An error occurred during authentication";
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
