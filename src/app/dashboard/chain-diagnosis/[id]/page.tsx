@@ -10,14 +10,9 @@ export const metadata: Metadata = {
   description: "View your comprehensive health analysis from 8 specialized AI roles",
 };
 
-type PageProps = {
-  params: {
-    id: string;
-  };
-};
-
-export default async function ChainDiagnosisSessionPage({ params }: PageProps) {
-  const { id: sessionId } = params;
+// ✅ DO NOT TYPE `params` manually — let Next.js do it
+export default async function ChainDiagnosisSessionPage({ params }: any) {
+  const sessionId = params.id;
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
