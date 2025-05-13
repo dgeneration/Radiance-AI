@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: "View your diagnosis details",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function DiagnosisDetailPage({ params }: any) {
   const diagnosisId = params.id;
   const supabase = await createClient();
