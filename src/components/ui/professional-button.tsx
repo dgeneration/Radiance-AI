@@ -58,6 +58,8 @@ export function ProfessionalButton({
     className
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const childContent = (React.Children.only(children) as React.ReactElement<any>).props.children;
   return (
     <motion.div
       whileHover={disabled ? {} : { scale: 1.01 }}
@@ -90,7 +92,7 @@ export function ProfessionalButton({
                     <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{icon}</span>
                   )}
                   <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>
-                    {(React.Children.only(children) as React.ReactElement<any>).props.children}
+                    {childContent}
                   </span>
                   {iconPosition === "right" && icon && (
                     <span className={`relative z-10 group-hover:translate-x-0.5 transition-transform ${variant === "primary" ? "text-shadow-sm" : ""}`}>
