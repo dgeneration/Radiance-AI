@@ -4,6 +4,7 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
   fallbacks: {
     // Add offline fallbacks for specific routes
     document: '/offline', // fallback for document type requests
