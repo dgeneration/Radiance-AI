@@ -74,27 +74,34 @@ export function ProfessionalButton({
           type={type}
           {...props}
         >
-          {React.cloneElement(React.Children.only(children as React.ReactElement), {
-            className: "flex items-center gap-2 justify-center w-full h-full",
-            children: (
-              <>
-                {iconPosition === "left" && icon && (
-                  <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{icon}</span>
-                )}
-                <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{(children as React.ReactElement).props.children}</span>
-                {iconPosition === "right" && icon && (
-                  <span className={`relative z-10 group-hover:translate-x-0.5 transition-transform ${variant === "primary" ? "text-shadow-sm" : ""}`}>
-                    {icon}
+          {React.cloneElement(
+            React.Children.only(children) as React.ReactElement<any>,
+            {
+              ...((React.Children.only(children) as React.ReactElement<any>).props),
+              className: cn(
+                "flex items-center gap-2 justify-center w-full h-full",
+                (React.Children.only(children) as React.ReactElement<any>).props.className
+              ),
+              children: (
+                <>
+                  {iconPosition === "left" && icon && (
+                    <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{icon}</span>
+                  )}
+                  <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>
+                    {(React.Children.only(children) as React.ReactElement<any>).props.children}
                   </span>
-                )}
-
-                {/* Animated gradient overlay for primary variant */}
-                {variant === "primary" && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-300 z-0 pointer-events-none"></span>
-                )}
-              </>
-            )
-          })}
+                  {iconPosition === "right" && icon && (
+                    <span className={`relative z-10 group-hover:translate-x-0.5 transition-transform ${variant === "primary" ? "text-shadow-sm" : ""}`}>
+                      {icon}
+                    </span>
+                  )}
+                  {variant === "primary" && (
+                    <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-300 z-0 pointer-events-none" />
+                  )}
+                </>
+              )
+            }
+          )}
         </Button>
       ) : (
         <Button
@@ -113,10 +120,8 @@ export function ProfessionalButton({
               {icon}
             </span>
           )}
-
-          {/* Animated gradient overlay for primary variant */}
           {variant === "primary" && (
-            <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-300 z-0 pointer-events-none"></span>
+            <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-300 z-0 pointer-events-none" />
           )}
         </Button>
       )}
