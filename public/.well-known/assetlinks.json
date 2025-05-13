@@ -1,12 +1,5 @@
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "io.dgeneration.radiance.twa",
-      "sha256_cert_fingerprints": [
-        "BA6AF725C7D18C40E650F549BE74F5364D86C42BAFE2B4CBE7E857A851441479"
-      ]
-    }
-  }
-]
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target" : { "namespace": "android_app", "package_name": "io.dgeneration.radiance.twa",
+               "sha256_cert_fingerprints": ["BA:6A:F7:25:C7:D1:8C:40:E6:50:F5:49:BE:74:F5:36:4D:86:C4:2B:AF:E2:B4:CB:E7:E8:57:A8:51:44:14:79"] }
+}]
