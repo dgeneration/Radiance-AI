@@ -14,7 +14,15 @@ export async function updateSession(request: NextRequest) {
                        url.pathname.includes('favicon') ||
                        url.pathname.includes('.svg') ||
                        url.pathname.includes('.png') ||
+                       url.pathname.includes('.json') ||
+                       url.pathname.includes('.js') ||
+                       url.pathname.includes('.css') ||
+                       url.pathname.startsWith('/icons') ||
                        url.pathname === '/forbidden' ||
+                       url.pathname === '/offline' ||
+                       url.pathname === '/manifest.json' ||
+                       url.pathname === '/sw.js' ||
+                       url.pathname.startsWith('/worker-') ||
                        isLegalPath
 
   let response = NextResponse.next({

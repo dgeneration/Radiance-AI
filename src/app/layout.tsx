@@ -68,6 +68,7 @@ export default async function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#00C6D7" />
+        <script src="/offline-check.js" defer></script>
       </head>
       <body
         className={cn(

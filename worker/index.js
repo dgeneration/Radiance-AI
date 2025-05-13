@@ -14,6 +14,12 @@ workbox.setConfig({
 // This will be replaced by the precache manifest
 self.__WB_MANIFEST;
 
+// Explicitly precache the offline page
+workbox.precaching.precacheAndRoute([
+  { url: '/offline', revision: null },
+  { url: '/icons/icon-512x512.png', revision: null }
+]);
+
 // Cache first strategy for static assets
 workbox.routing.registerRoute(
   /\/_next\/static\/.*/i,
@@ -52,7 +58,8 @@ workbox.routing.registerRoute(
         maxEntries: 50,
         maxAgeSeconds: 24 * 60 * 60 // 24 hours
       })
-    ]
+    ],
+    networkTimeoutSeconds: 10 // Show cached content if network request takes more than 10 seconds
   })
 );
 
@@ -73,14 +80,41 @@ workbox.routing.registerRoute(
 // Offline fallback
 workbox.routing.setCatchHandler(async ({ event }) => {
   // Return specific fallbacks for different types of requests
-  switch (event.request.destination) {
-    case 'document':
-      return workbox.precaching.matchPrecache('/offline');
-    case 'image':
-      return workbox.precaching.matchPrecache('/icons/icon-512x512.png');
-    default:
-      return Response.error();
+  const destination = event.request.destination;
+
+  if (destination === 'document') {
+    try {
+      // Try to serve the offline page from the cache
+      const offlinePageResponse = await workbox.precaching.matchPrecache('/offline');
+      if (offlinePageResponse) {
+        return offlinePageResponse;
+      }
+
+      // If the offline page is not in the cache, try to fetch it from the network
+      return await fetch('/offline');
+    } catch (error) {
+      // If all else fails, return a simple offline message
+      return new Response('You are offline. Please check your internet connection.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/html' },
+      });
+    }
   }
+
+  if (destination === 'image') {
+    try {
+      return await workbox.precaching.matchPrecache('/icons/icon-512x512.png');
+    } catch (error) {
+      // Return a transparent image as fallback
+      return new Response('', {
+        status: 200,
+        headers: { 'Content-Type': 'image/png' },
+      });
+    }
+  }
+
+  // For all other types of requests, return an error response
+  return Response.error();
 });
 
 // Skip waiting and claim clients
