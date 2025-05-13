@@ -59,7 +59,7 @@ export function ProfessionalButton({
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const childContent = (React.Children.only(children) as React.ReactElement<any>).props.children;
+  const childContent = React.Children.toArray(children);
   return (
     <motion.div
       whileHover={disabled ? {} : { scale: 1.01 }}
