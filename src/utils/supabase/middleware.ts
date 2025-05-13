@@ -19,7 +19,6 @@ export async function updateSession(request: NextRequest) {
                        url.pathname.includes('.css') ||
                        url.pathname.startsWith('/icons') ||
                        url.pathname === '/forbidden' ||
-                       url.pathname === '/offline' ||
                        url.pathname === '/manifest.json' ||
                        url.pathname === '/sw.js' ||
                        url.pathname.startsWith('/worker-') ||
