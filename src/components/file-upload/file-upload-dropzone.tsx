@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { ProfessionalButton } from '@/components/ui/professional-button';
 import { motion } from 'framer-motion';
-import { uploadFile, uploadMultipleFiles, FileMetadata } from '@/utils/supabase/file-storage';
+import { uploadFile, FileMetadata } from '@/utils/supabase/file-storage';
 import Image from 'next/image';
 
 // Maximum file size: 10MB
@@ -36,7 +36,7 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: { file: File; errors: { code: string; message: string }[] }[]) => {
     // Handle rejected files
     if (rejectedFiles.length > 0) {
       const errors = rejectedFiles.map(file => {

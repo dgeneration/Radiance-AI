@@ -96,14 +96,14 @@ export async function POST(request: NextRequest) {
 
       // Return the stream directly
       const transformStream = new TransformStream({
-        start(controller) {
+        start() {
           console.log('Server: Transform stream started');
         },
         transform(chunk, controller) {
           // Pass through the chunk as-is
           controller.enqueue(chunk);
         },
-        flush(controller) {
+        flush() {
           console.log('Server: Transform stream complete');
         }
       });

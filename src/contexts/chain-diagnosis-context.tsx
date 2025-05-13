@@ -2,16 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import {
-  ChainDiagnosisSession,
-  ChainDiagnosisUserInput,
-  MedicalAnalystResponse,
-  GeneralPhysicianResponse,
-  SpecialistDoctorResponse,
-  PathologistResponse,
-  NutritionistResponse,
-  PharmacistResponse,
-  FollowUpSpecialistResponse,
-  RadianceAISummarizerResponse
+  ChainDiagnosisSession
 } from '@/types/chain-diagnosis';
 import {
   initializeChainDiagnosisSession,
@@ -55,8 +46,8 @@ interface ChainDiagnosisContextType {
   // Actions
   startNewSession: (
     userId: string,
-    userProfile: any,
-    symptomData: any,
+    userProfile: Record<string, unknown> | null,
+    symptomData: Record<string, unknown>,
     selectedFiles?: FileMetadata[]
   ) => Promise<string | null>;
 
@@ -140,8 +131,8 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   // Start a new Chain Diagnosis session
   const startNewSession = useCallback(async (
     userId: string,
-    userProfile: any,
-    symptomData: any,
+    userProfile: Record<string, unknown> | null,
+    symptomData: Record<string, unknown>,
     selectedFiles?: FileMetadata[]
   ): Promise<string | null> => {
     try {
@@ -173,13 +164,13 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             if (processNextStepRef.current) {
               await processNextStepRef.current();
             }
-          } catch (error) {
+          } catch {
             setError('Error starting diagnosis process. Please try again.');
           }
         }, 1000);
 
         return session.id;
-      } catch (dbError) {
+      } catch {
         // Fallback to in-memory session if database operations fail
 
         // Create a session ID
@@ -213,14 +204,14 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             if (processNextStepRef.current) {
               await processNextStepRef.current();
             }
-          } catch (error) {
+          } catch {
             setError('Error starting diagnosis process. Please try again.');
           }
         }, 1000);
 
         return sessionId;
       }
-    } catch (error) {
+    } catch {
       setError('Failed to start a new diagnosis session. Please try again.');
       return null;
     } finally {
@@ -245,7 +236,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       setCurrentStep(session.current_step);
 
       return true;
-    } catch (error) {
+    } catch {
       setError('Failed to load the diagnosis session. Please try again.');
       return false;
     } finally {
@@ -263,7 +254,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       setUserSessions(sessions);
 
       return true;
-    } catch (error) {
+    } catch {
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {
@@ -504,13 +495,13 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             window.location.reload();
           }, 2000);
         }
-      } catch (loadError) {
+      } catch {
         // Continue with the in-memory session if database operations fail
         setError('Warning: Using in-memory session. Your diagnosis may not be saved permanently.');
       }
 
       return true;
-    } catch (error) {
+    } catch {
       setError('Failed to process the diagnosis step. Please try again.');
       return false;
     } finally {

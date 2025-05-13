@@ -7,7 +7,6 @@ import { ProfessionalButton } from "@/components/ui/professional-button";
 import { AnimatedSection, AnimatedIcon, FloatingElement } from "@/components/animations";
 import { GradientHeading } from "@/components/ui/gradient-heading";
 import { FaArrowRight, FaUser, FaHistory, FaEnvelope, FaIdCard, FaSignInAlt, FaBrain } from "react-icons/fa";
-import { TestTube } from "lucide-react";
 import { MdHealthAndSafety, MdOutlineVerified } from "react-icons/md";
 
 export const metadata: Metadata = {

@@ -110,7 +110,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
         if (profile) {
           setUserProfile(profile);
         }
-      } catch (error) {
+      } catch {
         // Silently handle errors
       } finally {
         setIsLoadingProfile(false);
@@ -213,7 +213,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
       if (sessionId) {
         router.push(`/dashboard/chain-diagnosis/${sessionId}`);
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     }
   };
@@ -281,7 +281,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                     className="overflow-hidden"
                   >
                     <p className="text-sm text-muted-foreground mb-5">
-                      We're using your profile information for diagnosis. Your age and gender will be included automatically.
+                      We&apos;re using your profile information for diagnosis. Your age and gender will be included automatically.
                     </p>
 
                     <div className="mb-6">
@@ -412,7 +412,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                     ) : (
                       <div className="text-center py-6 bg-card/50 backdrop-blur-sm rounded-xl border border-primary/5">
                         <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                          You haven't added any health information yet. This information helps us provide more accurate diagnoses.
+                          You haven&apos;t added any health information yet. This information helps us provide more accurate diagnoses.
                         </p>
                         <ProfessionalButton
                           asChild
@@ -461,7 +461,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                           />
                         </FormControl>
                         <FormDescription className="mt-2">
-                          Be as specific as possible about what you're experiencing.
+                          Be as specific as possible about what you&apos;re experiencing.
                         </FormDescription>
                       </div>
                       <FormMessage />

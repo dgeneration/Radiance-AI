@@ -45,7 +45,7 @@ export async function uploadFile(file: File, userId: string): Promise<FileMetada
 
     // Upload the file to Supabase storage
     try {
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('medical-reports')
         .upload(filePath, file, {
           cacheControl: '3600',

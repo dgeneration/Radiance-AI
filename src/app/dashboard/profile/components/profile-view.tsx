@@ -62,22 +62,7 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
 
-  // Helper function to check if a field has reached its edit limit
-  const hasReachedEditLimit = (field: keyof UserProfile) => {
-    // Only check personal details fields (not health metrics or location)
-    const personalDetailsFields = ['first_name', 'last_name', 'gender', 'birth_year'];
 
-    if (!personalDetailsFields.includes(field)) {
-      return false;
-    }
-
-    // Check if the field has an edit count property
-    const editCountField = `${field}_edit_count` as keyof UserProfile;
-    const editCount = profile[editCountField] as number | null | undefined;
-
-    // If edit count is 1 or more, the field has reached its limit
-    return editCount !== null && editCount !== undefined && editCount >= 1;
-  };
 
   const handleEditComplete = () => {
     setIsEditing(false);

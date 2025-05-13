@@ -19,25 +19,25 @@ interface ChainDiagnosisHistoryProps {
 export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosisHistoryProps) {
   const { loadUserSessions, userSessions, isLoading, error } = useChainDiagnosis();
   const router = useRouter();
-  
+
   // Load user sessions when the component mounts
   useEffect(() => {
     loadUserSessions(userId);
   }, [userId, loadUserSessions]);
-  
+
   // Use the sessions from context if available, otherwise use the initial sessions
   const sessions = userSessions.length > 0 ? userSessions : initialSessions;
-  
+
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
     router.push(`/dashboard/chain-diagnosis/${sessionId}`);
   };
-  
+
   // Handle starting a new session
   const handleNewSession = () => {
     router.push('/dashboard/chain-diagnosis');
   };
-  
+
   if (isLoading && sessions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -46,7 +46,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
       </div>
     );
   }
-  
+
   if (error && sessions.length === 0) {
     return (
       <Card className="bg-destructive/10 border-destructive/20">
@@ -67,7 +67,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
       </Card>
     );
   }
-  
+
   if (sessions.length === 0) {
     return (
       <AnimatedSection>
@@ -75,7 +75,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
           <CardHeader>
             <CardTitle>No Diagnosis Sessions Found</CardTitle>
             <CardDescription>
-              You haven't started any chain diagnosis sessions yet.
+              You haven&apos;t started any chain diagnosis sessions yet.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -91,7 +91,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
       </AnimatedSection>
     );
   }
-  
+
   return (
     <AnimatedSection className="space-y-6">
       <div className="flex justify-between items-center">
@@ -101,22 +101,22 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sessions.map((session) => {
           const createdAt = new Date(session.created_at);
           const timeAgo = formatDistanceToNow(createdAt, { addSuffix: true });
-          
+
           // Get the primary symptoms
           const primarySymptoms = session.user_input.symptoms_info.symptoms_list.slice(0, 3);
-          
+
           // Determine session status
           const isCompleted = session.status === 'completed';
           const isInProgress = session.status === 'in_progress';
           const hasError = session.status === 'error';
-          
+
           return (
-            <Card 
+            <Card
               key={session.id}
               className="bg-card/50 backdrop-blur-sm border-primary/10 hover:shadow-md transition-all"
             >
@@ -128,8 +128,8 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                     </div>
                     <CardTitle className="text-lg">Chain Diagnosis</CardTitle>
                   </div>
-                  
-                  <Badge 
+
+                  <Badge
                     className={
                       isCompleted ? "bg-green-500/20 text-green-500 hover:bg-green-500/30" :
                       isInProgress ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500/30" :
@@ -139,7 +139,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                     {isCompleted ? "Completed" : isInProgress ? "In Progress" : "Error"}
                   </Badge>
                 </div>
-                
+
                 <CardDescription className="flex items-center gap-1 mt-1">
                   <Calendar className="h-3 w-3" />
                   <span>{createdAt.toLocaleDateString()}</span>
@@ -148,16 +148,16 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                   <span>{timeAgo}</span>
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent>
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-sm font-medium mb-1">Symptoms</h4>
                     <div className="flex flex-wrap gap-1">
                       {primarySymptoms.map((symptom, index) => (
-                        <Badge 
+                        <Badge
                           key={index}
-                          variant="outline" 
+                          variant="outline"
                           className="bg-background/50"
                         >
                           {symptom}
@@ -170,11 +170,11 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="text-sm font-medium mb-1">Progress</h4>
                     <div className="w-full bg-muted rounded-full h-2">
-                      <div 
+                      <div
                         className={`h-2 rounded-full ${
                           hasError ? "bg-destructive" : "bg-primary"
                         }`}
@@ -187,9 +187,9 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                   </div>
                 </div>
               </CardContent>
-              
+
               <CardFooter className="pt-2 border-t border-border/30">
-                <Button 
+                <Button
                   onClick={() => handleViewSession(session.id)}
                   className="w-full"
                   variant="outline"

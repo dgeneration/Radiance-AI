@@ -371,9 +371,9 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
           // Read the blob as text
           const text = await blob.text();
           setContent(text);
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error('Error fetching text content:', err);
-          setError(err.message || 'Failed to load text content');
+          setError(err instanceof Error ? err.message : 'Failed to load text content');
         } finally {
           setLoading(false);
         }

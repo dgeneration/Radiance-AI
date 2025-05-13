@@ -51,11 +51,11 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           // Try to parse the entire content as JSON
           const parsed = JSON.parse(streamingContent.medicalAnalyst);
           setParsedResponse(parsed);
-        } catch (e) {
+        } catch {
           // Silently handle parsing errors
         }
       }
-    } catch (e) {
+    } catch {
       // Silently handle parsing errors
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);

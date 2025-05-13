@@ -170,7 +170,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                     <div>
                       <p className="text-sm font-medium text-green-500">Analysis Complete</p>
                       <p className="text-xs text-muted-foreground">
-                        Your medical image has been analyzed. Click the "Detailed View" tab to see the results.
+                        Your medical image has been analyzed. Click the &quot;Detailed View&quot; tab to see the results.
                       </p>
                     </div>
                     <Button

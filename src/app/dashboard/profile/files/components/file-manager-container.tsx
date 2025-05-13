@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { FileManager } from "@/components/file-upload/file-manager";
 import { AnimatedDashboardSection } from "@/components/dashboard";
 import { FolderOpen } from "lucide-react";
@@ -33,10 +32,10 @@ export function FileManagerContainer({ userId }: FileManagerContainerProps) {
           <div className="bg-card/50 backdrop-blur-sm border border-primary/10 p-5 rounded-xl shadow-md">
             <FileManager userId={userId} />
           </div>
-          
+
           <div className="p-4 bg-card/30 border border-border/40 rounded-md">
             <p className="text-sm text-muted-foreground">
-              <strong>Note:</strong> Files uploaded here can be attached to your diagnosis requests. 
+              <strong>Note:</strong> Files uploaded here can be attached to your diagnosis requests.
               Supported file types include images (JPG, PNG, GIF) and documents (PDF, DOC, DOCX, TXT).
               Maximum file size is 10MB.
             </p>

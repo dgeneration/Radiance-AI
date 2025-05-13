@@ -452,7 +452,7 @@ async function makePerplexityRequest(
 function parseJsonResponse<T>(content: string): T {
   try {
     // Clean up the content by removing any XML-like tags
-    let cleanedContent = content.replace(/<[^>]*>.*?<\/[^>]*>/gs, '').replace(/<[^>]*>/g, '').trim();
+    const cleanedContent = content.replace(/<[^>]*>.*?<\/[^>]*>/gs, '').replace(/<[^>]*>/g, '').trim();
 
     // Try to extract JSON object from the content
     const jsonMatch = cleanedContent.match(/```json\s*([\s\S]*?)\s*```/);
@@ -649,7 +649,7 @@ function parseJsonResponse<T>(content: string): T {
         while ((keyValueMatch = keyValueRegex.exec(cleanedContent)) !== null) {
           const key = keyValueMatch[1];
           // Determine which capture group has the value
-          let value = keyValueMatch[2] || keyValueMatch[3] || keyValueMatch[4] || keyValueMatch[5];
+          const value = keyValueMatch[2] || keyValueMatch[3] || keyValueMatch[4] || keyValueMatch[5];
 
           // If it's a string, keep it as is
           if (keyValueMatch[2]) {
