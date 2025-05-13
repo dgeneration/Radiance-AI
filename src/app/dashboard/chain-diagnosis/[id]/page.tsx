@@ -15,7 +15,7 @@ export default async function ChainDiagnosisSessionPage({
 }: {
   params: { id: string };
 }) {
-  const sessionId = params.id;
+  const { id: sessionId } = await params;
 
   // Check if user is logged in
   const supabase = await createClient();

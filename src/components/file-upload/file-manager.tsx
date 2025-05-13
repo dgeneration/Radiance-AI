@@ -163,6 +163,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
               alt={previewFile.name}
               width={600}
               height={400}
+              sizes="(max-width: 768px) 100vw, 600px"
               className="max-h-[70vh] w-auto object-contain"
               onError={async () => {
                 // If loading the image fails, try to download it directly and create a blob URL
@@ -718,6 +719,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                       alt={file.name}
                       width={200}
                       height={200}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                       className="h-full w-full object-cover"
                       onError={async (e) => {
                         // If the public URL fails, try to get a signed URL

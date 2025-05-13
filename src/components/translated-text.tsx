@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "@/contexts/translation-context";
+import type { JSX } from "react";
 
 interface TranslatedTextProps {
   text: string;

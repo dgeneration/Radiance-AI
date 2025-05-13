@@ -94,6 +94,7 @@ export function FileSelector({ userId, onFilesSelected, selectedFiles, multiple 
                         src={file.public_url || ''}
                         alt={file.name}
                         fill
+                        sizes="(max-width: 768px) 40px, 40px"
                         className="object-cover"
                       />
                     </div>

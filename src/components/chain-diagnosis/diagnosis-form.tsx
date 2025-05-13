@@ -535,16 +535,16 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                 <div className="space-y-2">
                   <FormLabel className="text-base font-medium flex items-center gap-2">
                     <FaNotesMedical className="text-accent/70 w-4 h-4" />
-                    Medical Reports (Optional)
+                    Medical Report (Optional)
                   </FormLabel>
                   <FileSelector
                     userId={userId}
                     onFilesSelected={setSelectedFiles}
                     selectedFiles={selectedFiles}
-                    multiple={true}
+                    multiple={false}
                   />
                   <FormDescription>
-                    Attach medical reports, test results, or images for more accurate analysis.
+                    Attach a single medical report, test result, or image for more accurate analysis.
                   </FormDescription>
                 </div>
 

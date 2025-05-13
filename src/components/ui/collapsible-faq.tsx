@@ -9,6 +9,7 @@ interface CollapsibleFAQProps {
   question: string;
   answer: string;
   icon: React.ReactNode;
+  iconClassName?: string;
   delay?: number;
   isAccent?: boolean;
 }
@@ -17,6 +18,7 @@ export function CollapsibleFAQ({
   question,
   answer,
   icon,
+  iconClassName,
   delay = 0,
   isAccent = false
 }: CollapsibleFAQProps) {
@@ -36,7 +38,7 @@ export function CollapsibleFAQ({
       >
         <AnimatedIcon
           icon={icon}
-          className={`w-10 h-10 ${isAccent ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'} rounded-full flex items-center justify-center flex-shrink-0 mt-1`}
+          className={`w-10 h-10 ${iconClassName || (isAccent ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary')} rounded-full flex items-center justify-center flex-shrink-0 mt-1`}
           delay={delay}
           hoverScale={1.1}
         />

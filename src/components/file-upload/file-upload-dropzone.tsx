@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { Upload, X, AlertCircle, FileText, Image as ImageIcon, ArrowUpCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
@@ -36,14 +36,14 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: { file: File; errors: { code: string; message: string }[] }[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
     // Handle rejected files
-    if (rejectedFiles.length > 0) {
-      const errors = rejectedFiles.map(file => {
-        if (file.file.size > MAX_FILE_SIZE) {
-          return `${file.file.name} exceeds the maximum file size of 10MB`;
+    if (fileRejections.length > 0) {
+      const errors = fileRejections.map(rejection => {
+        if (rejection.file.size > MAX_FILE_SIZE) {
+          return `${rejection.file.name} exceeds the maximum file size of 10MB`;
         }
-        return `${file.file.name} is not an accepted file type`;
+        return `${rejection.file.name} is not an accepted file type`;
       });
       setError(errors.join(', '));
       return;
@@ -153,16 +153,16 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
         </Alert>
       )}
 
-      <motion.div
-        {...getRootProps()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
-          isDragActive
-            ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
-            : 'border-primary/20 hover:border-primary/40 bg-card/50 hover:shadow-md hover:bg-card/70'
-        }`}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-      >
+      <div {...getRootProps()}>
+        <motion.div
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+            isDragActive
+              ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
+              : 'border-primary/20 hover:border-primary/40 bg-card/50 hover:shadow-md hover:bg-card/70'
+          }`}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+        >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center justify-center space-y-4">
           <motion.div
@@ -188,6 +188,7 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
           </div>
         </div>
       </motion.div>
+      </div>
 
       {files.length > 0 && (
         <div className="space-y-4">

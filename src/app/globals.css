@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* stylelint-disable */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -42,6 +43,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+/* stylelint-enable */
 
 :root {
   --radius: 0.625rem;
@@ -113,6 +115,7 @@
   --sidebar-ring: #00C6D7;
 }
 
+/* stylelint-disable */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -197,3 +200,4 @@
     cursor: not-allowed !important;
   }
 }
+/* stylelint-enable */

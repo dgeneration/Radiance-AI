@@ -142,7 +142,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       // Convert user data to Chain Diagnosis input format
       const userInput = await convertToChainDiagnosisInput(
         userId,
-        userProfile,
+        userProfile || {}, // Provide an empty object if userProfile is null
         symptomData,
         selectedFiles
       );

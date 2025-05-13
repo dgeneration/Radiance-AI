@@ -96,11 +96,11 @@ export function ErrorPage({
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            {primaryAction.href === "#" && primaryAction.onClick ? (
+            {(primaryAction.href as string) === "#" && primaryAction.onClick ? (
               <ProfessionalButton
                 variant="primary"
                 fullWidth
-                icon={primaryAction.href === "/" ? <Home className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+                icon={(primaryAction.href as string) === "/" ? <Home className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
                 iconPosition="left"
                 onClick={primaryAction.onClick}
               >
@@ -111,7 +111,7 @@ export function ErrorPage({
                 asChild
                 variant="primary"
                 fullWidth
-                icon={primaryAction.href === "/" ? <Home className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+                icon={(primaryAction.href as string) === "/" ? <Home className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
                 iconPosition="left"
               >
                 <Link href={primaryAction.href}>
@@ -121,7 +121,7 @@ export function ErrorPage({
             )}
 
             {secondaryAction && (
-              secondaryAction.href === "#" && secondaryAction.onClick ? (
+              (secondaryAction.href as string) === "#" && secondaryAction.onClick ? (
                 <ProfessionalButton
                   variant="outline"
                   fullWidth
@@ -143,7 +143,7 @@ export function ErrorPage({
             )}
 
             {tertiaryAction && (
-              tertiaryAction.href === "#" && tertiaryAction.onClick ? (
+              (tertiaryAction.href as string) === "#" && tertiaryAction.onClick ? (
                 <ProfessionalButton
                   variant="outline"
                   fullWidth

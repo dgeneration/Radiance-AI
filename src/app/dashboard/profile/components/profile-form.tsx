@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Country, State, City } from "country-state-city";
+import { Country, State, City, ICountry, IState, ICity } from "country-state-city";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -65,20 +65,9 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [countries, setCountries] = useState<{
-    name: string;
-    isoCode: string;
-    [key: string]: unknown;
-  }[]>([]);
-  const [states, setStates] = useState<{
-    name: string;
-    isoCode: string;
-    [key: string]: unknown;
-  }[]>([]);
-  const [cities, setCities] = useState<{
-    name: string;
-    [key: string]: unknown;
-  }[]>([]);
+  const [countries, setCountries] = useState<ICountry[]>([]);
+  const [states, setStates] = useState<IState[]>([]);
+  const [cities, setCities] = useState<ICity[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [isEditingHealthInfo, setIsEditingHealthInfo] = useState(false);
@@ -125,7 +114,9 @@ export default function ProfileForm({ initialProfile, userId }: ProfileFormProps
 
   // Set up countries, states, and cities
   useEffect(() => {
-    setCountries(Country.getAllCountries());
+    // Get all countries
+    const allCountries = Country.getAllCountries();
+    setCountries(allCountries);
 
     if (initialProfile) {
       setSelectedCountry(initialProfile.country);

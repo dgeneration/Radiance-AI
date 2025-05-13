@@ -7,7 +7,6 @@ const nextConfig = {
     },
   },
   images: {
-    domains: ['lvqnpykgqaoncbkuhedk.supabase.co', 'www.radiologyinfo.org', 'placehold.co', 'cdn.pixabay.com'],
     remotePatterns: [
       {
         protocol: 'https',

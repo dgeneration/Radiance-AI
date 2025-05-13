@@ -46,27 +46,8 @@ export function HeaderButton({
           onClick={onClick}
           {...props}
         >
-          {React.cloneElement(React.Children.only(children as React.ReactElement), {
-            className: "flex items-center gap-2 justify-center w-full h-full",
-            children: (
-              <>
-                {iconPosition === "left" && icon && (
-                  <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{icon}</span>
-                )}
-                <span className={`relative z-10 ${variant === "primary" ? "text-shadow-sm" : ""}`}>{(children as React.ReactElement).props.children}</span>
-                {iconPosition === "right" && icon && (
-                  <span className={`relative z-10 group-hover:translate-x-0.5 transition-transform ${variant === "primary" ? "text-shadow-sm" : ""}`}>
-                    {icon}
-                  </span>
-                )}
-                
-                {/* Subtle gradient overlay for primary variant */}
-                {variant === "primary" && (
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-200 z-0 pointer-events-none"></span>
-                )}
-              </>
-            )
-          })}
+          {/* Pass the child element directly without modification */}
+          {children}
         </Button>
       ) : (
         <Button
@@ -83,7 +64,7 @@ export function HeaderButton({
               {icon}
             </span>
           )}
-          
+
           {/* Subtle gradient overlay for primary variant */}
           {variant === "primary" && (
             <span className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-gradient-x opacity-0 group-hover:opacity-70 transition-opacity duration-200 z-0 pointer-events-none"></span>

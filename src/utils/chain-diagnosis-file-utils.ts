@@ -18,7 +18,7 @@ export async function extractTextFromPdf(fileUrl: string): Promise<string> {
 
     // This is a placeholder - in a real implementation, you would parse the PDF
     return "This is extracted text from the PDF file. In a real implementation, you would use a PDF parsing library like pdf.js or a server-side solution.";
-  } catch (error) {
+  } catch {
     return '';
   }
 }
@@ -39,7 +39,7 @@ export async function extractTextFromImage(fileUrl: string): Promise<string> {
 
     // This is a placeholder - in a real implementation, you would use OCR
     return "This is extracted text from the image file. In a real implementation, you would use an OCR service like Tesseract.js or a cloud OCR API.";
-  } catch (error) {
+  } catch {
     return '';
   }
 }
@@ -79,7 +79,7 @@ export async function processMedicalReportFile(file: FileMetadata): Promise<stri
     } else {
       return `Unsupported file type: ${fileType}`;
     }
-  } catch (error) {
+  } catch {
     return '';
   }
 }
@@ -119,7 +119,7 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
     };
 
     return result;
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }
@@ -134,8 +134,8 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
  */
 export async function convertToChainDiagnosisInput(
   userId: string,
-  userProfile: any,
-  symptomData: any,
+  userProfile: Record<string, unknown>,
+  symptomData: Record<string, unknown>,
   selectedFiles?: FileMetadata[]
 ): Promise<ChainDiagnosisUserInput> {
   // Get the authenticated user ID to ensure it matches
@@ -151,53 +151,76 @@ export async function convertToChainDiagnosisInput(
     : undefined;
 
   // Parse symptoms into an array
-  const symptomsList = symptomData.symptoms
+  const symptoms = symptomData.symptoms as string || '';
+  const symptomsList = symptoms
     .split(',')
     .map((symptom: string) => symptom.trim())
     .filter((symptom: string) => symptom.length > 0);
 
   // Calculate BMI if height and weight are available
   let bmi: number | undefined = undefined;
-  if (userProfile.height && userProfile.weight) {
+  const height = userProfile.height as number | undefined;
+  const weight = userProfile.weight as number | undefined;
+  if (height && weight) {
     // BMI = weight(kg) / (height(m))²
-    const heightInMeters = userProfile.height / 100;
-    bmi = userProfile.weight / (heightInMeters * heightInMeters);
+    const heightInMeters = height / 100;
+    bmi = weight / (heightInMeters * heightInMeters);
     bmi = Math.round(bmi * 10) / 10; // Round to 1 decimal place
   }
 
   // Calculate age from birth year
   const currentYear = new Date().getFullYear();
-  const age = userProfile.birth_year ? currentYear - userProfile.birth_year : 0;
+  const birthYear = userProfile.birth_year as number | undefined;
+  const age = birthYear ? currentYear - birthYear : 0;
+
+  // Extract and type-cast all properties
+  const firstName = userProfile.first_name as string | undefined;
+  const lastName = userProfile.last_name as string | undefined;
+  const country = userProfile.country as string | undefined;
+  const state = userProfile.state as string | undefined;
+  const city = userProfile.city as string | undefined;
+  const zipCode = userProfile.zip_code as string | undefined;
+  const gender = userProfile.gender as string | undefined;
+  const dietaryPreference = userProfile.dietary_preference as string | undefined;
+  const allergies = userProfile.allergies as string | undefined;
+  const medications = userProfile.medications as string | undefined;
+  const medicalConditions = userProfile.medical_conditions as string | undefined;
+  const healthHistory = userProfile.health_history as string | undefined;
+
+  const symptomGender = symptomData.gender as string | undefined;
+  const symptomAge = symptomData.age as string | undefined;
+  const duration = symptomData.duration as string | undefined;
+  const medicalHistory = symptomData.medicalHistory as string | undefined;
 
   // Construct the Chain Diagnosis user input
   return {
     user_details: {
       id: authenticatedUserId, // Use the authenticated user ID
-      first_name: userProfile.first_name || '',
-      last_name: userProfile.last_name || '',
-      country: userProfile.country || '',
-      state: userProfile.state || '',
-      city: userProfile.city || '',
-      zip_code: userProfile.zip_code || '',
-      gender: userProfile.gender || symptomData.gender || '',
-      birth_year: userProfile.birth_year || currentYear - parseInt(symptomData.age),
-      age: age || parseInt(symptomData.age)
+      first_name: firstName || '',
+      last_name: lastName || '',
+      country: country || '',
+      state: state || '',
+      city: city || '',
+      zip_code: zipCode || '',
+      gender: gender || symptomGender || '',
+      birth_year: birthYear || (symptomAge ? currentYear - parseInt(symptomAge) : 0),
+      age: age || (symptomAge ? parseInt(symptomAge) : 0)
     },
     health_metrics: {
-      height: userProfile.height,
-      weight: userProfile.weight,
+      height,
+      weight,
       bmi,
-      dietary_preference: userProfile.dietary_preference || 'Not specified'
+      dietary_preference: dietaryPreference || 'Not specified'
     },
     symptoms_info: {
       symptoms_list: symptomsList,
-      duration: symptomData.duration
+      duration: duration || ''
     },
     medical_info: {
-      allergies: userProfile.allergies || '',
-      medications: userProfile.medications || '',
-      medical_conditions: userProfile.medical_conditions || '',
-      health_history: userProfile.health_history || symptomData.medicalHistory || ''
+      allergies: allergies || '',
+      medications: medications || '',
+      medical_conditions: medicalConditions || '',
+      health_history: healthHistory || medicalHistory || ''
     },
     medical_report: medicalReport
   };

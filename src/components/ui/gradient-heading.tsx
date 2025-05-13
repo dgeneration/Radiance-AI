@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AnimatedText } from "@/components/animations";
+import type { JSX } from "react";
 
 interface GradientHeadingProps {
   children: React.ReactNode;

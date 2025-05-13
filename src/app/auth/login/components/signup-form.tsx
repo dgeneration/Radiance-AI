@@ -19,7 +19,7 @@ import { GradientHeading } from "@/components/ui/gradient-heading";
 import { AnimatedSection } from "@/components/animations/animated-section";
 import { AnimatedIcon } from "@/components/animations/animated-icon";
 import { UserPlus, MapPin, Heart, ArrowRight, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
-import { Country, State, City } from "country-state-city";
+import { Country, State, City, ICity } from "country-state-city";
 import ReactCountryFlag from "react-country-flag";
 
 // Generate years from 1920 to current year
@@ -66,11 +66,11 @@ export function SignupForm({
   const hasStates = states.length > 0;
 
   // Get cities based on country/state
-  let cities = [];
+  let cities: ICity[] = [];
   if (stateCode) {
-    cities = City.getCitiesOfState(countryCode, stateCode);
+    cities = City.getCitiesOfState(countryCode, stateCode) || [];
   } else if (countryCode && !hasStates) {
-    cities = City.getCitiesOfCountry(countryCode);
+    cities = City.getCitiesOfCountry(countryCode) || [];
   }
 
   // Check if there are cities available
@@ -92,6 +92,13 @@ export function SignupForm({
     }
     setCityCode("");
   }, [countryCode]);
+
+  // Ensure stateCode is set to N/A when there are no states
+  useEffect(() => {
+    if (countryCode && !hasStates && stateCode !== "N/A") {
+      setStateCode("N/A");
+    }
+  }, [countryCode, hasStates, stateCode]);
 
   // Reset city when state changes
   useEffect(() => {
@@ -551,10 +558,8 @@ export function SignupForm({
                           type="hidden"
                           name="stateCode"
                           value="N/A"
-                          onChange={() => {}}
+                          readOnly
                         />
-                        {/* Ensure stateCode is set to N/A when there are no states */}
-                        {countryCode && !hasStates && stateCode !== "N/A" && setStateCode("N/A")}
                       </div>
                     )}
 

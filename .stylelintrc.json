@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwindcss",
+          "apply",
+          "variants",
+          "responsive",
+          "screen",
+          "layer",
+          "theme",
+          "custom-variant",
+          "import",
+          "tw-animate-css"
+        ]
+      }
+    ],
+    "no-descending-specificity": null
+  }
+}

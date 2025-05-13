@@ -1,3 +1,6 @@
+// Initialize a variable to track database initialization
+let isDbInitialized = false;
+
 import {
   ChainDiagnosisUserInput,
   MedicalAnalystResponse,
@@ -53,13 +56,13 @@ export async function initializeChainDiagnosisSession(
   try {
     // Only initialize the database on first run or if explicitly needed
     // This avoids unnecessary initialization on every request
-    if (!globalThis.dbInitialized) {
+    if (!isDbInitialized) {
       try {
         await initChainDiagnosisDb();
-        globalThis.dbInitialized = true;
-      } catch (dbInitError) {
+        isDbInitialized = true;
+      } catch {
         // Suppress the error to avoid console noise
-        globalThis.dbInitialized = true; // Still mark as initialized to avoid repeated attempts
+        isDbInitialized = true; // Still mark as initialized to avoid repeated attempts
       }
     }
 
@@ -67,14 +70,14 @@ export async function initializeChainDiagnosisSession(
     const supabase = createClient();
 
     // First, check if the user is authenticated
-    let userId = userInput.user_id; // Default to the provided user ID
+    let userId = userInput.user_details.id; // Default to the provided user ID
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         userId = user.id; // Use authenticated user ID if available
       }
-    } catch (authError) {
+    } catch {
       // Continue with provided user ID if authentication fails
     }
 
@@ -90,7 +93,6 @@ export async function initializeChainDiagnosisSession(
     };
 
     // Try to insert the session into the database, but continue with in-memory session if it fails
-    let databaseInsertSuccessful = false;
 
     try {
       // First attempt to insert with the authenticated client
@@ -108,14 +110,12 @@ export async function initializeChainDiagnosisSession(
           // Skip reinitialization since we know the table exists
           // Just try inserting again with better error handling
           try {
-            const { error: retryError } = await supabase
+            await supabase
               .from('chain_diagnosis_sessions')
               .insert(session);
 
-            if (!retryError) {
-              databaseInsertSuccessful = true;
-            }
-          } catch (retryError) {
+            // Successfully inserted
+          } catch {
             // Silently continue with in-memory session
           }
         }
@@ -131,22 +131,18 @@ export async function initializeChainDiagnosisSession(
               session.user_id = currentUser.id;
 
               // Try one more time with the correct user ID
-              const { error: finalAttemptError } = await supabase
+              await supabase
                 .from('chain_diagnosis_sessions')
                 .insert(session);
-
-              if (!finalAttemptError) {
-                databaseInsertSuccessful = true;
-              }
             }
-          } catch (authError) {
+          } catch {
             // Silently continue with in-memory session
           }
         }
       } else {
-        databaseInsertSuccessful = true;
+        // Successfully inserted
       }
-    } catch (insertError) {
+    } catch {
       // Silently continue with in-memory session
     }
 
@@ -169,7 +165,7 @@ export async function initializeChainDiagnosisSession(
 async function makePerplexityRequest(
   model: string,
   systemPrompt: string,
-  userPrompt: string | any[],
+  userPrompt: string | Array<{type: string, text?: string, image_url?: {url: string}}>,
   streaming: boolean = false,
   onStreamingResponse?: StreamingResponseHandler,
   hasImageUrl: boolean = false
@@ -245,13 +241,13 @@ async function makePerplexityRequest(
                     fullResponse += content;
                     onStreamingResponse(content, false);
                   }
-                } catch (e) {
+                } catch {
                   // Silently handle parsing errors
                 }
               }
             }
           }
-        } catch (streamError) {
+        } catch {
           // If streaming fails, still try to return what we have
           if (fullResponse) {
             onStreamingResponse(fullResponse, true);
@@ -401,13 +397,13 @@ async function makePerplexityRequest(
                   fullResponse += content;
                   onStreamingResponse(content, false);
                 }
-              } catch (e) {
+              } catch {
                 // Silently handle parsing errors
               }
             }
           }
         }
-      } catch (streamError) {
+      } catch {
         // If streaming fails, still try to return what we have
         if (fullResponse) {
           onStreamingResponse(fullResponse, true);
@@ -460,7 +456,7 @@ function parseJsonResponse<T>(content: string): T {
     if (jsonMatch && jsonMatch[1]) {
       try {
         return JSON.parse(jsonMatch[1]);
-      } catch (codeBlockError) {
+      } catch {
         // Continue to other methods
       }
     }
@@ -470,7 +466,7 @@ function parseJsonResponse<T>(content: string): T {
     if (jsonObjectMatch && jsonObjectMatch[1]) {
       try {
         return JSON.parse(jsonObjectMatch[1]);
-      } catch (innerError) {
+      } catch {
         // Continue to other methods
       }
     }
@@ -529,7 +525,7 @@ function parseJsonResponse<T>(content: string): T {
       // First try to parse as is
       try {
         return JSON.parse(cleanedContent);
-      } catch (initialError) {
+      } catch {
         // Try to fix common JSON syntax errors
         let fixedJson = cleanedContent;
 
@@ -622,7 +618,7 @@ function parseJsonResponse<T>(content: string): T {
           const extractedJson = cleanedContent.substring(startIndex, endIndex);
           try {
             return JSON.parse(extractedJson);
-          } catch (balancedError) {
+          } catch {
             // Continue to next approach
           }
         }
@@ -634,7 +630,7 @@ function parseJsonResponse<T>(content: string): T {
           const extractedJson = match[0];
           try {
             return JSON.parse(extractedJson);
-          } catch (regexError) {
+          } catch {
             // Continue to next approach
           }
         }
@@ -642,7 +638,7 @@ function parseJsonResponse<T>(content: string): T {
         // Last resort: Try to manually reconstruct a valid JSON object
 
         // Extract key-value pairs using regex
-        const keyValuePairs: Record<string, any> = {};
+        const keyValuePairs: Record<string, unknown> = {};
         const keyValueRegex = /"([^"]+)"\s*:\s*(?:"([^"]+)"|(\[[^\]]*\])|(\{[^}]*\})|([^,}]+))/g;
         let keyValueMatch;
 
@@ -659,7 +655,7 @@ function parseJsonResponse<T>(content: string): T {
           else if (keyValueMatch[3] || keyValueMatch[4]) {
             try {
               keyValuePairs[key] = JSON.parse(value);
-            } catch (parseError) {
+            } catch {
               keyValuePairs[key] = value; // Keep as string if parsing fails
             }
           }
@@ -678,13 +674,13 @@ function parseJsonResponse<T>(content: string): T {
         if (Object.keys(keyValuePairs).length > 0) {
           return keyValuePairs as unknown as T;
         }
-      } catch (extractError) {
+      } catch {
         // Silently handle extraction errors
       }
 
       throw finalError; // Re-throw to be caught by the outer catch
     }
-  } catch (error) {
+  } catch {
 
     // Create a fallback response with the raw content for debugging
     const fallbackResponse = {
@@ -816,7 +812,7 @@ export async function processMedicalAnalyst(
   userInput: ChainDiagnosisUserInput,
   streaming: boolean = false,
   onStreamingResponse?: StreamingResponseHandler
-): Promise<MedicalAnalystResponse | null> {
+): Promise<MedicalAnalystResponse | undefined> {
   try {
     // Check if we have a medical report or an image URL
     const hasReport = !!userInput.medical_report?.text;
@@ -827,18 +823,18 @@ export async function processMedicalAnalyst(
       await updateChainDiagnosisSession(sessionId, {
         current_step: 1,
         status: 'in_progress',
-        medical_analyst_response: null
+        medical_analyst_response: undefined
       });
 
-      return null;
+      return undefined;
     }
 
     // Enhanced system prompt for Medical Analyst
     const systemPrompt = `${getSystemPrompt('medical-analyst')}
 
 You are analyzing a medical ${hasImageUrl ? 'image' : 'report'} with the following details:
-- Report Type: ${userInput.medical_report.type || 'Unknown'}
-- Report Name: ${userInput.medical_report.name || 'Unknown'}
+- Report Type: ${userInput.medical_report?.type || 'Unknown'}
+- Report Name: ${userInput.medical_report?.name || 'Unknown'}
 ${hasImageUrl ? '- Image URL will be provided in the user message' : ''}
 
 ${hasImageUrl ? `IMPORTANT: This request includes a medical image URL. You should:
@@ -892,7 +888,7 @@ Respond in JSON format with the following structure:
       // For image URLs, we need to use the specific format required by Perplexity
 
       // Check if the image URL is valid
-      if (!userInput.medical_report.image_url || !userInput.medical_report.image_url.startsWith('http')) {
+      if (!userInput.medical_report?.image_url || !userInput.medical_report.image_url.startsWith('http')) {
         throw new Error('Invalid image URL format. Image URL must start with http:// or https://');
       }
 
@@ -915,7 +911,7 @@ Please provide a detailed analysis of the medical image, including:
         {
           type: "image_url",
           image_url: {
-            url: userInput.medical_report.image_url
+            url: userInput.medical_report?.image_url || ''
           }
         }
       ];
@@ -931,9 +927,9 @@ Please provide a detailed analysis of the medical image, including:
           medical_history: userInput.medical_info?.medical_conditions || ''
         },
         medical_report: {
-          type: userInput.medical_report.type || 'Unknown',
-          name: userInput.medical_report.name || 'Unknown',
-          text: userInput.medical_report.text
+          type: userInput.medical_report?.type || 'Unknown',
+          name: userInput.medical_report?.name || 'Unknown',
+          text: userInput.medical_report?.text || ''
         }
       }, null, 2);
     }
@@ -964,7 +960,7 @@ Please provide a detailed analysis of the medical image, including:
           if (!response.choices || !response.choices[0]) {
             throw new Error('Invalid streaming response structure');
           }
-        } catch (streamingError) {
+        } catch {
           // If streaming fails, fall back to non-streaming
           if (onStreamingResponse) {
             onStreamingResponse('Streaming failed, falling back to standard request...', false);
@@ -1018,7 +1014,7 @@ Please provide a detailed analysis of the medical image, including:
       }
 
       if (!parsedResponse.report_type_analyzed) {
-        parsedResponse.report_type_analyzed = userInput.medical_report.type || 'Medical Report';
+        parsedResponse.report_type_analyzed = userInput.medical_report?.type || 'Medical Report';
       }
 
       if (!parsedResponse.key_findings_from_report || !Array.isArray(parsedResponse.key_findings_from_report)) {
@@ -1053,11 +1049,11 @@ Please provide a detailed analysis of the medical image, including:
         }
       }
 
-    } catch (error) {
+    } catch {
       // Create a fallback response that includes the raw content
       parsedResponse = {
         role_name: "Medical Analyst AI (Radiance AI)",
-        report_type_analyzed: userInput.medical_report.type || 'Medical Report',
+        report_type_analyzed: userInput.medical_report?.type || 'Medical Report',
         key_findings_from_report: ["The analysis is available in unstructured format"],
         abnormalities_highlighted: [],
         clinical_correlation_points_for_gp: ["Please review the full analysis in the reference data"],

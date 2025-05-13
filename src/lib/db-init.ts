@@ -9,7 +9,7 @@ export async function initChainDiagnosisDb() {
 
     // Check if the table already exists
     try {
-      const { data: tableExists, error: checkTableError } = await supabase
+      const { error: checkTableError } = await supabase
         .from('chain_diagnosis_sessions')
         .select('id')
         .limit(1);
@@ -17,7 +17,7 @@ export async function initChainDiagnosisDb() {
       if (checkTableError && checkTableError.message.includes('does not exist')) {
         // Try to create the table using the RPC function first
         try {
-          const { error: createTableError } = await supabase.rpc('execute_sql', {
+          await supabase.rpc('execute_sql', {
             sql: `
               CREATE TABLE IF NOT EXISTS chain_diagnosis_sessions (
                 id UUID PRIMARY KEY,
@@ -49,17 +49,17 @@ export async function initChainDiagnosisDb() {
               );
             `
           });
-        } catch (rpcError) {
+        } catch {
           // Silently handle RPC errors
         }
       }
-    } catch (error) {
+    } catch {
       // Silently handle errors checking if table exists
     }
 
     // Try to create indexes
     try {
-      const { error: createIndexesError } = await supabase.rpc('execute_sql', {
+      await supabase.rpc('execute_sql', {
         sql: `
           CREATE INDEX IF NOT EXISTS chain_diagnosis_sessions_user_id_idx ON chain_diagnosis_sessions(user_id);
           CREATE INDEX IF NOT EXISTS chain_diagnosis_sessions_created_at_idx ON chain_diagnosis_sessions(created_at);
@@ -68,7 +68,7 @@ export async function initChainDiagnosisDb() {
       });
 
       // Silently handle index creation errors
-    } catch (error) {
+    } catch {
       // Silently handle errors in index creation attempt
     }
 
@@ -78,13 +78,13 @@ export async function initChainDiagnosisDb() {
     // Check if RLS policies already exist instead of trying to create them
     try {
       // First check if the table has RLS enabled
-      const { data: rlsData, error: rlsError } = await supabase
+      await supabase
         .from('chain_diagnosis_sessions')
         .select('id')
         .limit(1);
 
       // Skip policy creation entirely since we know they already exist
-    } catch (error) {
+    } catch {
       // Silently handle errors checking RLS status
     }
 
@@ -93,17 +93,17 @@ export async function initChainDiagnosisDb() {
     try {
       // Instead of listing all buckets (which can cause permission errors),
       // we'll just check if we can get the bucket's details directly
-      const { data: bucketInfo, error: bucketError } = await supabase.storage
+      await supabase.storage
         .from('medical-reports')
         .getPublicUrl('test-path');
 
       // Skip bucket creation entirely since we know it already exists
-    } catch (error) {
+    } catch {
       // Silently handle errors checking bucket status
     }
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

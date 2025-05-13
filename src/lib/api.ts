@@ -352,13 +352,13 @@ Reminder: Respond ONLY with the valid JSON object. No markdown or explanations. 
     // Utility function to safely get nested properties with defaults
     function safeGet<T>(obj: Record<string, unknown>, path: string, defaultValue: T): T {
       const parts = path.split('.');
-      let current: any = obj;
+      let current: Record<string, unknown> | unknown = obj;
 
       for (const part of parts) {
         if (current == null || typeof current !== 'object') {
           return defaultValue;
         }
-        current = current[part];
+        current = (current as Record<string, unknown>)[part];
       }
 
       return (current !== undefined ? current : defaultValue) as T;

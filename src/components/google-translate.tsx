@@ -3,25 +3,7 @@
 import { useEffect, useRef } from "react";
 import Script from "next/script";
 
-declare global {
-  interface Window {
-    googleTranslateElementInit: () => void;
-    google: {
-      translate: {
-        TranslateElement: new (
-          options: {
-            pageLanguage: string;
-            includedLanguages?: string;
-            layout?: { [key: string]: unknown };
-            autoDisplay?: boolean;
-            multilanguagePage?: boolean;
-          },
-          elementId: string
-        ) => void;
-      };
-    };
-  }
-}
+// No need to redeclare global types as they're already defined in src/types/global.d.ts
 
 export default function GoogleTranslate() {
   const translationRef = useRef<HTMLDivElement>(null);
@@ -34,18 +16,38 @@ export default function GoogleTranslate() {
         // Add a small delay to ensure the DOM is ready
         setTimeout(() => {
           if (
-            window.google &&
-            window.google.translate &&
-            window.google.translate.TranslateElement &&
+            window.google?.translate?.TranslateElement &&
             translationRef.current
           ) {
-            new window.google.translate.TranslateElement(
+            // Define the TranslateElement constructor type
+            type TranslateElementConstructor = {
+              new (
+                options: {
+                  pageLanguage: string;
+                  includedLanguages?: string;
+                  layout?: { [key: string]: string };
+                  autoDisplay?: boolean;
+                  multilanguagePage?: boolean;
+                },
+                elementId: string
+              ): unknown;
+              InlineLayout?: {
+                SIMPLE: string;
+                HORIZONTAL: string;
+              };
+            };
+
+            // Cast to the correct type
+            const TranslateElement = window.google.translate.TranslateElement as TranslateElementConstructor;
+
+            // Now we can safely use it
+            new TranslateElement(
               {
                 pageLanguage: "en",
                 // Include popular languages - can be customized
                 includedLanguages:
                   "ar,zh-CN,nl,en,fr,de,hi,it,ja,ko,pt,ru,es,sv,tr",
-                layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+                layout: { SIMPLE: TranslateElement.InlineLayout?.SIMPLE ?? "" },
                 autoDisplay: false,
                 multilanguagePage: true,
               },
@@ -64,7 +66,6 @@ export default function GoogleTranslate() {
     return () => {
       // Remove the initialization function when component unmounts
       if (window.googleTranslateElementInit) {
-        // @ts-expect-error - We need to delete the function
         window.googleTranslateElementInit = undefined;
       }
     };
