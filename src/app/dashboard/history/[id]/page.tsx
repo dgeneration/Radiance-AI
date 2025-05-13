@@ -14,11 +14,8 @@ export const metadata: Metadata = {
   description: "View your diagnosis details",
 };
 
-export default async function DiagnosisDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function DiagnosisDetailPage({ params }: any) {
+  const diagnosisId = params.id;
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
@@ -30,7 +27,7 @@ export default async function DiagnosisDetailPage({
     const { data: diagnosis, error: diagnosisError } = await supabase
       .from("diagnoses")
       .select("id, created_at, user_id, symptoms, age, gender, duration, medical_history, diagnosis, reasoning, icd_code, citations, api_response")
-      .eq("id", params.id)
+      .eq("id", diagnosisId)
       .eq("user_id", userData.user.id)
       .single();
 
