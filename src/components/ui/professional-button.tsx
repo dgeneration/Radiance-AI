@@ -75,11 +75,13 @@ export function ProfessionalButton({
           {...props}
         >
           {React.cloneElement(
-            React.Children.only(children) as React.ReactElement<any>,
+            React.Children.only(children) as React.ReactElement<unknown>,
             {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...((React.Children.only(children) as React.ReactElement<any>).props),
               className: cn(
                 "flex items-center gap-2 justify-center w-full h-full",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (React.Children.only(children) as React.ReactElement<any>).props.className
               ),
               children: (
