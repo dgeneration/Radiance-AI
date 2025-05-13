@@ -15,11 +15,7 @@ export const metadata: Metadata = {
   description: "An error occurred during authentication",
 };
 
-type PageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
-};
-
-export default function AuthErrorPage({ searchParams }: PageProps) {
+export default function AuthErrorPage({ searchParams }: any) {
   const errorMessage =
     typeof searchParams?.message === "string"
       ? searchParams.message
