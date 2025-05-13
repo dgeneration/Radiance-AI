@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { FileMetadata, getUserFiles, deleteFile, getSignedUrl, downloadFile } from '@/utils/supabase/file-storage';
 import { FileText, Image as ImageIcon, Trash2, Download, Eye, X, Check, Search, Upload, FileJson, FileCode, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -34,10 +34,17 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
+  const loadFiles = useCallback(async () => {
+    setLoading(true);
+    const userFiles = await getUserFiles(userId);
+    setFiles(userFiles);
+    setLoading(false);
+  }, [userId]);
+
   // Load files on component mount
   useEffect(() => {
     loadFiles();
-  }, [userId]);
+  }, [loadFiles]);
 
   // Create refs for newly uploaded files
   const newFileRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
@@ -65,12 +72,6 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
     }
   }, [newlyUploadedFiles, files]);
 
-  const loadFiles = async () => {
-    setLoading(true);
-    const userFiles = await getUserFiles(userId);
-    setFiles(userFiles);
-    setLoading(false);
-  };
 
   const handleUploadComplete = (newFiles: FileMetadata[]) => {
     // Add the new files to the beginning of the list
