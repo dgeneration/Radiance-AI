@@ -58,7 +58,6 @@ export function ProfessionalButton({
     className
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const childContent = React.Children.toArray(children);
   return (
     <motion.div

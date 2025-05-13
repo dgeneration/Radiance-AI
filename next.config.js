@@ -1,4 +1,21 @@
 /** @type {import('next').NextConfig} */
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  fallbacks: {
+    // Add offline fallbacks for specific routes
+    document: '/offline', // fallback for document type requests
+    image: '/icons/icon-512x512.png', // fallback for image type requests
+    font: false, // disable font fallbacks
+    audio: false, // disable audio fallbacks
+    video: false // disable video fallbacks
+  },
+  swSrc: 'worker/index.js', // Use custom service worker
+  buildExcludes: [/middleware-manifest\.json$/] // Exclude middleware manifest
+});
+
 const nextConfig = {
   experimental: {
     // This is experimental but will become the default in the next Next.js version
@@ -37,4 +54,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);

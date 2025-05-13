@@ -11,6 +11,8 @@ import { PageTransition } from "@/components/page-transition";
 import { TranslationProvider } from "@/contexts/translation-context";
 import { PageTranslator } from "@/components/page-translator";
 import FloatingLanguageSelector from "@/components/floating-language-selector";
+import { OfflineDetector } from "@/components/offline-detector";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -33,6 +35,12 @@ function AppContent({ children, user }: ProvidersProps) {
 
       {/* Add floating language selector */}
       <FloatingLanguageSelector />
+
+      {/* Add offline detector */}
+      <OfflineDetector />
+
+      {/* Add PWA install prompt */}
+      <PWAInstallPrompt />
 
       {!isAuthPage && <NavigationProgress />}
       {showLoadingOverlay && <LoadingOverlay isLoading={true} />}
