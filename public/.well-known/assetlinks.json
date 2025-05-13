@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.dgeneration.radiance.twa",
+      "sha256_cert_fingerprints": [
+        "BA6AF725C7D18C40E650F549BE74F5364D86C42BAFE2B4CBE7E857A851441479"
+      ]
+    }
+  }
+]
