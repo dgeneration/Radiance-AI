@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "View your comprehensive health analysis from 8 specialized AI roles",
 };
 
-// ✅ DO NOT TYPE `params` manually — let Next.js do it
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function ChainDiagnosisSessionPage({ params }: any) {
   const sessionId = params.id;
 
