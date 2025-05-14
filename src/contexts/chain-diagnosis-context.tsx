@@ -308,7 +308,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [handleStreamingResponse, processGeneralPhysician]);
+  }, [handleStreamingResponse]);
 
   // Load all sessions for a user
   const loadUserSessions = useCallback(async (userId: string): Promise<boolean> => {

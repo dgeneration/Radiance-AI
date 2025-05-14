@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Stethoscope, AlertCircle, CheckCircle, HeartPulse,
-  Pill, Activity, FileText, ClipboardList, AlertTriangle, TestTube,
+  Activity, FileText, ClipboardList, AlertTriangle, TestTube,
   ChevronDown, ChevronUp
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';

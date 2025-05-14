@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import {
-  Loader2, ChevronDown, ChevronUp, Brain, User, Stethoscope, TestTube,
-  Apple, Pill, Calendar, FileText, Microscope, HeartPulse, Activity,
+  Loader2, ChevronDown, ChevronUp, Brain, Stethoscope, TestTube,
+  Apple, Pill, Calendar, Microscope, HeartPulse, Activity,
   Sparkles, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

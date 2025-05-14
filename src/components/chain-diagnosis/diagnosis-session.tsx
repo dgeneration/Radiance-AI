@@ -9,7 +9,7 @@ import { GeneralPhysicianView } from './general-physician-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Brain, ArrowRight, Download, Share2, Activity, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, Brain, Download, Share2, Activity, FileText } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 

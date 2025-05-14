@@ -63,24 +63,26 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
 
+  // Create a ref to track if we've already triggered the continue action
+  const hasContinuedRef = React.useRef(false);
+
+  // Auto-continue to General Physician after a short delay if no medical report or image is present
+  useEffect(() => {
+    if (isActive && !isLoading && !hasContinuedRef.current &&
+        !currentSession?.user_input.medical_report?.text &&
+        !currentSession?.user_input.medical_report?.image_url) {
+      hasContinuedRef.current = true; // Mark as continued to prevent multiple triggers
+
+      const timer = setTimeout(() => {
+        onContinue();
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, isLoading, onContinue, currentSession?.user_input.medical_report?.text, currentSession?.user_input.medical_report?.image_url]);
+
   // If no medical report or image is present, show a message and auto-continue
   if (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url) {
-    // Create a ref outside the useEffect to track if we've already triggered the continue action
-    const hasContinuedRef = React.useRef(false);
-
-    // Auto-continue to General Physician after a short delay
-    useEffect(() => {
-      if (isActive && !isLoading && !hasContinuedRef.current) {
-        hasContinuedRef.current = true; // Mark as continued to prevent multiple triggers
-
-        const timer = setTimeout(() => {
-          onContinue();
-        }, 1500);
-
-        return () => clearTimeout(timer);
-      }
-    }, [isActive, isLoading, onContinue]);
-
     return (
       <AnimatedSection>
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
@@ -137,7 +139,6 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
       </AnimatedSection>
     );
   }
-
   // If we're still loading and have no parsed response, show a loading state
   if (isLoading && !parsedResponse && isActive) {
     return (
