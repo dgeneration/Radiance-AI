@@ -4,6 +4,6 @@
   "scss.validate": false,
   "stylelint.validate": ["css", "scss"],
   "editor.codeActionsOnSave": {
-    "source.fixAll.stylelint": true
+    "source.fixAll.stylelint": "explicit"
   }
 }
