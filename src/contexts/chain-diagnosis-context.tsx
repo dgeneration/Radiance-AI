@@ -235,6 +235,72 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       setCurrentSession(session);
       setCurrentStep(session.current_step);
 
+      // Check if we should auto-continue based on localStorage flag
+      const shouldAutoContinue = localStorage.getItem('auto_continue_to_general_physician') === 'true';
+      const storedSessionId = localStorage.getItem('auto_continue_session_id');
+
+      // If we have a Medical Analyst response but no General Physician response,
+      // and either the auto-continue flag is set or we're resuming a session that was in progress,
+      // automatically process the General Physician step
+      if (session.medical_analyst_response && !session.general_physician_response &&
+          (shouldAutoContinue && storedSessionId === sessionId)) {
+        console.log('Auto-continuing to General Physician after session load...');
+
+        // Clear the flags
+        localStorage.removeItem('auto_continue_to_general_physician');
+        localStorage.removeItem('auto_continue_session_id');
+
+        // Wait a short delay to ensure the UI is fully loaded
+        setTimeout(async () => {
+          try {
+            // Set the current step to 1 (General Physician)
+            setCurrentStep(1);
+
+            // Set loading and streaming states
+            setIsLoading(true);
+            setIsStreaming(true);
+
+            console.log('Directly calling processGeneralPhysician...');
+
+            // Directly call processGeneralPhysician instead of using processNextStep
+            const response = await processGeneralPhysician(
+              sessionId,
+              session.user_input,
+              session.medical_analyst_response,
+              false,  // Changed from true to false to disable streaming
+              (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
+            );
+
+            // Force a UI update by updating the current session directly
+            setCurrentSession(prev => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                general_physician_response: response
+              };
+            });
+
+            // Update the current step
+            setCurrentStep(2);
+
+            // Set loading and streaming states to false
+            setIsLoading(false);
+            setIsStreaming(false);
+
+            // Reload the page to ensure everything is up to date
+            setIsReloading(true);
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } catch (error) {
+            console.error('Error in auto-continue General Physician step:', error);
+            setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
+            setIsLoading(false);
+            setIsStreaming(false);
+          }
+        }, 2000);
+      }
+
       return true;
     } catch {
       setError('Failed to load the diagnosis session. Please try again.');
@@ -242,7 +308,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [handleStreamingResponse, processGeneralPhysician]);
 
   // Load all sessions for a user
   const loadUserSessions = useCallback(async (userId: string): Promise<boolean> => {
@@ -276,6 +342,9 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
 
       const { id: sessionId, user_input: userInput } = currentSession;
 
+      // Debug message to help track what's happening
+      console.log(`Processing next step: currentStep=${currentStep}, sessionId=${sessionId}`);
+
       // Determine which step to process based on the current step
       switch (currentStep) {
         case 0: // Medical Analyst (only if medical report is present)
@@ -288,6 +357,41 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             if (!hasMedicalReport) {
               // Skip directly to General Physician if no medical report
               setCurrentStep(1);
+
+              // Automatically process the General Physician step
+              setTimeout(async () => {
+                try {
+                  // Process General Physician step
+                  const response = await processGeneralPhysician(
+                    sessionId,
+                    userInput,
+                    undefined,
+                    false,  // Changed from true to false to disable streaming
+                    (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
+                  );
+
+                  // Force a UI update by updating the current session directly
+                  setCurrentSession(prev => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      general_physician_response: response
+                    };
+                  });
+
+                  // Update the current step
+                  setCurrentStep(2);
+
+                  // Schedule a page reload after a short delay to ensure the data is saved
+                  setIsReloading(true); // Set reloading state to show loading indicator
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 2000);
+                } catch (error) {
+                  console.error('Error in General Physician step:', error);
+                  setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
+                }
+              }, 1000);
             } else {
               // Check if there's an image URL
               const hasImageUrl = !!userInput.medical_report?.image_url;
@@ -300,11 +404,14 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                 hasImageUrl ? undefined : (chunk, isComplete) => handleStreamingResponse('medicalAnalyst', chunk, isComplete)
               );
 
-              // If streaming is disabled, manually set the streaming content to the response
-              if (hasImageUrl && response) {
-                resetStreamingContent('medicalAnalyst');
-                const responseContent = JSON.stringify(response, null, 2);
-                handleStreamingResponse('medicalAnalyst', responseContent, true);
+              // If we have a response, update the session
+              if (response) {
+                // If streaming is disabled (for image URLs), manually set the streaming content
+                if (hasImageUrl) {
+                  resetStreamingContent('medicalAnalyst');
+                  const responseContent = JSON.stringify(response, null, 2);
+                  handleStreamingResponse('medicalAnalyst', responseContent, true);
+                }
 
                 // Force a UI update by updating the current session directly
                 setCurrentSession(prev => {
@@ -315,34 +422,93 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                   };
                 });
 
-                // Schedule a page reload after a short delay to ensure the data is saved
-                setIsReloading(true); // Set reloading state to show loading indicator
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
+                // For image URLs, we need to reload the page
+                if (hasImageUrl) {
+                  // Schedule a page reload after a short delay to ensure the data is saved
+                  setIsReloading(true); // Set reloading state to show loading indicator
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 2000);
+                } else {
+                  // For text reports, immediately proceed to General Physician without reload
+                  console.log('Medical Analyst complete, proceeding to General Physician...');
+
+                  // Set the current step to 1 (General Physician)
+                  setCurrentStep(1);
+
+                  // Wait a short delay to ensure the UI updates
+                  setTimeout(async () => {
+                    try {
+                      // Process General Physician step
+                      resetStreamingContent('generalPhysician');
+                      const gpResponse = await processGeneralPhysician(
+                        sessionId,
+                        userInput,
+                        response,
+                        false,  // Disable streaming
+                        (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
+                      );
+
+                      // Force a UI update by updating the current session directly
+                      setCurrentSession(prev => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          general_physician_response: gpResponse
+                        };
+                      });
+
+                      // Update the current step
+                      setCurrentStep(2);
+                    } catch (error) {
+                      console.error('Error in General Physician step:', error);
+                      setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
+                    } finally {
+                      setIsLoading(false);
+                      setIsStreaming(false);
+                    }
+                  }, 1000);
+                }
               }
 
-              // Move to the next step regardless of whether we got a response
-              setCurrentStep(1);
+              // Stay on the current step (0) for now - we'll auto-continue after reload
+              // setCurrentStep(1); -- Commented out to prevent automatic progression during this session
             }
           } catch (error) {
             console.error('Error in Medical Analyst step:', error);
             setError(error instanceof Error ? error.message : 'Unknown error in Medical Analyst step');
-            // Still move to the next step even if there was an error
-            setCurrentStep(1);
+            // Stay on the current step even if there was an error
+            // Let the user decide to continue manually
+            // setCurrentStep(1); -- Commented out to prevent automatic progression
           }
           break;
 
         case 1: // General Physician
           resetStreamingContent('generalPhysician');
-          await processGeneralPhysician(
+          const response = await processGeneralPhysician(
             sessionId,
             userInput,
             currentSession.medical_analyst_response,
-            true,
+            false,  // Changed from true to false to disable streaming
             (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
           );
+
+          // Force a UI update by updating the current session directly
+          setCurrentSession(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              general_physician_response: response
+            };
+          });
+
           setCurrentStep(2);
+
+          // Schedule a page reload after a short delay to ensure the data is saved
+          setIsReloading(true); // Set reloading state to show loading indicator
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
           break;
 
         case 2: // Specialist Doctor

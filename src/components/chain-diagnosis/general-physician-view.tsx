@@ -2,20 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { MedicalAnalystResponse } from '@/types/chain-diagnosis';
+import { GeneralPhysicianResponse } from '@/types/chain-diagnosis';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, TestTube, FileText, AlertCircle } from 'lucide-react';
+import { Loader2, Stethoscope, AlertCircle } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { cn } from '@/lib/utils';
 
-interface MedicalAnalystViewProps {
+interface GeneralPhysicianViewProps {
   isActive: boolean;
   onContinue: () => void;
 }
 
-export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewProps) {
+export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianViewProps) {
   const {
     currentSession,
     streamingContent,
@@ -24,23 +24,23 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
     error
   } = useChainDiagnosis();
 
-  const [parsedResponse, setParsedResponse] = useState<MedicalAnalystResponse | null>(null);
-  const [activeTab, setActiveTab] = useState('findings');
+  const [parsedResponse, setParsedResponse] = useState<GeneralPhysicianResponse | null>(null);
+  const [activeTab, setActiveTab] = useState('analysis');
 
   // Parse the streaming content or use the stored response
   useEffect(() => {
     try {
       // First priority: use the stored response from the session if available
-      if (currentSession?.medical_analyst_response) {
-        setParsedResponse(currentSession.medical_analyst_response);
+      if (currentSession?.general_physician_response) {
+        setParsedResponse(currentSession.general_physician_response);
         return;
       }
 
       // Second priority: try to parse streaming content if available
-      if (streamingContent.medicalAnalyst) {
+      if (streamingContent.generalPhysician) {
         try {
           // Try to extract JSON from the content
-          const jsonMatch = streamingContent.medicalAnalyst.match(/```json\s*([\s\S]*?)\s*```/);
+          const jsonMatch = streamingContent.generalPhysician.match(/```json\s*([\s\S]*?)\s*```/);
 
           if (jsonMatch && jsonMatch[1]) {
             const parsed = JSON.parse(jsonMatch[1]);
@@ -49,7 +49,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           }
 
           // Try to parse the entire content as JSON
-          const parsed = JSON.parse(streamingContent.medicalAnalyst);
+          const parsed = JSON.parse(streamingContent.generalPhysician);
           setParsedResponse(parsed);
         } catch {
           // Silently handle parsing errors
@@ -58,82 +58,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
     } catch {
       // Silently handle parsing errors
     }
-  }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
-
-  // If no medical report or image is present, show a message and auto-continue
-  if (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url) {
-    // Create a ref outside the useEffect to track if we've already triggered the continue action
-    const hasContinuedRef = React.useRef(false);
-
-    // Auto-continue to General Physician after a short delay
-    useEffect(() => {
-      if (isActive && !isLoading && !hasContinuedRef.current) {
-        hasContinuedRef.current = true; // Mark as continued to prevent multiple triggers
-
-        const timer = setTimeout(() => {
-          onContinue();
-        }, 1500);
-
-        return () => clearTimeout(timer);
-      }
-    }, [isActive, isLoading, onContinue]);
-
-    return (
-      <AnimatedSection>
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "p-2 rounded-full",
-                isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-              )}>
-                <TestTube className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle>Medical Analyst AI</CardTitle>
-                <CardDescription>
-                  No medical report or image to analyze
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-amber-500 mb-1">No Medical Report Provided</p>
-                <p className="text-sm text-muted-foreground">
-                  The Medical Analyst AI requires a medical report or image to analyze. Since no report or image was provided,
-                  this step will be skipped and the diagnosis will proceed directly to the General Physician AI.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-
-          <CardFooter>
-            <Button
-              onClick={onContinue}
-              className="w-full bg-primary hover:bg-primary/90"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Continuing to General Physician...
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-      </AnimatedSection>
-    );
-  }
+  }, [streamingContent.generalPhysician, currentSession?.general_physician_response]);
 
   // If we're still loading and have no parsed response, show a loading state
   if (isLoading && !parsedResponse && isActive) {
@@ -143,12 +68,12 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/20 rounded-full">
-                <TestTube className="h-5 w-5 text-primary" />
+                <Stethoscope className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Medical Analyst AI</CardTitle>
+                <CardTitle>General Physician AI</CardTitle>
                 <CardDescription>
-                  Analyzing your medical report
+                  Analyzing your symptoms
                 </CardDescription>
               </div>
             </div>
@@ -157,9 +82,9 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium mb-2">Analyzing Medical Report</p>
+              <p className="text-lg font-medium mb-2">Analyzing Your Symptoms</p>
               <p className="text-muted-foreground text-center max-w-md">
-                The Medical Analyst AI is carefully reviewing your medical report to identify key findings and abnormalities.
+                The General Physician AI is carefully reviewing your symptoms and medical history to provide a preliminary assessment.
                 This may take a moment...
               </p>
             </div>
@@ -180,9 +105,9 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 <AlertCircle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <CardTitle>Error Analyzing Medical Report</CardTitle>
+                <CardTitle>Error Processing Symptoms</CardTitle>
                 <CardDescription>
-                  There was a problem processing your medical report
+                  There was a problem analyzing your symptoms
                 </CardDescription>
               </div>
             </div>
@@ -198,10 +123,9 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
           <CardFooter>
             <Button
               onClick={onContinue}
-              className="w-full"
-              variant="outline"
+              className="w-full bg-primary hover:bg-primary/90"
             >
-              Skip to General Physician
+              Try to Continue Anyway
             </Button>
           </CardFooter>
         </Card>
@@ -223,50 +147,74 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                 "p-2 rounded-full",
                 isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
               )}>
-                <TestTube className="h-5 w-5" />
+                <Stethoscope className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle>Medical Analyst AI</CardTitle>
+                <CardTitle>General Physician AI</CardTitle>
                 <CardDescription>
-                  {isStreaming && isActive ? "Analyzing your medical report..." : "Analysis of your medical report"}
+                  {isStreaming && isActive ? "Analyzing your symptoms..." : "Preliminary assessment of your symptoms"}
                 </CardDescription>
               </div>
             </div>
-
-            {isStreaming && isActive && (
-              <div className="flex items-center gap-2 text-primary text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Processing...</span>
-              </div>
-            )}
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Report Type */}
-          {parsedResponse?.report_type_analyzed && (
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Report Type: <span className="font-medium text-foreground">{parsedResponse.report_type_analyzed}</span>
-              </span>
+          {/* Patient Summary */}
+          <div className="bg-background/50 p-4 rounded-lg border border-border/50">
+            <h3 className="text-sm font-medium mb-2">Patient Summary</h3>
+            {parsedResponse?.patient_summary_review ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Name: <span className="text-foreground">{parsedResponse.patient_summary_review.name}</span></p>
+                  <p className="text-muted-foreground">Age: <span className="text-foreground">{parsedResponse.patient_summary_review.age}</span></p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Key Symptoms:</p>
+                  <ul className="list-disc list-inside">
+                    {parsedResponse.patient_summary_review.key_symptoms.map((symptom, index) => (
+                      <li key={index} className="text-foreground">{symptom}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-2 text-muted-foreground">
+                {isStreaming && isActive ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <p>Loading patient summary...</p>
+                  </div>
+                ) : (
+                  <p>No patient summary available</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Medical Analyst Findings Summary (if available) */}
+          {parsedResponse?.medical_analyst_findings_summary &&
+           parsedResponse.medical_analyst_findings_summary !== "N/A" && (
+            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
+              <h3 className="text-sm font-medium mb-2">Medical Analyst Findings</h3>
+              <p className="text-sm">{parsedResponse.medical_analyst_findings_summary}</p>
             </div>
           )}
 
           {/* Tabs for different sections */}
-          <Tabs defaultValue="findings" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="analysis" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="findings">Key Findings</TabsTrigger>
-              <TabsTrigger value="abnormalities">Abnormalities</TabsTrigger>
-              <TabsTrigger value="correlation">Clinical Correlation</TabsTrigger>
+              <TabsTrigger value="analysis">Symptom Analysis</TabsTrigger>
+              <TabsTrigger value="concerns">Potential Concerns</TabsTrigger>
+              <TabsTrigger value="advice">Initial Advice</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="findings" className="space-y-4 pt-4">
-              {parsedResponse?.key_findings_from_report?.length ? (
+            <TabsContent value="analysis" className="space-y-4 pt-4">
+              {parsedResponse?.preliminary_symptom_analysis?.length ? (
                 <ul className="space-y-2">
-                  {parsedResponse.key_findings_from_report.map((finding, index) => (
+                  {parsedResponse.preliminary_symptom_analysis.map((analysis, index) => (
                     <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
-                      {finding}
+                      {analysis}
                     </li>
                   ))}
                 </ul>
@@ -275,21 +223,21 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                   {isStreaming && isActive ? (
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Identifying key findings...</p>
+                      <p>Analyzing symptoms...</p>
                     </div>
                   ) : (
-                    <p>No key findings identified</p>
+                    <p>No symptom analysis available</p>
                   )}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="abnormalities" className="space-y-4 pt-4">
-              {parsedResponse?.abnormalities_highlighted?.length ? (
+            <TabsContent value="concerns" className="space-y-4 pt-4">
+              {parsedResponse?.potential_areas_of_concern?.length ? (
                 <ul className="space-y-2">
-                  {parsedResponse.abnormalities_highlighted.map((abnormality, index) => (
-                    <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50 text-amber-500">
-                      {abnormality}
+                  {parsedResponse.potential_areas_of_concern.map((concern, index) => (
+                    <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
+                      {concern}
                     </li>
                   ))}
                 </ul>
@@ -298,21 +246,21 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                   {isStreaming && isActive ? (
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Identifying abnormalities...</p>
+                      <p>Identifying potential concerns...</p>
                     </div>
                   ) : (
-                    <p>No abnormalities identified</p>
+                    <p>No potential concerns identified</p>
                   )}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="correlation" className="space-y-4 pt-4">
-              {parsedResponse?.clinical_correlation_points_for_gp?.length ? (
+            <TabsContent value="advice" className="space-y-4 pt-4">
+              {parsedResponse?.general_initial_advice?.length ? (
                 <ul className="space-y-2">
-                  {parsedResponse.clinical_correlation_points_for_gp.map((point, index) => (
+                  {parsedResponse.general_initial_advice.map((advice, index) => (
                     <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
-                      {point}
+                      {advice}
                     </li>
                   ))}
                 </ul>
@@ -321,17 +269,36 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                   {isStreaming && isActive ? (
                     <div className="flex flex-col items-center gap-2">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Generating clinical correlation points...</p>
+                      <p>Generating initial advice...</p>
                     </div>
                   ) : (
-                    <p>No clinical correlation points available</p>
+                    <p>No initial advice available</p>
                   )}
                 </div>
               )}
             </TabsContent>
           </Tabs>
 
-          {/* Raw JSON toggle removed */}
+          {/* Specialist Recommendation */}
+          {parsedResponse?.recommended_specialist_type && (
+            <div className="bg-accent/5 p-4 rounded-lg border border-accent/20">
+              <h3 className="text-sm font-medium mb-2">Recommended Specialist</h3>
+              <p className="text-sm font-medium text-accent">{parsedResponse.recommended_specialist_type}</p>
+            </div>
+          )}
+
+          {/* Questions for Specialist */}
+          {parsedResponse?.questions_for_specialist_consultation &&
+           parsedResponse.questions_for_specialist_consultation.length > 0 && (
+            <div className="bg-background/50 p-4 rounded-lg border border-border/50">
+              <h3 className="text-sm font-medium mb-2">Questions to Ask Your Specialist</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {parsedResponse.questions_for_specialist_consultation.map((question, index) => (
+                  <li key={index} className="text-sm">{question}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Disclaimer */}
           {parsedResponse?.disclaimer && (
@@ -343,8 +310,8 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
         </CardContent>
 
         <CardFooter>
-          {/* Only show the continue button if there's a Medical Analyst response and no General Physician response yet */}
-          {currentSession?.medical_analyst_response && !currentSession?.general_physician_response ? (
+          {/* Only show the continue button if there's a General Physician response and no Specialist Doctor response yet */}
+          {currentSession?.general_physician_response && !currentSession?.specialist_doctor_response ? (
             <Button
               onClick={onContinue}
               className="w-full bg-primary hover:bg-primary/90"
@@ -356,19 +323,19 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
                   Processing...
                 </>
               ) : (
-                "Continue to General Physician"
+                "Continue to Specialist Doctor"
               )}
             </Button>
-          ) : currentSession?.general_physician_response ? (
+          ) : currentSession?.specialist_doctor_response ? (
             <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
               <p className="text-sm text-green-500">
-                General Physician analysis is complete
+                Specialist Doctor analysis is complete
               </p>
             </div>
           ) : (
             <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
               <p className="text-sm text-amber-500">
-                {isLoading || isStreaming ? "Processing medical report..." : "Waiting for Medical Analyst response..."}
+                {isLoading || isStreaming ? "Processing symptoms..." : "Waiting for General Physician response..."}
               </p>
             </div>
           )}

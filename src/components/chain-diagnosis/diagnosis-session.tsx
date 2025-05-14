@@ -5,6 +5,7 @@ import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import { ChainDiagnosisProgressIndicator } from './progress-indicator';
 import { ChainDiagnosisStreamingContent } from './streaming-content';
 import { MedicalAnalystView } from './medical-analyst-view';
+import { GeneralPhysicianView } from './general-physician-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -36,31 +37,71 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   useEffect(() => {
     if (isStreaming) {
       setViewMode('progress');
-    } else if (currentSession?.medical_analyst_response) {
-      // When streaming is complete and we have a medical analyst response, switch to detailed view
+    } else if (currentSession?.medical_analyst_response || currentSession?.general_physician_response) {
+      // When streaming is complete and we have a response, switch to detailed view
       // Use a small timeout to ensure the UI has time to update with the latest data
       setTimeout(() => {
         setViewMode('detailed');
       }, 500);
     }
-  }, [isStreaming, currentSession?.medical_analyst_response]);
+  }, [isStreaming, currentSession?.medical_analyst_response, currentSession?.general_physician_response]);
 
-  // Additional effect to check for medical analyst response changes
+  // Additional effect to check for response changes
   useEffect(() => {
-    if (currentSession?.medical_analyst_response && !isStreaming) {
+    if ((currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming) {
       setViewMode('detailed');
     }
-  }, [currentSession?.medical_analyst_response, isStreaming]);
+  }, [currentSession?.medical_analyst_response, currentSession?.general_physician_response, isStreaming]);
+
+  // Create a ref outside the useEffect to track if we've already switched to detailed view
+  const hasViewSwitchedRef = React.useRef(false);
+
+  // Additional effect to switch to detailed view when currentStep is 1 (General Physician)
+  // but only do this once to avoid triggering multiple API calls
+  useEffect(() => {
+    if (currentStep === 1 && !isStreaming && !hasViewSwitchedRef.current) {
+      // If we're on the General Physician step and not streaming, switch to detailed view
+      setViewMode('detailed');
+      hasViewSwitchedRef.current = true;
+    }
+  }, [currentStep, isStreaming]);
+
+  // Handle continuing to the next step
+  const handleContinue = async () => {
+    await processNextStep();
+  };
 
   // Load the session when the component mounts
   useEffect(() => {
     loadSession(sessionId);
   }, [sessionId, loadSession]);
 
-  // Handle continuing to the next step
-  const handleContinue = async () => {
-    await processNextStep();
-  };
+  // Check if we should auto-continue to General Physician after reload
+  useEffect(() => {
+    const shouldAutoContinue = localStorage.getItem('auto_continue_to_general_physician') === 'true';
+    const storedSessionId = localStorage.getItem('auto_continue_session_id');
+
+    if (shouldAutoContinue && storedSessionId === sessionId &&
+        currentSession?.medical_analyst_response && currentStep === 0 && !isLoading && !isStreaming) {
+      // Clear the flags
+      localStorage.removeItem('auto_continue_to_general_physician');
+      localStorage.removeItem('auto_continue_session_id');
+
+      console.log('Auto-continuing to General Physician...');
+
+      // Wait a short delay to ensure the UI is fully loaded
+      const timer = setTimeout(() => {
+        // Set currentStep to 1 to indicate we're on the General Physician step
+        // This will trigger the processNextStep function in the context
+        processNextStep();
+
+        // Switch to detailed view
+        setViewMode('detailed');
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentSession, currentStep, sessionId, isLoading, isStreaming, processNextStep]);
 
   // Handle downloading the final report
   const handleDownloadReport = () => {
@@ -123,7 +164,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="text-lg font-medium mb-2">Refreshing Results</p>
           <p className="text-muted-foreground text-center max-w-md">
-            Your medical image has been analyzed. The page is refreshing to show the results...
+            Your analysis is complete. The page is refreshing to show the results...
           </p>
         </div>
       )}
@@ -159,7 +200,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 <ChainDiagnosisProgressIndicator />
 
                 {/* Notification when analysis is complete */}
-                {currentSession?.medical_analyst_response && !isStreaming && (
+                {(currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming && (
                   <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
                     <div className="p-1.5 bg-green-500/20 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
@@ -170,7 +211,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                     <div>
                       <p className="text-sm font-medium text-green-500">Analysis Complete</p>
                       <p className="text-xs text-muted-foreground">
-                        Your medical image has been analyzed. Click the &quot;Detailed View&quot; tab to see the results.
+                        {currentSession?.medical_analyst_response
+                          ? "Your medical image has been analyzed."
+                          : "Your symptoms have been analyzed."}
+                        Click the &quot;Detailed View&quot; tab to see the results.
                       </p>
                     </div>
                     <Button
@@ -230,14 +274,24 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
               <TabsContent value="detailed" className="mt-0">
                 <div className="space-y-6">
-                  {/* Medical Analyst View */}
-                  <MedicalAnalystView
-                    isActive={currentStep === 0}
-                    onContinue={handleContinue}
-                  />
+                  {/* Medical Analyst View - Only show if there's a medical report */}
+                  {(currentSession?.user_input.medical_report?.text || currentSession?.user_input.medical_report?.image_url) && (
+                    <MedicalAnalystView
+                      isActive={currentStep === 0}
+                      onContinue={handleContinue}
+                    />
+                  )}
+
+                  {/* General Physician View */}
+                  {(currentStep >= 1 || currentSession?.general_physician_response) && (
+                    <GeneralPhysicianView
+                      isActive={currentStep === 1 || (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url)}
+                      onContinue={handleContinue}
+                    />
+                  )}
 
                   {/* Other AI role views will be added in subsequent phases */}
-                  {currentStep > 0 && (
+                  {currentStep > 1 && (
                     <div className="bg-muted/30 p-4 rounded-lg text-center">
                       <p className="text-muted-foreground">
                         Detailed views for other AI roles will be implemented in subsequent phases.

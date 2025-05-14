@@ -132,7 +132,12 @@ export function ChainDiagnosisStreamingContent() {
     currentSession
   } = useChainDiagnosis();
 
-  const roleComponents = [
+  // Check if there's a medical report
+  const hasMedicalReport = !!currentSession?.user_input.medical_report?.text ||
+                          !!currentSession?.user_input.medical_report?.image_url;
+
+  // Define all role components
+  const allRoleComponents = [
     {
       key: 'medicalAnalyst',
       title: 'Medical Analyst',
@@ -207,6 +212,9 @@ export function ChainDiagnosisStreamingContent() {
     }
   ];
 
+  // Filter out the Medical Analyst step if no medical report is provided
+  const roleComponents = hasMedicalReport ? allRoleComponents : allRoleComponents.slice(1);
+
   // Simple refresh key for component updates if needed
   const [refreshKey] = useState(0);
 
@@ -229,16 +237,27 @@ export function ChainDiagnosisStreamingContent() {
       {/* Debug output removed */}
 
       <div className="space-y-4">
-        {roleComponents.map((role) => (
-          <RoleContent
-            key={role.key}
-            title={role.title}
-            icon={role.icon}
-            content={role.content}
-            isStreaming={isStreaming}
-            isActive={currentStep === role.step}
-          />
-        ))}
+        {roleComponents.map((role, index) => {
+          // Calculate if this role is active based on the current step
+          // If no medical report, adjust the step comparison
+          const isActive = hasMedicalReport
+            ? currentStep === role.step
+            : (currentStep === role.step) ||
+              // When currentStep is 0 or 1 and this is the first role (General Physician)
+              // This ensures the General Physician is highlighted when no medical report is provided
+              ((currentStep === 0 || currentStep === 1) && index === 0 && role.key === 'generalPhysician');
+
+          return (
+            <RoleContent
+              key={role.key}
+              title={role.title}
+              icon={role.icon}
+              content={role.content}
+              isStreaming={isStreaming}
+              isActive={isActive}
+            />
+          );
+        })}
       </div>
     </AnimatedSection>
   );

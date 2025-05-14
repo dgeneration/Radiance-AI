@@ -165,11 +165,11 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 - ✅ Create UI for displaying streaming Medical Analyst results
 - ✅ Add storage and retrieval of Medical Analyst responses
 
-### 🔹 5.3 General Physician AI
-- ⬜ Configure API component using sonar-pro model
-- ⬜ Implement logic to incorporate Medical Analyst data
-- ⬜ Create UI for displaying streaming General Physician results
-- ⬜ Add extraction of recommended specialist type
+### ✅ 5.3 General Physician AI
+- ✅ Configure API component using sonar-pro model
+- ✅ Implement logic to incorporate Medical Analyst data
+- ✅ Create UI for displaying streaming General Physician results
+- ✅ Add extraction of recommended specialist type
 
 ### 🔹 5.4 Specialist Doctor AI
 - ⬜ Configure API component using sonar-reasoning-pro model
@@ -233,7 +233,7 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 
 ## Notes
 - Last updated: May 12, 2024
-- Current focus: Phase 5.3 - General Physician AI
+- Current focus: Phase 5.4 - Specialist Doctor AI
 - The Multi-Agent Chain Diagnosis System will use the following Perplexity Sonar models:
   - Medical Analyst: sonar-deep-research
   - General Physician: sonar-pro
