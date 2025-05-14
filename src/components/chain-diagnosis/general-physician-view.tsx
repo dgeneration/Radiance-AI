@@ -6,8 +6,14 @@ import { GeneralPhysicianResponse } from '@/types/chain-diagnosis';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Stethoscope, AlertCircle } from 'lucide-react';
-import { AnimatedSection } from '@/components/animations';
+import {
+  Loader2, Stethoscope, AlertCircle, CheckCircle, HeartPulse,
+  Pill, Activity, FileText, ClipboardList, AlertTriangle, TestTube,
+  ChevronDown, ChevronUp
+} from 'lucide-react';
+import { AnimatedSection, AnimatedIcon } from '@/components/animations';
+import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface GeneralPhysicianViewProps {
@@ -26,6 +32,7 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
 
   const [parsedResponse, setParsedResponse] = useState<GeneralPhysicianResponse | null>(null);
   const [activeTab, setActiveTab] = useState('analysis');
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Parse the streaming content or use the stored response
   useEffect(() => {
@@ -136,57 +143,119 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
   // Main view with parsed response
   return (
     <AnimatedSection>
-      <Card className={cn(
-        "backdrop-blur-sm border transition-all",
-        isActive ? "bg-primary/5 border-primary/20" : "bg-card/50 border-primary/10"
-      )}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "p-2 rounded-full",
-                isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-              )}>
-                <Stethoscope className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle>General Physician AI</CardTitle>
-                <CardDescription>
-                  {isStreaming && isActive ? "Analyzing your symptoms..." : "Preliminary assessment of your symptoms"}
-                </CardDescription>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Patient Summary */}
-          <div className="bg-background/50 p-4 rounded-lg border border-border/50">
-            <h3 className="text-sm font-medium mb-2">Patient Summary</h3>
-            {parsedResponse?.patient_summary_review ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+      <motion.div
+        initial={{ opacity: 0.9, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className={cn(
+          "backdrop-blur-sm border transition-all shadow-sm",
+          isActive ? "bg-primary/5 border-primary/20" : "bg-card/50 border-primary/10"
+        )}>
+          <CardHeader
+            className={cn("pb-4 cursor-pointer", !isExpanded && "pb-2")}
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <AnimatedIcon
+                  icon={<HeartPulse className="h-5 w-5" />}
+                  className={cn(
+                    "p-3 rounded-full",
+                    isActive ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground"
+                  )}
+                  containerClassName="flex-shrink-0"
+                  pulseEffect={isActive && isStreaming}
+                  hoverScale={1.05}
+                />
                 <div>
-                  <p className="text-muted-foreground">Name: <span className="text-foreground">{parsedResponse.patient_summary_review.name}</span></p>
-                  <p className="text-muted-foreground">Age: <span className="text-foreground">{parsedResponse.patient_summary_review.age}</span></p>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">General Physician AI</CardTitle>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full ml-2">
+                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <CardDescription className="text-sm">
+                    {isStreaming && isActive ? "Analyzing your symptoms..." : "Preliminary assessment of your symptoms"}
+                  </CardDescription>
+
+                  {isStreaming && isActive && (
+                    <Badge
+                      variant="outline"
+                      className="mt-1 bg-primary/10 text-primary border-primary/20 px-2 py-0 text-xs font-normal"
+                    >
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Thinking...
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {parsedResponse && !isStreaming && (
+                <Badge
+                  variant="outline"
+                  className="bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0.5 text-xs font-normal"
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Analysis Complete
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+
+        <motion.div
+            initial={{ height: "auto", opacity: 1 }}
+            animate={{
+              height: isExpanded ? "auto" : 0,
+              opacity: isExpanded ? 1 : 0
+            }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <CardContent className={cn("space-y-5", !isExpanded && "hidden")}>
+          {/* Patient Summary */}
+          <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-medium">Patient Summary</h3>
+            </div>
+
+            {parsedResponse?.patient_summary_review ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Name:</span>
+                    <span className="font-medium">{parsedResponse.patient_summary_review.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Age:</span>
+                    <span className="font-medium">{parsedResponse.patient_summary_review.age}</span>
+                  </div>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Key Symptoms:</p>
-                  <ul className="list-disc list-inside">
+                  <p className="text-muted-foreground mb-1">Key Symptoms:</p>
+                  <ul className="space-y-1">
                     {parsedResponse.patient_summary_review.key_symptoms.map((symptom, index) => (
-                      <li key={index} className="text-foreground">{symptom}</li>
+                      <li key={index} className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <span>{symptom}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-2 text-muted-foreground">
+              <div className="text-center py-4 text-muted-foreground">
                 {isStreaming && isActive ? (
                   <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <p>Loading patient summary...</p>
                   </div>
                 ) : (
-                  <p>No patient summary available</p>
+                  <div className="flex flex-col items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground/70" />
+                    <p>No patient summary available</p>
+                  </div>
                 )}
               </div>
             )}
@@ -195,84 +264,150 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
           {/* Medical Analyst Findings Summary (if available) */}
           {parsedResponse?.medical_analyst_findings_summary &&
            parsedResponse.medical_analyst_findings_summary !== "N/A" && (
-            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20">
-              <h3 className="text-sm font-medium mb-2">Medical Analyst Findings</h3>
+            <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <TestTube className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-medium">Medical Analyst Findings</h3>
+              </div>
               <p className="text-sm">{parsedResponse.medical_analyst_findings_summary}</p>
             </div>
           )}
 
           {/* Tabs for different sections */}
           <Tabs defaultValue="analysis" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="analysis">Symptom Analysis</TabsTrigger>
-              <TabsTrigger value="concerns">Potential Concerns</TabsTrigger>
-              <TabsTrigger value="advice">Initial Advice</TabsTrigger>
+            <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
+              <TabsTrigger value="analysis" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <Activity className="h-3.5 w-3.5 mr-1.5" />
+                Symptom Analysis
+              </TabsTrigger>
+              <TabsTrigger value="concerns" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+                Potential Concerns
+              </TabsTrigger>
+              <TabsTrigger value="advice" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
+                Initial Advice
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="analysis" className="space-y-4 pt-4">
+            <TabsContent value="analysis" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
               {parsedResponse?.preliminary_symptom_analysis?.length ? (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {parsedResponse.preliminary_symptom_analysis.map((analysis, index) => (
-                    <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
-                      {analysis}
-                    </li>
+                    <motion.li
+                      key={index}
+                      className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <div className="flex gap-3">
+                        <Activity className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <span>{analysis}</span>
+                      </div>
+                    </motion.li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-10 text-muted-foreground">
                   {isStreaming && isActive ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Analyzing symptoms...</p>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                        <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-primary">Analyzing symptoms...</p>
+                        <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                      </div>
                     </div>
                   ) : (
-                    <p>No symptom analysis available</p>
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="h-6 w-6 text-muted-foreground/70" />
+                      <p>No symptom analysis available</p>
+                    </div>
                   )}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="concerns" className="space-y-4 pt-4">
+            <TabsContent value="concerns" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
               {parsedResponse?.potential_areas_of_concern?.length ? (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {parsedResponse.potential_areas_of_concern.map((concern, index) => (
-                    <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
-                      {concern}
-                    </li>
+                    <motion.li
+                      key={index}
+                      className="bg-amber-500/5 p-4 rounded-lg border border-amber-500/20 shadow-sm"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <div className="flex gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-amber-600">{concern}</span>
+                      </div>
+                    </motion.li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-10 text-muted-foreground">
                   {isStreaming && isActive ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Identifying potential concerns...</p>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                        <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-primary">Identifying potential concerns...</p>
+                        <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                      </div>
                     </div>
                   ) : (
-                    <p>No potential concerns identified</p>
+                    <div className="flex flex-col items-center gap-2">
+                      <CheckCircle className="h-6 w-6 text-green-500/70" />
+                      <p>No potential concerns identified</p>
+                    </div>
                   )}
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="advice" className="space-y-4 pt-4">
+            <TabsContent value="advice" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
               {parsedResponse?.general_initial_advice?.length ? (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {parsedResponse.general_initial_advice.map((advice, index) => (
-                    <li key={index} className="bg-background/50 p-3 rounded-md border border-border/50">
-                      {advice}
-                    </li>
+                    <motion.li
+                      key={index}
+                      className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                    >
+                      <div className="flex gap-3">
+                        <ClipboardList className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <span>{advice}</span>
+                      </div>
+                    </motion.li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-10 text-muted-foreground">
                   {isStreaming && isActive ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <p>Generating initial advice...</p>
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                        <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-primary">Generating initial advice...</p>
+                        <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                      </div>
                     </div>
                   ) : (
-                    <p>No initial advice available</p>
+                    <div className="flex flex-col items-center gap-2">
+                      <AlertCircle className="h-6 w-6 text-muted-foreground/70" />
+                      <p>No initial advice available</p>
+                    </div>
                   )}
                 </div>
               )}
@@ -281,20 +416,35 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
 
           {/* Specialist Recommendation */}
           {parsedResponse?.recommended_specialist_type && (
-            <div className="bg-accent/5 p-4 rounded-lg border border-accent/20">
-              <h3 className="text-sm font-medium mb-2">Recommended Specialist</h3>
-              <p className="text-sm font-medium text-accent">{parsedResponse.recommended_specialist_type}</p>
+            <div className="bg-accent/5 p-4 rounded-lg border border-accent/20 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <HeartPulse className="h-4 w-4 text-accent" />
+                <h3 className="text-sm font-medium">Recommended Specialist</h3>
+              </div>
+              <div className="flex items-center gap-2 ml-6">
+                <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+                  {parsedResponse.recommended_specialist_type}
+                </Badge>
+              </div>
             </div>
           )}
 
           {/* Questions for Specialist */}
           {parsedResponse?.questions_for_specialist_consultation &&
            parsedResponse.questions_for_specialist_consultation.length > 0 && (
-            <div className="bg-background/50 p-4 rounded-lg border border-border/50">
-              <h3 className="text-sm font-medium mb-2">Questions to Ask Your Specialist</h3>
-              <ul className="list-disc list-inside space-y-1">
+            <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <ClipboardList className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-medium">Questions to Ask Your Specialist</h3>
+              </div>
+              <ul className="space-y-2 ml-2">
                 {parsedResponse.questions_for_specialist_consultation.map((question, index) => (
-                  <li key={index} className="text-sm">{question}</li>
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {index + 1}
+                    </div>
+                    <span>{question}</span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -302,12 +452,13 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
 
           {/* Disclaimer */}
           {parsedResponse?.disclaimer && (
-            <div className="bg-background/50 p-3 rounded-md border border-border/50 text-xs text-muted-foreground">
+            <div className="bg-card/80 p-4 rounded-lg border border-border/50 text-xs text-muted-foreground">
               <p className="font-medium mb-1">Disclaimer:</p>
               <p>{parsedResponse.disclaimer}</p>
             </div>
           )}
         </CardContent>
+          </motion.div>
 
         <CardFooter>
           {/* Only show the continue button if there's a General Physician response and no Specialist Doctor response yet */}
@@ -341,6 +492,7 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
           )}
         </CardFooter>
       </Card>
+      </motion.div>
     </AnimatedSection>
   );
 }

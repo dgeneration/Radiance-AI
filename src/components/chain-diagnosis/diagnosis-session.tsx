@@ -9,7 +9,7 @@ import { GeneralPhysicianView } from './general-physician-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Brain, ArrowRight, Download, Share2 } from 'lucide-react';
+import { Loader2, AlertCircle, Brain, ArrowRight, Download, Share2, Activity, FileText } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -32,6 +32,9 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Track the active view mode - MOVED HERE FROM BELOW
   // Always start with 'progress' view to show streaming content
   const [viewMode, setViewMode] = useState<'progress' | 'detailed'>('progress');
+
+  // State for alert visibility
+  const [alertVisible, setAlertVisible] = useState(true);
 
   // Force progress view when streaming is active, and switch to detailed view when complete
   useEffect(() => {
@@ -189,19 +192,23 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
           <CardContent>
             <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'progress' | 'detailed')} className="w-full">
-              <div className="flex justify-end mb-4">
-                <TabsList>
-                  <TabsTrigger value="progress">Progress</TabsTrigger>
-                  <TabsTrigger value="detailed">Detailed View</TabsTrigger>
+              <div className="flex justify-center mb-6">
+                <TabsList className="w-full max-w-md grid grid-cols-2 p-1 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
+                  <TabsTrigger value="progress" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <Activity className="h-4 w-4 mr-2" />
+                    Progress View
+                  </TabsTrigger>
+                  <TabsTrigger value="detailed" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Detailed Analysis
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
-              <TabsContent value="progress" className="mt-0">
-                <ChainDiagnosisProgressIndicator />
-
-                {/* Notification when analysis is complete */}
-                {(currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming && (
-                  <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3">
+              <TabsContent value="progress" className="mt-0 animate-in fade-in-50 duration-300">
+                {/* Notification when analysis is complete - moved to the top */}
+                {(currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming && alertVisible && (
+                  <div className="mb-6 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3 relative">
                     <div className="p-1.5 bg-green-500/20 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -217,38 +224,25 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                         Click the &quot;Detailed View&quot; tab to see the results.
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="ml-auto border-green-500/20 text-green-500 hover:bg-green-500/10"
-                      onClick={() => setViewMode('detailed')}
+
+                    {/* Close button */}
+                    <button
+                      className="absolute top-2 right-2 text-green-500/70 hover:text-green-500 focus:outline-none"
+                      onClick={() => setAlertVisible(false)}
+                      aria-label="Close"
                     >
-                      View Results
-                    </Button>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
                   </div>
                 )}
 
-                {!isCompleted && currentStep < 8 && (
-                  <div className="mt-6 flex justify-end">
-                    <Button
-                      onClick={handleContinue}
-                      disabled={isLoading}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          Continue to Next Step
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
+                <ChainDiagnosisProgressIndicator
+                  onContinue={!isCompleted && currentStep < 8 ? handleContinue : undefined}
+                  isProcessing={isLoading}
+                />
 
                 {isCompleted && (
                   <div className="mt-6 flex flex-wrap gap-3 justify-end">
@@ -272,7 +266,23 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 )}
               </TabsContent>
 
-              <TabsContent value="detailed" className="mt-0">
+              <TabsContent value="detailed" className="mt-0 animate-in fade-in-50 duration-300">
+                <div className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10 text-primary">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        Detailed Analysis
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Comprehensive breakdown of your health assessment
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
                   {/* Medical Analyst View - Only show if there's a medical report */}
                   {(currentSession?.user_input.medical_report?.text || currentSession?.user_input.medical_report?.image_url) && (
@@ -292,10 +302,19 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
                   {/* Other AI role views will be added in subsequent phases */}
                   {currentStep > 1 && (
-                    <div className="bg-muted/30 p-4 rounded-lg text-center">
-                      <p className="text-muted-foreground">
-                        Detailed views for other AI roles will be implemented in subsequent phases.
-                      </p>
+                    <div className="bg-card/50 backdrop-blur-sm p-5 rounded-xl border border-border/50 shadow-sm text-center">
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <div className="p-3 rounded-full bg-primary/10 text-primary">
+                          <Brain className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-medium mb-1">Coming Soon</h3>
+                          <p className="text-muted-foreground max-w-md mx-auto">
+                            Detailed views for Specialist Doctor, Pathologist, Nutritionist, Pharmacist,
+                            Follow-up Specialist, and Summarizer will be implemented in subsequent phases.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
