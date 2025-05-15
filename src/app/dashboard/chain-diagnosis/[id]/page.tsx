@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "View your comprehensive health analysis from 8 specialized AI roles",
 };
 
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function ChainDiagnosisSessionPage({ params }: any) {
   const { id: sessionId } = await params;
 
