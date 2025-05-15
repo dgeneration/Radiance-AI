@@ -19,23 +19,37 @@ interface RoleContentProps {
   content: string;
   isStreaming: boolean;
   isActive: boolean;
+  forceStreaming?: boolean;
 }
 
-function RoleContent({ title, icon, content, isStreaming, isActive }: RoleContentProps) {
+function RoleContent({ title, icon, content, isStreaming, isActive, forceStreaming = false }: RoleContentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Log the component props for debugging
+  useEffect(() => {
+    console.log(`RoleContent ${title} props:`, {
+      isActive,
+      isStreaming,
+      forceStreaming,
+      hasContent: !!content,
+      contentLength: content?.length || 0
+    });
+  }, [title, isActive, isStreaming, forceStreaming, content]);
 
   // Auto-expand when content is being streamed or when the role is active
   useEffect(() => {
-    // Auto-expand when streaming starts for this role
-    if (isStreaming && isActive) {
+    // Auto-expand when streaming starts for any role or when forceStreaming is true
+    if (isStreaming || forceStreaming) {
+      console.log(`Auto-expanding ${title} because streaming is active or forced`);
       setIsExpanded(true);
     }
 
     // Also auto-expand when this role becomes active, even if not streaming
     if (isActive) {
+      console.log(`Auto-expanding ${title} because it's active`);
       setIsExpanded(true);
     }
-  }, [isStreaming, isActive]);
+  }, [isStreaming, isActive, forceStreaming, title]);
 
   return (
     <motion.div
@@ -134,7 +148,22 @@ function RoleContent({ title, icon, content, isStreaming, isActive }: RoleConten
                   // First, clean up the content by removing XML-like tags
                   const cleanedContent = content.replace(/<[^>]*>.*?<\/[^>]*>/gs, '').replace(/<[^>]*>/g, '');
 
-                  // Try to extract and format JSON if possible
+                  // Debug output to help diagnose issues
+                  console.log(`Role content for ${title}:`, {
+                    isActive,
+                    isStreaming,
+                    contentLength: cleanedContent.length,
+                    hasJsonBraces: cleanedContent.includes('{') && cleanedContent.includes('}'),
+                    firstChars: cleanedContent.substring(0, 50)
+                  });
+
+                  // For all roles, show raw content during streaming or when forceStreaming is true
+                  // This is the key change - we're no longer checking isActive
+                  if (isStreaming || forceStreaming) {
+                    return cleanedContent || "Waiting for content...";
+                  }
+
+                  // If we're not streaming, try to extract and format JSON if possible
                   if (cleanedContent.includes('{') && cleanedContent.includes('}')) {
                     try {
                       const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
@@ -142,15 +171,16 @@ function RoleContent({ title, icon, content, isStreaming, isActive }: RoleConten
                         const parsed = JSON.parse(jsonMatch[1]);
                         return JSON.stringify(parsed, null, 2);
                       }
-                    } catch {
-                      // If JSON parsing fails, just return the cleaned content
+                    } catch (e) {
+                      // If JSON parsing fails, log the error and return the cleaned content
+                      console.error("JSON parsing error:", e);
                     }
                   }
 
                   // If we couldn't parse JSON or there was no JSON, return the cleaned content
-                  return cleanedContent;
+                  return cleanedContent || "No content available";
                 })()}
-                {isActive && isStreaming && (
+                {(isStreaming || forceStreaming) && (
                   <span className="inline-block ml-1 animate-pulse">▌</span>
                 )}
               </pre>
@@ -203,7 +233,9 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.medicalAnalyst ||
               (currentSession?.medical_analyst_response ?
                 JSON.stringify(currentSession.medical_analyst_response, null, 2) : ''),
-      step: 0
+      step: 0,
+      // Force streaming to true for Medical Analyst if there's content
+      forceStreaming: !!streamingContent.medicalAnalyst
     },
     {
       key: 'generalPhysician',
@@ -212,7 +244,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.generalPhysician ||
               (currentSession?.general_physician_response ?
                 JSON.stringify(currentSession.general_physician_response, null, 2) : ''),
-      step: 1
+      step: 1,
+      forceStreaming: !!streamingContent.generalPhysician
     },
     {
       key: 'specialistDoctor',
@@ -221,7 +254,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.specialistDoctor ||
               (currentSession?.specialist_doctor_response ?
                 JSON.stringify(currentSession.specialist_doctor_response, null, 2) : ''),
-      step: 2
+      step: 2,
+      forceStreaming: !!streamingContent.specialistDoctor
     },
     {
       key: 'pathologist',
@@ -230,7 +264,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.pathologist ||
               (currentSession?.pathologist_response ?
                 JSON.stringify(currentSession.pathologist_response, null, 2) : ''),
-      step: 3
+      step: 3,
+      forceStreaming: !!streamingContent.pathologist
     },
     {
       key: 'nutritionist',
@@ -239,7 +274,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.nutritionist ||
               (currentSession?.nutritionist_response ?
                 JSON.stringify(currentSession.nutritionist_response, null, 2) : ''),
-      step: 4
+      step: 4,
+      forceStreaming: !!streamingContent.nutritionist
     },
     {
       key: 'pharmacist',
@@ -248,7 +284,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.pharmacist ||
               (currentSession?.pharmacist_response ?
                 JSON.stringify(currentSession.pharmacist_response, null, 2) : ''),
-      step: 5
+      step: 5,
+      forceStreaming: !!streamingContent.pharmacist
     },
     {
       key: 'followUpSpecialist',
@@ -257,7 +294,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.followUpSpecialist ||
               (currentSession?.follow_up_specialist_response ?
                 JSON.stringify(currentSession.follow_up_specialist_response, null, 2) : ''),
-      step: 6
+      step: 6,
+      forceStreaming: !!streamingContent.followUpSpecialist
     },
     {
       key: 'summarizer',
@@ -266,7 +304,8 @@ export function ChainDiagnosisStreamingContent() {
       content: streamingContent.summarizer ||
               (currentSession?.summarizer_response ?
                 JSON.stringify(currentSession.summarizer_response, null, 2) : ''),
-      step: 7
+      step: 7,
+      forceStreaming: !!streamingContent.summarizer
     }
   ];
 
@@ -303,15 +342,39 @@ export function ChainDiagnosisStreamingContent() {
       </div>
 
       <div className="space-y-5">
-        {roleComponents.map((role, index) => {
+        {roleComponents.map((role) => {
           // Calculate if this role is active based on the current step
           // If no medical report, adjust the step comparison
-          const isActive = hasMedicalReport
-            ? currentStep === role.step
-            : (currentStep === role.step) ||
-              // When currentStep is 0 or 1 and this is the first role (General Physician)
-              // This ensures the General Physician is highlighted when no medical report is provided
-              ((currentStep === 0 || currentStep === 1) && index === 0 && role.key === 'generalPhysician');
+          let isActive = false;
+
+          if (hasMedicalReport) {
+            // With medical report, use standard step comparison
+            isActive = currentStep === role.step;
+          } else {
+            // Without medical report, General Physician is active when currentStep is 0 or 1
+            if (role.key === 'generalPhysician') {
+              isActive = currentStep === 1 || currentStep === 0;
+            } else {
+              isActive = currentStep === role.step;
+            }
+          }
+
+          // Log the active state for debugging
+          if (role.key === 'generalPhysician') {
+            console.log(`General Physician active state:`, {
+              isActive,
+              currentStep,
+              roleStep: role.step,
+              hasMedicalReport,
+              isStreaming
+            });
+          }
+
+          // Determine if this role should be streaming
+          const shouldStream = isStreaming && (
+            isActive ||
+            (role.key === 'generalPhysician' && (currentStep === 0 || currentStep === 1))
+          );
 
           return (
             <RoleContent
@@ -319,8 +382,9 @@ export function ChainDiagnosisStreamingContent() {
               title={role.title}
               icon={role.icon}
               content={role.content}
-              isStreaming={isStreaming}
+              isStreaming={shouldStream}
               isActive={isActive}
+              forceStreaming={role.forceStreaming}
             />
           );
         })}

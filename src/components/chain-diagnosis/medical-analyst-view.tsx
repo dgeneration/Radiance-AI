@@ -36,31 +36,69 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
     try {
       // First priority: use the stored response from the session if available
       if (currentSession?.medical_analyst_response) {
-        setParsedResponse(currentSession.medical_analyst_response);
-        return;
+        // Log the raw response for debugging
+        console.log("Raw medical analyst response:", currentSession.medical_analyst_response);
+
+        // Check if the response is already a parsed object
+        if (typeof currentSession.medical_analyst_response === 'object' &&
+            currentSession.medical_analyst_response !== null) {
+          setParsedResponse(currentSession.medical_analyst_response);
+          return;
+        }
       }
 
       // Second priority: try to parse streaming content if available
       if (streamingContent.medicalAnalyst) {
         try {
+          // Log the raw streaming content for debugging
+          console.log("Raw medical analyst streaming content:", streamingContent.medicalAnalyst);
+
           // Try to extract JSON from the content
           const jsonMatch = streamingContent.medicalAnalyst.match(/```json\s*([\s\S]*?)\s*```/);
 
           if (jsonMatch && jsonMatch[1]) {
-            const parsed = JSON.parse(jsonMatch[1]);
-            setParsedResponse(parsed);
-            return;
+            try {
+              const parsed = JSON.parse(jsonMatch[1]);
+              setParsedResponse(parsed);
+              return;
+            } catch (e) {
+              console.error("Error parsing JSON from code block:", e);
+            }
           }
 
           // Try to parse the entire content as JSON
-          const parsed = JSON.parse(streamingContent.medicalAnalyst);
-          setParsedResponse(parsed);
-        } catch {
-          // Silently handle parsing errors
+          try {
+            const parsed = JSON.parse(streamingContent.medicalAnalyst);
+            setParsedResponse(parsed);
+            return;
+          } catch (e) {
+            console.error("Error parsing entire content as JSON:", e);
+          }
+
+          // If we get here, try to extract any JSON-like structure
+          const jsonLikeMatch = streamingContent.medicalAnalyst.match(/(\{[\s\S]*\})/);
+          if (jsonLikeMatch && jsonLikeMatch[1]) {
+            try {
+              // Try to fix common JSON issues
+              let jsonStr = jsonLikeMatch[1];
+              // Replace unquoted property names
+              jsonStr = jsonStr.replace(/(\w+):/g, '"$1":');
+              // Add missing quotes around string values
+              jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
+
+              const parsed = JSON.parse(jsonStr);
+              setParsedResponse(parsed);
+              return;
+            } catch (e) {
+              console.error("Error parsing JSON-like structure:", e);
+            }
+          }
+        } catch (e) {
+          console.error("Error in streaming content parsing:", e);
         }
       }
-    } catch {
-      // Silently handle parsing errors
+    } catch (e) {
+      console.error("Error in medical analyst response parsing:", e);
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
 
