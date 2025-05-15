@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { FollowUpSpecialistResponse } from '@/types/chain-diagnosis';
-
-// Define the new response type based on the provided JSON
+// Define the response type based on the provided JSON
 interface NewFollowUpSpecialistResponse {
   follow_up_recommendations: {
     symptom_monitoring: {
@@ -45,7 +43,7 @@ import {
   Loader2, AlertCircle, CheckCircle,
   Activity, FileText, ClipboardList, AlertTriangle,
   ChevronDown, ChevronUp, Calendar, HeartPulse,
-  Bell, ArrowUpRight, ThumbsUp, Camera, Pill, Utensils
+  ArrowUpRight, Camera, Pill, Utensils
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -95,7 +93,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -105,7 +103,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
             const parsed = JSON.parse(streamingContent.followUpSpecialist);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -123,15 +121,15 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in follow-up specialist response parsing
     }
   }, [streamingContent.followUpSpecialist, currentSession?.follow_up_specialist_response]);
