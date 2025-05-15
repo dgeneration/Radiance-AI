@@ -47,7 +47,6 @@ function ThreeCircleLayout({
   error,
   onContinue,
   isProcessing,
-  currentSession
 }: {
   steps: { title: string; description: string }[];
   currentStep: number;
@@ -56,7 +55,6 @@ function ThreeCircleLayout({
   error: string | null;
   onContinue?: () => void;
   isProcessing?: boolean;
-  currentSession: ChainDiagnosisSession | null;
 }) {
   // Get current step info
   const currentStepInfo = steps[currentStep];
@@ -882,17 +880,6 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
             // For Summarizer
             ((hasMedicalReport ? index === 7 : index === 6) && currentSession?.summarizer_response);
 
-          // Determine if this step is in progress (has started but not completed)
-          const isStepInProgress = isStepActive && (
-            (index === 0 && !currentSession?.medical_analyst_response) ||
-            (index === 1 && !currentSession?.general_physician_response) ||
-            (index === 2 && !currentSession?.specialist_doctor_response) ||
-            (index === 3 && !currentSession?.pathologist_response) ||
-            (index === 4 && !currentSession?.nutritionist_response) ||
-            (index === 5 && !currentSession?.pharmacist_response) ||
-            (index === 6 && !currentSession?.follow_up_specialist_response) ||
-            (index === 7 && !currentSession?.summarizer_response)
-          );
 
           // Show loading indicator when the step is active and API is in progress
           const showLoading = isLoading || isStreaming;
@@ -1123,7 +1110,6 @@ export function ChainDiagnosisProgressIndicator({
         error={error}
         onContinue={onContinue}
         isProcessing={isProcessing}
-        currentSession={currentSession}
       />
 
 

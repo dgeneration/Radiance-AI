@@ -22,14 +22,9 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
 
   // Load user sessions when the component mounts
   useEffect(() => {
-    console.log('Loading user sessions for userId:', userId);
-    loadUserSessions(userId)
-      .then(success => {
-        console.log('Sessions loaded successfully:', success);
-      })
-      .catch(err => {
-        console.error('Error loading sessions:', err);
-      });
+    loadUserSessions(userId).catch(() => {
+      // Error is handled by the context
+    });
   }, [userId, loadUserSessions]);
 
   // Use the sessions from context if available, otherwise use the initial sessions
@@ -38,27 +33,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
   const validInitialSessions = Array.isArray(initialSessions) ? initialSessions : [];
   const sessions = validUserSessions.length > 0 ? validUserSessions : validInitialSessions;
 
-  // Debug log the sessions
-  useEffect(() => {
-    console.log('Initial sessions:', initialSessions?.length, initialSessions);
-    console.log('User sessions from context:', userSessions?.length, userSessions);
-    console.log('Combined sessions being used:', sessions?.length, sessions);
 
-    // Check if sessions have the expected structure
-    if (sessions?.length > 0) {
-      const firstSession = sessions[0];
-      console.log('First session structure:', {
-        id: firstSession.id,
-        user_id: firstSession.user_id,
-        created_at: firstSession.created_at,
-        status: firstSession.status,
-        current_step: firstSession.current_step,
-        hasUserInput: !!firstSession.user_input,
-        userInputKeys: firstSession.user_input ? Object.keys(firstSession.user_input) : [],
-        hasSymptomsList: !!firstSession.user_input?.symptoms_info?.symptoms_list
-      });
-    }
-  }, [initialSessions, userSessions, sessions]);
 
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
@@ -124,8 +99,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
     );
   }
 
-  // Add a direct console log right before rendering
-  console.log('Rendering sessions list with', sessions.length, 'sessions');
+
 
   return (
     <AnimatedSection className="space-y-6">
@@ -141,7 +115,6 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
         {Array.isArray(sessions) && sessions.map(session => {
           try {
             if (!session || !session.id) {
-              console.error('Invalid session object:', session);
               return null;
             }
 
@@ -275,7 +248,6 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
             </Card>
             );
           } catch (error) {
-            console.error('Error rendering session card:', error, session);
             return null;
           }
         })}

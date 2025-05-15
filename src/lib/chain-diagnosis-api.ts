@@ -458,15 +458,13 @@ async function makePerplexityRequest(
  * @returns A properly formatted SpecialistDoctorResponse
  */
 function parseSpecialistDoctorResponse(content: string, specialistType: string): SpecialistDoctorResponse {
-  console.log("Parsing specialist doctor response with custom parser");
-
   // Try to extract the JSON object from the content
   try {
     // First, try to parse it as a regular JSON
     try {
       return JSON.parse(content) as SpecialistDoctorResponse;
     } catch (e) {
-      console.log("Regular JSON parsing failed, trying to extract from content");
+      // Regular JSON parsing failed, trying to extract from content
     }
 
     // If that fails, try to extract the JSON object from the content
@@ -475,12 +473,11 @@ function parseSpecialistDoctorResponse(content: string, specialistType: string):
       try {
         return JSON.parse(jsonMatch[1]) as SpecialistDoctorResponse;
       } catch (e) {
-        console.log("Extracted JSON parsing failed, trying to parse manually");
+        // Extracted JSON parsing failed, trying to parse manually
       }
     }
 
     // If that fails, try to parse the specific format provided
-    console.log("Attempting to parse the specific format provided");
 
     // Create a base response object
     const response: SpecialistDoctorResponse = {
@@ -1547,8 +1544,6 @@ export async function processSpecialistDoctor(
         parsedResponse.disclaimer = "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI.";
       }
     } catch (error) {
-      console.error('Error parsing Specialist Doctor response:', error);
-
       // Create a fallback response based on the raw content provided
       parsedResponse = {
         role_name: `${specialistType} AI (Radiance AI)`,
@@ -1714,8 +1709,6 @@ export async function processNutritionist(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processNutritionist:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1779,8 +1772,6 @@ export async function processPharmacist(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processPharmacist:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1850,8 +1841,6 @@ export async function processFollowUpSpecialist(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processFollowUpSpecialist:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1926,8 +1915,6 @@ export async function processRadianceAISummarizer(
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in processRadianceAISummarizer:', error);
-
     // Update the session with error status
     await updateChainDiagnosisSession(sessionId, {
       status: 'error',
@@ -1953,13 +1940,11 @@ export async function getChainDiagnosisSession(sessionId: string): Promise<Chain
       .single();
 
     if (error) {
-      console.error('Error getting chain diagnosis session:', error);
       return null;
     }
 
     return data as ChainDiagnosisSession;
   } catch (error) {
-    console.error('Error in getChainDiagnosisSession:', error);
     return null;
   }
 }
@@ -1972,11 +1957,9 @@ export async function getChainDiagnosisSession(sessionId: string): Promise<Chain
 export async function getUserChainDiagnosisSessions(userId: string): Promise<ChainDiagnosisSession[]> {
   try {
     if (!userId) {
-      console.error('getUserChainDiagnosisSessions called with invalid userId:', userId);
       return [];
     }
 
-    console.log(`Fetching chain diagnosis sessions for user ${userId}`);
     const supabase = createClient();
     const { data, error } = await supabase
       .from('chain_diagnosis_sessions')
@@ -1985,29 +1968,23 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error getting user chain diagnosis sessions:', error);
       return [];
     }
 
     const sessions = data as ChainDiagnosisSession[];
-    console.log(`Retrieved ${sessions.length} chain diagnosis sessions for user ${userId}`);
 
     // Validate the sessions data
     const validSessions = sessions.filter(session => {
       if (!session || !session.id) {
-        console.warn('Found invalid session object:', session);
         return false;
       }
       return true;
     });
 
-    if (validSessions.length !== sessions.length) {
-      console.warn(`Filtered out ${sessions.length - validSessions.length} invalid sessions`);
-    }
+
 
     return validSessions;
   } catch (error) {
-    console.error('Error in getUserChainDiagnosisSessions:', error);
     return [];
   }
 }

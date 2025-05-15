@@ -25,31 +25,20 @@ interface RoleContentProps {
 function RoleContent({ title, icon, content, isStreaming, isActive, forceStreaming = false }: RoleContentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Log the component props for debugging
-  useEffect(() => {
-    console.log(`RoleContent ${title} props:`, {
-      isActive,
-      isStreaming,
-      forceStreaming,
-      hasContent: !!content,
-      contentLength: content?.length || 0
-    });
-  }, [title, isActive, isStreaming, forceStreaming, content]);
+
 
   // Auto-expand when content is being streamed or when the role is active
   useEffect(() => {
     // Auto-expand when streaming starts for any role or when forceStreaming is true
     if (isStreaming || forceStreaming) {
-      console.log(`Auto-expanding ${title} because streaming is active or forced`);
       setIsExpanded(true);
     }
 
     // Also auto-expand when this role becomes active, even if not streaming
     if (isActive) {
-      console.log(`Auto-expanding ${title} because it's active`);
       setIsExpanded(true);
     }
-  }, [isStreaming, isActive, forceStreaming, title]);
+  }, [isStreaming, isActive, forceStreaming]);
 
   return (
     <motion.div
@@ -148,14 +137,7 @@ function RoleContent({ title, icon, content, isStreaming, isActive, forceStreami
                   // First, clean up the content by removing XML-like tags
                   const cleanedContent = content.replace(/<[^>]*>.*?<\/[^>]*>/gs, '').replace(/<[^>]*>/g, '');
 
-                  // Debug output to help diagnose issues
-                  console.log(`Role content for ${title}:`, {
-                    isActive,
-                    isStreaming,
-                    contentLength: cleanedContent.length,
-                    hasJsonBraces: cleanedContent.includes('{') && cleanedContent.includes('}'),
-                    firstChars: cleanedContent.substring(0, 50)
-                  });
+
 
                   // For all roles, show raw content during streaming or when forceStreaming is true
                   // This is the key change - we're no longer checking isActive
@@ -172,8 +154,7 @@ function RoleContent({ title, icon, content, isStreaming, isActive, forceStreami
                         return JSON.stringify(parsed, null, 2);
                       }
                     } catch (e) {
-                      // If JSON parsing fails, log the error and return the cleaned content
-                      console.error("JSON parsing error:", e);
+                      // If JSON parsing fails, return the cleaned content
                     }
                   }
 
@@ -359,16 +340,7 @@ export function ChainDiagnosisStreamingContent() {
             }
           }
 
-          // Log the active state for debugging
-          if (role.key === 'generalPhysician') {
-            console.log(`General Physician active state:`, {
-              isActive,
-              currentStep,
-              roleStep: role.step,
-              hasMedicalReport,
-              isStreaming
-            });
-          }
+
 
           // Determine if this role should be streaming
           const shouldStream = isStreaming && (

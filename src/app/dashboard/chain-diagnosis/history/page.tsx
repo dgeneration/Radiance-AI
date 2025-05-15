@@ -23,36 +23,21 @@ export default async function ChainDiagnosisHistoryPage() {
   // Get user's chain diagnosis sessions
   let sessions = [];
   try {
-    console.log("Fetching chain diagnosis sessions for user:", userData.user.id);
     const { data: sessionsData, error } = await supabase
       .from("chain_diagnosis_sessions")
       .select("*")
       .eq("user_id", userData.user.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching chain diagnosis sessions:", error);
-    } else {
+    if (!error) {
       sessions = Array.isArray(sessionsData) ? sessionsData : [];
-      console.log(`Fetched ${sessions.length} chain diagnosis sessions for user ${userData.user.id}`);
-
-      // Log the first session to check its structure
-      if (sessions.length > 0) {
-        console.log("First session:", {
-          id: sessions[0].id,
-          created_at: sessions[0].created_at,
-          status: sessions[0].status,
-          hasUserInput: !!sessions[0].user_input
-        });
-      }
     }
   } catch (error) {
-    console.error("Exception fetching chain diagnosis sessions:", error);
+    // Continue with empty sessions array
   }
 
   // Ensure sessions is always an array
   if (!Array.isArray(sessions)) {
-    console.error("Sessions is not an array, resetting to empty array");
     sessions = [];
   }
 

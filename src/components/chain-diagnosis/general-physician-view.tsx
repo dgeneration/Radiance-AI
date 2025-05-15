@@ -40,9 +40,6 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
     try {
       // First priority: use the stored response from the session if available
       if (currentSession?.general_physician_response) {
-        // Log the raw response for debugging
-        console.log("Raw general physician response:", currentSession.general_physician_response);
-
         // Check if the response is already a parsed object
         if (typeof currentSession.general_physician_response === 'object' &&
             currentSession.general_physician_response !== null) {
@@ -54,9 +51,6 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
       // Second priority: try to parse streaming content if available
       if (streamingContent.generalPhysician) {
         try {
-          // Log the raw streaming content for debugging
-          console.log("Raw general physician streaming content:", streamingContent.generalPhysician);
-
           // Try to extract JSON from the content
           const jsonMatch = streamingContent.generalPhysician.match(/```json\s*([\s\S]*?)\s*```/);
 
@@ -66,7 +60,7 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
               setParsedResponse(parsed);
               return;
             } catch (e) {
-              console.error("Error parsing JSON from code block:", e);
+              // Failed to parse JSON from code block
             }
           }
 
@@ -76,7 +70,7 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
             setParsedResponse(parsed);
             return;
           } catch (e) {
-            console.error("Error parsing entire content as JSON:", e);
+            // Failed to parse entire content as JSON
           }
 
           // If we get here, try to extract any JSON-like structure
@@ -94,15 +88,15 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
               setParsedResponse(parsed);
               return;
             } catch (e) {
-              console.error("Error parsing JSON-like structure:", e);
+              // Failed to parse JSON-like structure
             }
           }
         } catch (e) {
-          console.error("Error in streaming content parsing:", e);
+          // Error in streaming content parsing
         }
       }
     } catch (e) {
-      console.error("Error in general physician response parsing:", e);
+      // Error in general physician response parsing
     }
   }, [streamingContent.generalPhysician, currentSession?.general_physician_response]);
 

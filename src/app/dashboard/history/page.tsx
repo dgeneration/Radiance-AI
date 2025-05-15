@@ -35,7 +35,6 @@ export default async function HistoryPage() {
       diagnoses = diagnosesData;
     }
   } catch (error) {
-    console.error("Error fetching diagnoses:", error);
     // Continue with empty diagnoses array
   }
 

@@ -36,9 +36,6 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
     try {
       // First priority: use the stored response from the session if available
       if (currentSession?.medical_analyst_response) {
-        // Log the raw response for debugging
-        console.log("Raw medical analyst response:", currentSession.medical_analyst_response);
-
         // Check if the response is already a parsed object
         if (typeof currentSession.medical_analyst_response === 'object' &&
             currentSession.medical_analyst_response !== null) {
@@ -50,9 +47,6 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
       // Second priority: try to parse streaming content if available
       if (streamingContent.medicalAnalyst) {
         try {
-          // Log the raw streaming content for debugging
-          console.log("Raw medical analyst streaming content:", streamingContent.medicalAnalyst);
-
           // Try to extract JSON from the content
           const jsonMatch = streamingContent.medicalAnalyst.match(/```json\s*([\s\S]*?)\s*```/);
 
@@ -62,7 +56,7 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
               setParsedResponse(parsed);
               return;
             } catch (e) {
-              console.error("Error parsing JSON from code block:", e);
+              // Failed to parse JSON from code block
             }
           }
 
@@ -72,7 +66,7 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
             setParsedResponse(parsed);
             return;
           } catch (e) {
-            console.error("Error parsing entire content as JSON:", e);
+            // Failed to parse entire content as JSON
           }
 
           // If we get here, try to extract any JSON-like structure
@@ -90,15 +84,15 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
               setParsedResponse(parsed);
               return;
             } catch (e) {
-              console.error("Error parsing JSON-like structure:", e);
+              // Failed to parse JSON-like structure
             }
           }
         } catch (e) {
-          console.error("Error in streaming content parsing:", e);
+          // Error in streaming content parsing
         }
       }
     } catch (e) {
-      console.error("Error in medical analyst response parsing:", e);
+      // Error in medical analyst response parsing
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);
 

@@ -72,7 +72,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   // Ensure userSessions is always an array
   useEffect(() => {
     if (!Array.isArray(userSessions)) {
-      console.error('userSessions is not an array, resetting to empty array');
       setUserSessions([]);
     }
   }, [userSessions]);
@@ -262,8 +261,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       // automatically process the General Physician step
       if (session.medical_analyst_response && !session.general_physician_response &&
           (shouldAutoContinue && storedSessionId === sessionId)) {
-        console.log('Auto-continuing to General Physician after session load...');
-
         // Clear the flags
         localStorage.removeItem('auto_continue_to_general_physician');
         localStorage.removeItem('auto_continue_session_id');
@@ -278,7 +275,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             setIsLoading(true);
             setIsStreaming(true);
 
-            console.log('Directly calling processGeneralPhysician...');
+
 
             // Directly call processGeneralPhysician instead of using processNextStep
             const response = await processGeneralPhysician(
@@ -311,7 +308,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               window.location.reload();
             }, 2000);
           } catch (error) {
-            console.error('Error in auto-continue General Physician step:', error);
             setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
             setIsLoading(false);
             setIsStreaming(false);
@@ -332,32 +328,26 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   const loadUserSessions = useCallback(async (userId: string): Promise<boolean> => {
     try {
       if (!userId) {
-        console.error('loadUserSessions called with invalid userId:', userId);
         setError('Invalid user ID. Please try again.');
         return false;
       }
 
-      console.log('Loading user sessions for userId:', userId);
       setIsLoading(true);
       setError(null);
 
       const sessions = await getUserChainDiagnosisSessions(userId);
-      console.log(`Retrieved ${sessions.length} sessions from API`);
 
       // Ensure sessions is an array
       if (!Array.isArray(sessions)) {
-        console.error('Sessions is not an array:', sessions);
         setUserSessions([]);
         setError('Failed to load your diagnosis history. Please try again.');
         return false;
       }
 
       setUserSessions(sessions);
-      console.log('User sessions set in context');
 
       return true;
     } catch (error) {
-      console.error('Error in loadUserSessions:', error);
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {
@@ -379,8 +369,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
 
       const { id: sessionId, user_input: userInput } = currentSession;
 
-      // Debug message to help track what's happening
-      console.log(`Processing next step: currentStep=${currentStep}, sessionId=${sessionId}`);
+
 
       // Determine which step to process based on the current step
       switch (currentStep) {
@@ -428,7 +417,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                     window.location.reload();
                   }, 2000);
                 } catch (error) {
-                  console.error('Error in General Physician step:', error);
                   setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
                 }
               }, 1000);
@@ -471,7 +459,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                   }, 2000);
                 } else {
                   // For text reports, immediately proceed to General Physician without reload
-                  console.log('Medical Analyst complete, proceeding to General Physician...');
 
                   // Set the current step to 1 (General Physician)
                   setCurrentStep(1);
@@ -505,7 +492,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                       // Update the current step
                       setCurrentStep(2);
                     } catch (error) {
-                      console.error('Error in General Physician step:', error);
                       setError(error instanceof Error ? error.message : 'Unknown error in General Physician step');
                     } finally {
                       setIsLoading(false);
@@ -519,7 +505,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               // setCurrentStep(1); -- Commented out to prevent automatic progression during this session
             }
           } catch (error) {
-            console.error('Error in Medical Analyst step:', error);
             setError(error instanceof Error ? error.message : 'Unknown error in Medical Analyst step');
             // Stay on the current step even if there was an error
             // Let the user decide to continue manually
