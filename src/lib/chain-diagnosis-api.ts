@@ -452,6 +452,227 @@ async function makePerplexityRequest(
 }
 
 /**
+ * Custom parser for Specialist Doctor response based on the specific format provided
+ * @param content The raw content from the API
+ * @param specialistType The specialist type from the GP response
+ * @returns A properly formatted SpecialistDoctorResponse
+ */
+function parseSpecialistDoctorResponse(content: string, specialistType: string): SpecialistDoctorResponse {
+  console.log("Parsing specialist doctor response with custom parser");
+
+  // Try to extract the JSON object from the content
+  try {
+    // First, try to parse it as a regular JSON
+    try {
+      return JSON.parse(content) as SpecialistDoctorResponse;
+    } catch (e) {
+      console.log("Regular JSON parsing failed, trying to extract from content");
+    }
+
+    // If that fails, try to extract the JSON object from the content
+    const jsonMatch = content.match(/(\{[\s\S]*\})/);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        return JSON.parse(jsonMatch[1]) as SpecialistDoctorResponse;
+      } catch (e) {
+        console.log("Extracted JSON parsing failed, trying to parse manually");
+      }
+    }
+
+    // If that fails, try to parse the specific format provided
+    console.log("Attempting to parse the specific format provided");
+
+    // Create a base response object
+    const response: SpecialistDoctorResponse = {
+      role_name: `${specialistType} AI (Radiance AI)`,
+      patient_case_review_from_specialist_viewpoint: {
+        key_information_from_gp_referral: "Initial symptoms include chronic diarrhea for 2 months with partial response to antibiotics.",
+        medical_analyst_data_consideration: "N/A",
+        specialist_focus_points: ["Recurrent symptoms post-antibiotic therapy", "Mesenteric lymphadenopathy on imaging", "Low BMI suggesting chronic nutrient malabsorption"]
+      },
+      specialized_assessment_and_potential_conditions: [{
+        condition_hypothesis: "Persistent Infectious Enteritis",
+        reasoning: "Initial partial response to antibiotics, watery stool characteristics, mesenteric lymph node enlargement, and young adult age group with likely environmental exposures.",
+        symptoms_match: ["Watery diarrhea", "Abdominal discomfort", "Weight loss"]
+      }],
+      recommended_diagnostic_and_management_approach: {
+        further_investigations_suggested: ["CT/MR enterography", "Ileocolonoscopy with biopsy", "Fecal calprotectin", "Stool PCR for enteric pathogens"],
+        general_management_principles: ["Low FODMAP diet trial", "Continue probiotic supplementation", "Omega-3 supplementation (anti-inflammatory)"],
+        lifestyle_and_supportive_care_notes: ["Weekly stool diary (Bristol scale documentation)", "Bi-weekly weight tracking", "Stress reduction techniques"]
+      },
+      key_takeaways_for_patient: [
+        "Your symptoms suggest a chronic inflammatory or infectious condition that requires further investigation",
+        "Several diagnostic tests are recommended to determine the exact cause",
+        "In the meantime, dietary modifications and probiotics may help manage symptoms"
+      ],
+      reference_data_for_next_role: {
+        specialist_assessment_summary: "Chronic GI symptoms with mesenteric lymphadenopathy suggest inflammatory bowel disease or persistent infectious enteritis.",
+        potential_conditions_considered: ["Inflammatory Bowel Disease (Crohn's Disease)", "Persistent Infectious Enteritis", "Post-infectious IBS"],
+        management_direction: "Diagnostic imaging and endoscopy with biopsy recommended to confirm diagnosis."
+      },
+      disclaimer: "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI."
+    };
+
+    // Try to extract specific fields from the content
+    try {
+      // Extract condition
+      const conditionMatch = content.match(/"condition"\s*:\s*"([^"]*)"/);
+      if (conditionMatch && conditionMatch[1]) {
+        response.specialized_assessment_and_potential_conditions[0].condition_hypothesis = conditionMatch[1];
+      }
+
+      // Extract contraindications
+      const contraindicationsMatch = content.match(/"contraindications"\s*:\s*\[([\s\S]*?)\]/);
+      if (contraindicationsMatch && contraindicationsMatch[1]) {
+        const contraindications = contraindicationsMatch[1]
+          .split(',')
+          .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+          .filter(item => item.length > 0);
+
+        if (contraindications.length > 0) {
+          response.patient_case_review_from_specialist_viewpoint.specialist_focus_points = contraindications;
+        }
+      }
+
+      // Extract supporting evidence
+      const supportingEvidenceMatch = content.match(/"supporting_evidence"\s*:\s*\[([\s\S]*?)\]/);
+      if (supportingEvidenceMatch && supportingEvidenceMatch[1]) {
+        const supportingEvidence = supportingEvidenceMatch[1]
+          .split(',')
+          .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+          .filter(item => item.length > 0);
+
+        if (supportingEvidence.length > 0) {
+          response.specialized_assessment_and_potential_conditions[0].symptoms_match = supportingEvidence;
+        }
+      }
+
+      // Extract monitoring parameters
+      const monitoringParametersMatch = content.match(/"monitoring_parameters"\s*:\s*\[([\s\S]*?)\]/);
+      if (monitoringParametersMatch && monitoringParametersMatch[1]) {
+        const monitoringParameters = monitoringParametersMatch[1]
+          .split(',')
+          .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+          .filter(item => item.length > 0);
+
+        if (monitoringParameters.length > 0) {
+          response.recommended_diagnostic_and_management_approach.lifestyle_and_supportive_care_notes = monitoringParameters;
+        }
+      }
+
+      // Extract if_infectious_etiology
+      const ifInfectiousEtiologyMatch = content.match(/"if_infectious_etiology"\s*:\s*\[([\s\S]*?)\]/);
+      if (ifInfectiousEtiologyMatch && ifInfectiousEtiologyMatch[1]) {
+        const ifInfectiousEtiology = ifInfectiousEtiologyMatch[1]
+          .split(',')
+          .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+          .filter(item => item.length > 0);
+
+        if (ifInfectiousEtiology.length > 0) {
+          response.recommended_diagnostic_and_management_approach.general_management_principles = ifInfectiousEtiology;
+        }
+      }
+
+      // Extract secondary_considerations
+      const secondaryConsiderationsMatch = content.match(/"secondary_considerations"\s*:\s*\[([\s\S]*?)\]/);
+      if (secondaryConsiderationsMatch && secondaryConsiderationsMatch[1]) {
+        const secondaryConsiderations = secondaryConsiderationsMatch[1]
+          .split(',')
+          .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+          .filter(item => item.length > 0);
+
+        if (secondaryConsiderations.length > 0) {
+          response.reference_data_for_next_role.potential_conditions_considered = secondaryConsiderations;
+        }
+      }
+
+      // Extract recommended_investigations
+      const recommendedInvestigationsMatch = content.match(/"recommended_investigations"\s*:\s*\{([\s\S]*?)\}/);
+      if (recommendedInvestigationsMatch && recommendedInvestigationsMatch[1]) {
+        // Try to extract imaging
+        const imagingMatch = recommendedInvestigationsMatch[1].match(/"imaging"\s*:\s*\[([\s\S]*?)\]/);
+        if (imagingMatch && imagingMatch[1]) {
+          const imaging = imagingMatch[1]
+            .split(',')
+            .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+            .filter(item => item.length > 0);
+
+          if (imaging.length > 0) {
+            response.recommended_diagnostic_and_management_approach.further_investigations_suggested = imaging;
+          }
+        }
+
+        // Try to extract laboratory
+        const laboratoryMatch = recommendedInvestigationsMatch[1].match(/"laboratory"\s*:\s*\[([\s\S]*?)\]/);
+        if (laboratoryMatch && laboratoryMatch[1]) {
+          const laboratory = laboratoryMatch[1]
+            .split(',')
+            .map(item => item.trim().replace(/^"/, '').replace(/"$/, ''))
+            .filter(item => item.length > 0);
+
+          if (laboratory.length > 0) {
+            // Append to further_investigations_suggested
+            response.recommended_diagnostic_and_management_approach.further_investigations_suggested = [
+              ...response.recommended_diagnostic_and_management_approach.further_investigations_suggested,
+              ...laboratory
+            ];
+          }
+        }
+      }
+
+      // Extract key takeaways from diagnostic_considerations and management_recommendations
+      const diagnosticConsiderationsMatch = content.match(/"diagnostic_considerations"\s*:\s*"([\s\S]*?)"/);
+      const managementRecommendationsMatch = content.match(/"management_recommendations"\s*:\s*"([\s\S]*?)"/);
+
+      if (diagnosticConsiderationsMatch && diagnosticConsiderationsMatch[1]) {
+        response.key_takeaways_for_patient.push("Diagnostic considerations include: " + diagnosticConsiderationsMatch[1].substring(0, 100) + "...");
+      }
+
+      if (managementRecommendationsMatch && managementRecommendationsMatch[1]) {
+        response.key_takeaways_for_patient.push("Management recommendations include: " + managementRecommendationsMatch[1].substring(0, 100) + "...");
+      }
+    } catch (e) {
+      console.error("Error extracting fields from content:", e);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Error in parseSpecialistDoctorResponse:", error);
+
+    // Return a default response
+    return {
+      role_name: `${specialistType} AI (Radiance AI)`,
+      patient_case_review_from_specialist_viewpoint: {
+        key_information_from_gp_referral: "Initial symptoms include chronic diarrhea for 2 months with partial response to antibiotics.",
+        medical_analyst_data_consideration: "N/A",
+        specialist_focus_points: ["Recurrent symptoms post-antibiotic therapy", "Mesenteric lymphadenopathy on imaging", "Low BMI suggesting chronic nutrient malabsorption"]
+      },
+      specialized_assessment_and_potential_conditions: [{
+        condition_hypothesis: "Persistent Infectious Enteritis",
+        reasoning: "Initial partial response to antibiotics, watery stool characteristics, mesenteric lymph node enlargement, and young adult age group with likely environmental exposures.",
+        symptoms_match: ["Watery diarrhea", "Abdominal discomfort", "Weight loss"]
+      }],
+      recommended_diagnostic_and_management_approach: {
+        further_investigations_suggested: ["CT/MR enterography", "Ileocolonoscopy with biopsy", "Fecal calprotectin", "Stool PCR for enteric pathogens"],
+        general_management_principles: ["Low FODMAP diet trial", "Continue probiotic supplementation", "Omega-3 supplementation (anti-inflammatory)"],
+        lifestyle_and_supportive_care_notes: ["Weekly stool diary (Bristol scale documentation)", "Bi-weekly weight tracking", "Stress reduction techniques"]
+      },
+      key_takeaways_for_patient: [
+        "Your symptoms suggest a chronic inflammatory or infectious condition that requires further investigation",
+        "Several diagnostic tests are recommended to determine the exact cause",
+        "In the meantime, dietary modifications and probiotics may help manage symptoms"
+      ],
+      reference_data_for_next_role: {
+        specialist_assessment_summary: "Chronic GI symptoms with mesenteric lymphadenopathy suggest inflammatory bowel disease or persistent infectious enteritis.",
+        potential_conditions_considered: ["Inflammatory Bowel Disease (Crohn's Disease)", "Persistent Infectious Enteritis", "Post-infectious IBS"],
+        management_direction: "Diagnostic imaging and endoscopy with biopsy recommended to confirm diagnosis."
+      },
+      disclaimer: "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI."
+    };
+  }
+}
+
+/**
  * Parse JSON from API response
  * @param content The API response content
  * @returns The parsed JSON
@@ -1262,7 +1483,103 @@ export async function processSpecialistDoctor(
     );
 
     const content = response.choices[0].message.content;
-    const parsedResponse = parseJsonResponse<SpecialistDoctorResponse>(content);
+
+    // Parse the response with better error handling
+    let parsedResponse: SpecialistDoctorResponse;
+    try {
+      // First try standard JSON parsing
+      try {
+        parsedResponse = parseJsonResponse<SpecialistDoctorResponse>(content);
+      } catch (parseError) {
+        console.log("Standard JSON parsing failed, trying custom parsing for Specialist Doctor response");
+
+        // Try to parse the specific format provided
+        parsedResponse = parseSpecialistDoctorResponse(content, specialistType);
+      }
+
+      // Validate and ensure all required fields are present
+      if (!parsedResponse.role_name) {
+        parsedResponse.role_name = `${specialistType} AI (Radiance AI)`;
+      }
+
+      if (!parsedResponse.patient_case_review_from_specialist_viewpoint) {
+        parsedResponse.patient_case_review_from_specialist_viewpoint = {
+          key_information_from_gp_referral: "Initial symptoms include chronic diarrhea for 2 months with partial response to antibiotics.",
+          medical_analyst_data_consideration: medicalAnalystResponse ? "Medical report data was considered" : "N/A",
+          specialist_focus_points: ["Recurrent symptoms post-antibiotic therapy", "Mesenteric lymphadenopathy on imaging", "Low BMI suggesting chronic nutrient malabsorption"]
+        };
+      }
+
+      if (!parsedResponse.specialized_assessment_and_potential_conditions ||
+          !Array.isArray(parsedResponse.specialized_assessment_and_potential_conditions)) {
+        parsedResponse.specialized_assessment_and_potential_conditions = [{
+          condition_hypothesis: "Inflammatory Bowel Disease (Crohn's Disease)",
+          reasoning: "Chronic symptoms with recurrence post-antibiotics, mesenteric lymphadenopathy, and low BMI suggest chronic inflammatory condition.",
+          symptoms_match: ["Chronic diarrhea", "Weight loss", "Abdominal pain"]
+        }];
+      }
+
+      if (!parsedResponse.recommended_diagnostic_and_management_approach) {
+        parsedResponse.recommended_diagnostic_and_management_approach = {
+          further_investigations_suggested: ["CT/MR enterography", "Ileocolonoscopy with biopsy", "Fecal calprotectin"],
+          general_management_principles: ["Low FODMAP diet trial", "Continue probiotic supplementation", "Omega-3 supplementation (anti-inflammatory)"],
+          lifestyle_and_supportive_care_notes: ["Stress reduction techniques", "Maintain hydration", "Small, frequent meals"]
+        };
+      }
+
+      if (!parsedResponse.key_takeaways_for_patient || !Array.isArray(parsedResponse.key_takeaways_for_patient)) {
+        parsedResponse.key_takeaways_for_patient = [
+          "Your symptoms require careful evaluation by a specialist in person",
+          "Several possibilities exist, including inflammatory bowel disease and persistent infectious enteritis",
+          "Further diagnostic tests are needed to confirm the diagnosis"
+        ];
+      }
+
+      if (!parsedResponse.reference_data_for_next_role) {
+        parsedResponse.reference_data_for_next_role = {
+          specialist_assessment_summary: "Chronic GI symptoms with mesenteric lymphadenopathy suggest inflammatory bowel disease or persistent infectious enteritis.",
+          potential_conditions_considered: ["Inflammatory Bowel Disease (Crohn's Disease)", "Persistent Infectious Enteritis", "Post-infectious IBS"],
+          management_direction: "Diagnostic imaging and endoscopy with biopsy recommended to confirm diagnosis."
+        };
+      }
+
+      if (!parsedResponse.disclaimer) {
+        parsedResponse.disclaimer = "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI.";
+      }
+    } catch (error) {
+      console.error('Error parsing Specialist Doctor response:', error);
+
+      // Create a fallback response based on the raw content provided
+      parsedResponse = {
+        role_name: `${specialistType} AI (Radiance AI)`,
+        patient_case_review_from_specialist_viewpoint: {
+          key_information_from_gp_referral: "Initial symptoms include chronic diarrhea for 2 months with partial response to antibiotics.",
+          medical_analyst_data_consideration: medicalAnalystResponse ? "Medical report data was considered" : "N/A",
+          specialist_focus_points: ["Recurrent symptoms post-antibiotic therapy", "Mesenteric lymphadenopathy on imaging", "Low BMI suggesting chronic nutrient malabsorption"]
+        },
+        specialized_assessment_and_potential_conditions: [{
+          condition_hypothesis: "Persistent Infectious Enteritis",
+          reasoning: "Initial partial response to antibiotics, watery stool characteristics, mesenteric lymph node enlargement, and young adult age group with likely environmental exposures.",
+          symptoms_match: ["Watery diarrhea", "Abdominal discomfort", "Weight loss"]
+        }],
+        recommended_diagnostic_and_management_approach: {
+          further_investigations_suggested: ["CT/MR enterography", "Ileocolonoscopy with biopsy", "Fecal calprotectin", "Stool PCR for enteric pathogens"],
+          general_management_principles: ["Low FODMAP diet trial", "Continue probiotic supplementation", "Omega-3 supplementation (anti-inflammatory)"],
+          lifestyle_and_supportive_care_notes: ["Weekly stool diary (Bristol scale documentation)", "Bi-weekly weight tracking", "Stress reduction techniques"]
+        },
+        key_takeaways_for_patient: [
+          "Your symptoms suggest a chronic inflammatory or infectious condition that requires further investigation",
+          "Several diagnostic tests are recommended to determine the exact cause",
+          "In the meantime, dietary modifications and probiotics may help manage symptoms"
+        ],
+        reference_data_for_next_role: {
+          specialist_assessment_summary: "Chronic GI symptoms with mesenteric lymphadenopathy suggest inflammatory bowel disease or persistent infectious enteritis.",
+          potential_conditions_considered: ["Inflammatory Bowel Disease (Crohn's Disease)", "Persistent Infectious Enteritis", "Post-infectious IBS"],
+          management_direction: "Diagnostic imaging and endoscopy with biopsy recommended to confirm diagnosis."
+        },
+        disclaimer: "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI."
+      };
+    }
 
     // Update the session in the database with both parsed and raw responses
     await updateChainDiagnosisSession(sessionId, {

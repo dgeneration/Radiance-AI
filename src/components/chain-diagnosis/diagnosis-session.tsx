@@ -6,6 +6,7 @@ import { ChainDiagnosisProgressIndicator } from './progress-indicator';
 import { ChainDiagnosisStreamingContent } from './streaming-content';
 import { MedicalAnalystView } from './medical-analyst-view';
 import { GeneralPhysicianView } from './general-physician-view';
+import { SpecialistDoctorView } from './specialist-doctor-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -40,34 +41,82 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   useEffect(() => {
     if (isStreaming) {
       setViewMode('progress');
-    } else if (currentSession?.medical_analyst_response || currentSession?.general_physician_response) {
+    } else if (currentSession?.medical_analyst_response ||
+               currentSession?.general_physician_response ||
+               currentSession?.specialist_doctor_response) {
       // When streaming is complete and we have a response, switch to detailed view
       // Use a small timeout to ensure the UI has time to update with the latest data
       setTimeout(() => {
         setViewMode('detailed');
       }, 500);
     }
-  }, [isStreaming, currentSession?.medical_analyst_response, currentSession?.general_physician_response]);
+  }, [isStreaming, currentSession?.medical_analyst_response,
+      currentSession?.general_physician_response,
+      currentSession?.specialist_doctor_response]);
 
   // Additional effect to check for response changes
   useEffect(() => {
-    if ((currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming) {
+    if ((currentSession?.medical_analyst_response ||
+         currentSession?.general_physician_response ||
+         currentSession?.specialist_doctor_response) && !isStreaming) {
       setViewMode('detailed');
     }
-  }, [currentSession?.medical_analyst_response, currentSession?.general_physician_response, isStreaming]);
+  }, [currentSession?.medical_analyst_response,
+      currentSession?.general_physician_response,
+      currentSession?.specialist_doctor_response,
+      isStreaming]);
 
   // Create a ref outside the useEffect to track if we've already switched to detailed view
   const hasViewSwitchedRef = React.useRef(false);
 
-  // Additional effect to switch to detailed view when currentStep is 1 (General Physician)
+  // Create a ref for the detailed view container
+  const detailedViewRef = React.useRef<HTMLDivElement>(null);
+
+  // Create refs for each role component
+  const medicalAnalystRef = React.useRef<HTMLDivElement>(null);
+  const generalPhysicianRef = React.useRef<HTMLDivElement>(null);
+  const specialistDoctorRef = React.useRef<HTMLDivElement>(null);
+
+  // Determine the last completed role
+  const getLastCompletedRole = () => {
+    if (currentSession?.specialist_doctor_response) return 'specialist';
+    if (currentSession?.general_physician_response) return 'physician';
+    if (currentSession?.medical_analyst_response) return 'analyst';
+    return null;
+  };
+
+  const lastCompletedRole = getLastCompletedRole();
+
+  // Additional effect to switch to detailed view when currentStep is 1 (General Physician) or 2 (Specialist Doctor)
   // but only do this once to avoid triggering multiple API calls
   useEffect(() => {
-    if (currentStep === 1 && !isStreaming && !hasViewSwitchedRef.current) {
-      // If we're on the General Physician step and not streaming, switch to detailed view
+    if ((currentStep === 1 || currentStep === 2) && !isStreaming && !hasViewSwitchedRef.current) {
+      // If we're on the General Physician or Specialist Doctor step and not streaming, switch to detailed view
       setViewMode('detailed');
       hasViewSwitchedRef.current = true;
     }
   }, [currentStep, isStreaming]);
+
+  // Auto-scroll to the detailed view when switching to it
+  useEffect(() => {
+    if (viewMode === 'detailed') {
+      // First scroll to the detailed view section
+      setTimeout(() => {
+        detailedViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Then scroll to the last completed role after a short delay
+        setTimeout(() => {
+          if (lastCompletedRole === 'specialist' && specialistDoctorRef.current) {
+            specialistDoctorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'physician' && generalPhysicianRef.current) {
+            generalPhysicianRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'analyst' && medicalAnalystRef.current) {
+            medicalAnalystRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
+      }, 100);
+    }
+  }, [viewMode, lastCompletedRole]);
 
   // Handle continuing to the next step
   const handleContinue = async () => {
@@ -267,7 +316,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
               </TabsContent>
 
               <TabsContent value="detailed" className="mt-0 animate-in fade-in-50 duration-300">
-                <div className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
+                <div ref={detailedViewRef} className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-primary/10 text-primary">
                       <FileText className="h-5 w-5" />
@@ -286,22 +335,39 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 <div className="space-y-6">
                   {/* Medical Analyst View - Only show if there's a medical report */}
                   {(currentSession?.user_input.medical_report?.text || currentSession?.user_input.medical_report?.image_url) && (
-                    <MedicalAnalystView
-                      isActive={currentStep === 0}
-                      onContinue={handleContinue}
-                    />
+                    <div ref={medicalAnalystRef}>
+                      <MedicalAnalystView
+                        isActive={currentStep === 0}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'analyst'}
+                      />
+                    </div>
                   )}
 
                   {/* General Physician View */}
                   {(currentStep >= 1 || currentSession?.general_physician_response) && (
-                    <GeneralPhysicianView
-                      isActive={currentStep === 1 || (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url)}
-                      onContinue={handleContinue}
-                    />
+                    <div ref={generalPhysicianRef}>
+                      <GeneralPhysicianView
+                        isActive={currentStep === 1 || (!currentSession?.user_input.medical_report?.text && !currentSession?.user_input.medical_report?.image_url)}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'physician'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Specialist Doctor View */}
+                  {(currentStep >= 2 || currentSession?.specialist_doctor_response) && (
+                    <div ref={specialistDoctorRef}>
+                      <SpecialistDoctorView
+                        isActive={currentStep === 2}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'specialist'}
+                      />
+                    </div>
                   )}
 
                   {/* Other AI role views will be added in subsequent phases */}
-                  {currentStep > 1 && (
+                  {currentStep > 2 && (
                     <div className="bg-card/50 backdrop-blur-sm p-5 rounded-xl border border-border/50 shadow-sm text-center">
                       <div className="flex flex-col items-center gap-3 py-6">
                         <div className="p-3 rounded-full bg-primary/10 text-primary">
@@ -310,7 +376,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                         <div>
                           <h3 className="text-lg font-medium mb-1">Coming Soon</h3>
                           <p className="text-muted-foreground max-w-md mx-auto">
-                            Detailed views for Specialist Doctor, Pathologist, Nutritionist, Pharmacist,
+                            Detailed views for Pathologist, Nutritionist, Pharmacist,
                             Follow-up Specialist, and Summarizer will be implemented in subsequent phases.
                           </p>
                         </div>

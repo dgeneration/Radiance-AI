@@ -539,7 +539,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             return false;
           }
 
-          await processSpecialistDoctor(
+          const specialistResponse = await processSpecialistDoctor(
             sessionId,
             userInput,
             currentSession.general_physician_response,
@@ -547,7 +547,23 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             true,
             (chunk, isComplete) => handleStreamingResponse('specialistDoctor', chunk, isComplete)
           );
+
+          // Force a UI update by updating the current session directly
+          setCurrentSession(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              specialist_doctor_response: specialistResponse
+            };
+          });
+
           setCurrentStep(3);
+
+          // Schedule a page reload after a short delay to ensure the data is saved
+          setIsReloading(true); // Set reloading state to show loading indicator
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
           break;
 
         case 3: // Pathologist

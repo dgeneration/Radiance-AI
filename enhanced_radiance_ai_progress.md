@@ -33,7 +33,11 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 
 ## In Progress
 
-- No pending tasks
+🟡 Working on Phase 5.4 - Specialist Doctor AI implementation:
+- Creating the Specialist Doctor view component
+- Integrating it with the diagnosis session component
+- Implementing proper streaming response handling
+- Testing the component with real data
 
 ---
 
@@ -172,10 +176,10 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 - ✅ Add extraction of recommended specialist type
 
 ### 🔹 5.4 Specialist Doctor AI
-- ⬜ Configure API component using sonar-reasoning-pro model
-- ⬜ Implement dynamic system prompt based on specialist type
-- ⬜ Create UI for displaying streaming Specialist Doctor results
-- ⬜ Add specialized display components based on specialist type
+- 🟡 Configure API component using sonar-reasoning-pro model
+- 🟡 Implement dynamic system prompt based on specialist type
+- 🟡 Create UI for displaying streaming Specialist Doctor results
+- 🟡 Add specialized display components based on specialist type
 
 ### 🔹 5.5 Additional AI Roles
 - ⬜ Implement Pathologist AI using sonar-pro model

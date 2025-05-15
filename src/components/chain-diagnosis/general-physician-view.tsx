@@ -19,9 +19,10 @@ import { cn } from '@/lib/utils';
 interface GeneralPhysicianViewProps {
   isActive: boolean;
   onContinue: () => void;
+  isLastRole?: boolean;
 }
 
-export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianViewProps) {
+export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false }: GeneralPhysicianViewProps) {
   const {
     currentSession,
     streamingContent,
@@ -32,7 +33,7 @@ export function GeneralPhysicianView({ isActive, onContinue }: GeneralPhysicianV
 
   const [parsedResponse, setParsedResponse] = useState<GeneralPhysicianResponse | null>(null);
   const [activeTab, setActiveTab] = useState('analysis');
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(isLastRole);
 
   // Parse the streaming content or use the stored response
   useEffect(() => {

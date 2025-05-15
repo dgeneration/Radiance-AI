@@ -15,9 +15,10 @@ import { cn } from '@/lib/utils';
 interface MedicalAnalystViewProps {
   isActive: boolean;
   onContinue: () => void;
+  isLastRole?: boolean;
 }
 
-export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewProps) {
+export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }: MedicalAnalystViewProps) {
   const {
     currentSession,
     streamingContent,
@@ -28,7 +29,7 @@ export function MedicalAnalystView({ isActive, onContinue }: MedicalAnalystViewP
 
   const [parsedResponse, setParsedResponse] = useState<MedicalAnalystResponse | null>(null);
   const [activeTab, setActiveTab] = useState('findings');
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(isLastRole);
 
   // Parse the streaming content or use the stored response
   useEffect(() => {
