@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { PathologistResponse } from '@/types/chain-diagnosis';
+// Import necessary types and components
 
 // Define the new response type based on the provided JSON
 interface NewPathologistResponse {
@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, AlertCircle, CheckCircle,
-  Activity, FileText, ClipboardList, AlertTriangle,
   ChevronDown, ChevronUp, TestTube, Microscope,
   FlaskRound, Beaker
 } from 'lucide-react';
@@ -68,7 +67,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -78,7 +77,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
             const parsed = JSON.parse(streamingContent.pathologist);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -96,15 +95,15 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in pathologist response parsing
     }
   }, [streamingContent.pathologist, currentSession?.pathologist_response]);

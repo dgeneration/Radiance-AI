@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { NutritionistResponse } from '@/types/chain-diagnosis';
-
-// Define the new response type based on the provided JSON
+// Define the response type based on the provided JSON
 interface NewNutritionistResponse {
   patient_id: string;
   name: string;
@@ -34,9 +32,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, AlertCircle, CheckCircle,
-  Activity, FileText, ClipboardList, AlertTriangle,
+  Activity, ClipboardList, AlertTriangle,
   ChevronDown, ChevronUp, Apple, Utensils,
-  Scale, Salad, User, Stethoscope
+  Salad, User, Stethoscope
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -86,7 +84,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -96,7 +94,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
             const parsed = JSON.parse(streamingContent.nutritionist);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -114,15 +112,15 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in nutritionist response parsing
     }
   }, [streamingContent.nutritionist, currentSession?.nutritionist_response]);
