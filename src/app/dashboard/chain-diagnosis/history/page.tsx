@@ -32,7 +32,7 @@ export default async function ChainDiagnosisHistoryPage() {
     if (!error) {
       sessions = Array.isArray(sessionsData) ? sessionsData : [];
     }
-  } catch (error) {
+  } catch {
     // Continue with empty sessions array
   }
 

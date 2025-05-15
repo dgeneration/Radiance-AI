@@ -153,7 +153,7 @@ function RoleContent({ title, icon, content, isStreaming, isActive, forceStreami
                         const parsed = JSON.parse(jsonMatch[1]);
                         return JSON.stringify(parsed, null, 2);
                       }
-                    } catch (e) {
+                    } catch {
                       // If JSON parsing fails, return the cleaned content
                     }
                   }

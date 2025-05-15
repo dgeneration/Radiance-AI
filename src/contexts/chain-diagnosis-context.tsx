@@ -347,7 +347,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
       setUserSessions(sessions);
 
       return true;
-    } catch (error) {
+    } catch {
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {

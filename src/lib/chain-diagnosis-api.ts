@@ -463,7 +463,7 @@ function parseSpecialistDoctorResponse(content: string, specialistType: string):
     // First, try to parse it as a regular JSON
     try {
       return JSON.parse(content) as SpecialistDoctorResponse;
-    } catch (e) {
+    } catch {
       // Regular JSON parsing failed, trying to extract from content
     }
 
@@ -472,7 +472,7 @@ function parseSpecialistDoctorResponse(content: string, specialistType: string):
     if (jsonMatch && jsonMatch[1]) {
       try {
         return JSON.parse(jsonMatch[1]) as SpecialistDoctorResponse;
-      } catch (e) {
+      } catch {
         // Extracted JSON parsing failed, trying to parse manually
       }
     }
@@ -1487,8 +1487,8 @@ export async function processSpecialistDoctor(
       // First try standard JSON parsing
       try {
         parsedResponse = parseJsonResponse<SpecialistDoctorResponse>(content);
-      } catch (parseError) {
-        console.log("Standard JSON parsing failed, trying custom parsing for Specialist Doctor response");
+      } catch {
+        // Standard JSON parsing failed, trying custom parsing for Specialist Doctor response
 
         // Try to parse the specific format provided
         parsedResponse = parseSpecialistDoctorResponse(content, specialistType);
@@ -1543,7 +1543,7 @@ export async function processSpecialistDoctor(
       if (!parsedResponse.disclaimer) {
         parsedResponse.disclaimer = "This specialist insight is for informational purposes and not a substitute for a direct consultation and diagnosis by a qualified healthcare professional. Radiance AI.";
       }
-    } catch (error) {
+    } catch {
       // Create a fallback response based on the raw content provided
       parsedResponse = {
         role_name: `${specialistType} AI (Radiance AI)`,
@@ -1944,7 +1944,7 @@ export async function getChainDiagnosisSession(sessionId: string): Promise<Chain
     }
 
     return data as ChainDiagnosisSession;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -1971,6 +1971,8 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
       return [];
     }
 
+    // Continue with valid data
+
     const sessions = data as ChainDiagnosisSession[];
 
     // Validate the sessions data
@@ -1984,7 +1986,7 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
 
 
     return validSessions;
-  } catch (error) {
+  } catch {
     return [];
   }
 }

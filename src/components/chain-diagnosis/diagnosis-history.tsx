@@ -247,7 +247,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
               </CardFooter>
             </Card>
             );
-          } catch (error) {
+          } catch {
             return null;
           }
         })}

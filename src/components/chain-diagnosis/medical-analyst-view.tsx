@@ -55,7 +55,7 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -65,7 +65,7 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
             const parsed = JSON.parse(streamingContent.medicalAnalyst);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -83,15 +83,15 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in medical analyst response parsing
     }
   }, [streamingContent.medicalAnalyst, currentSession?.medical_analyst_response]);

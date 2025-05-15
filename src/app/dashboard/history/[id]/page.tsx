@@ -438,10 +438,8 @@ export default async function DiagnosisDetailPage({ params }: any) {
         </div>
       </>
     );
-  } catch (error) {
-    // Redirect will stop execution, but TypeScript doesn't know that
+  } catch {
+    // Redirect will stop execution
     redirect("/dashboard/history?error=Error fetching diagnosis");
-    // This line is never reached, but TypeScript requires a return path
-    return null;
   }
 }

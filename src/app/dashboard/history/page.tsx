@@ -34,7 +34,7 @@ export default async function HistoryPage() {
     if (!error && diagnosesData) {
       diagnoses = diagnosesData;
     }
-  } catch (error) {
+  } catch {
     // Continue with empty diagnoses array
   }
 
