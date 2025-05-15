@@ -49,7 +49,8 @@ function ThreeCircleLayout({
   isStreaming,
   error,
   onContinue,
-  isProcessing
+  isProcessing,
+  currentSession
 }: {
   steps: { title: string; description: string }[];
   currentStep: number;
@@ -58,6 +59,7 @@ function ThreeCircleLayout({
   error: string | null;
   onContinue?: () => void;
   isProcessing?: boolean;
+  currentSession: any;
 }) {
   // Get current step info
   const currentStepInfo = steps[currentStep];
@@ -72,6 +74,18 @@ function ThreeCircleLayout({
 
   // Show loading animation if streaming or loading
   const showLoading = isLoading || isStreaming;
+
+  // Determine if the current step is in progress (has started but not completed)
+  const isCurrentStepInProgress = showLoading || (
+    // Check if the current step's response is missing
+    (currentStep === 0 && !currentSession?.medical_analyst_response) ||
+    (currentStep === 1 && !currentSession?.general_physician_response) ||
+    (currentStep === 2 && !currentSession?.specialist_doctor_response) ||
+    (currentStep === 3 && !currentSession?.pathologist_response) ||
+    (currentStep === 4 && !currentSession?.nutritionist_response) ||
+    (currentStep === 5 && !currentSession?.pharmacist_response) ||
+    (currentStep === 6 && !currentSession?.follow_up_specialist_response) ||
+    (currentStep === 7 && !currentSession?.summarizer_response));
 
   // Handle responsive icon sizes
   const [iconSize, setIconSize] = React.useState(40);
@@ -120,67 +134,63 @@ function ThreeCircleLayout({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Previous step circle (left) */}
-          <div className="relative">
-            {prevStepInfo ? (
-              <>
-                <motion.div
-                  className={cn(
-                    "w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md z-10 relative",
-                    "bg-gradient-to-br from-green-500 to-primary text-white"
-                  )}
-                  initial={{ scale: 0.9, opacity: 0.8 }}
-                  animate={{
-                    scale: 1,
-                    opacity: 1,
-                    boxShadow: "0 0 15px rgba(34, 197, 94, 0.3)"
-                  }}
-                  transition={{ duration: 0.5 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <Check className="h-10 w-10" />
-                </motion.div>
+          {/* Previous step circle (left) - only show if there's a previous step */}
+          {prevStepInfo ? (
+            <div className="relative">
+              <motion.div
+                className={cn(
+                  "w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md z-10 relative",
+                  "bg-gradient-to-br from-green-500 to-primary text-white"
+                )}
+                initial={{ scale: 0.9, opacity: 0.8 }}
+                animate={{
+                  scale: 1,
+                  opacity: 1,
+                  boxShadow: "0 0 15px rgba(34, 197, 94, 0.3)"
+                }}
+                transition={{ duration: 0.5 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <Check className="h-10 w-10" />
+              </motion.div>
 
-                {/* Step number badge */}
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 z-20">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm bg-green-500 text-white">
-                    {prevStepIndex !== null ? prevStepIndex + 1 : 0}
-                  </div>
+              {/* Step number badge */}
+              <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 z-20">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm bg-green-500 text-white">
+                  {prevStepIndex !== null ? prevStepIndex + 1 : 0}
                 </div>
+              </div>
 
-                {/* Connector line from previous to current - desktop */}
+              {/* Connector line from previous to current - desktop */}
+              <motion.div
+                className="absolute top-1/2 -right-8 w-8 h-2 -translate-y-1/2
+                           bg-gradient-to-r from-green-500 to-primary
+                           hidden md:block"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              />
+
+              {/* Connector line from previous to current - mobile (vertical) */}
+              <div className="absolute -bottom-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
-                  className="absolute top-1/2 -right-8 w-8 h-2 -translate-y-1/2
-                             bg-gradient-to-r from-green-500 to-primary
-                             hidden md:block"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
+                  className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
+                             bg-gradient-to-b from-green-500 to-primary"
+                  initial={{ scaleY: 0, originY: 0 }}
+                  animate={{ scaleY: 1 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 />
+              </div>
 
-                {/* Connector line from previous to current - mobile (vertical) */}
-                <div className="absolute -bottom-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
-                  <motion.div
-                    className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
-                               bg-gradient-to-b from-green-500 to-primary"
-                    initial={{ scaleY: 0, originY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  />
-                </div>
-
-                {/* Previous step title - responsive position */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 text-center hidden md:block">
-                  <p className="text-xs font-medium text-green-500 truncate">{prevStepInfo.title}</p>
-                </div>
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-26 text-center md:hidden">
-                  <p className="text-xs font-medium text-green-500 truncate">{prevStepInfo.title}</p>
-                </div>
-              </>
-            ) : (
-              <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 opacity-0"></div> // Placeholder to maintain layout
-            )}
-          </div>
+              {/* Previous step title - responsive position */}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 text-center hidden md:block">
+                <p className="text-xs font-medium text-green-500 truncate">{prevStepInfo.title}</p>
+              </div>
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-26 text-center md:hidden">
+                <p className="text-xs font-medium text-green-500 truncate">{prevStepInfo.title}</p>
+              </div>
+            </div>
+          ) : null}
 
           {/* Current step circle (center, larger) */}
           <div className="relative">
@@ -448,18 +458,31 @@ function ThreeCircleLayout({
                 const direction = i % 2 === 0 ? 1 : -1;
 
                 // Color based on position to ensure even distribution
+                // Use purple colors when loading/streaming
                 const colorGroup = i % 3;
-                const color = colorGroup === 0
-                  ? 'rgba(0, 198, 215, 0.9)'
-                  : colorGroup === 1
-                    ? 'rgba(29, 233, 182, 0.9)'
-                    : 'rgba(255, 255, 255, 0.9)';
+                const color = showLoading || isCurrentStepInProgress
+                  ? colorGroup === 0
+                    ? 'rgba(147, 51, 234, 0.9)' // Purple (purple-600)
+                    : colorGroup === 1
+                      ? 'rgba(168, 85, 247, 0.9)' // Light purple (purple-500)
+                      : 'rgba(192, 132, 252, 0.9)' // Very light purple (purple-400)
+                  : colorGroup === 0
+                    ? 'rgba(0, 198, 215, 0.9)' // Default cyan
+                    : colorGroup === 1
+                      ? 'rgba(29, 233, 182, 0.9)' // Default teal
+                      : 'rgba(255, 255, 255, 0.9)'; // Default white
 
-                const glow = colorGroup === 0
-                  ? 'rgba(0, 198, 215, 0.8)'
-                  : colorGroup === 1
-                    ? 'rgba(29, 233, 182, 0.8)'
-                    : 'rgba(255, 255, 255, 0.8)';
+                const glow = showLoading || isCurrentStepInProgress
+                  ? colorGroup === 0
+                    ? 'rgba(147, 51, 234, 0.8)' // Purple glow
+                    : colorGroup === 1
+                      ? 'rgba(168, 85, 247, 0.8)' // Light purple glow
+                      : 'rgba(192, 132, 252, 0.8)' // Very light purple glow
+                  : colorGroup === 0
+                    ? 'rgba(0, 198, 215, 0.8)' // Default cyan glow
+                    : colorGroup === 1
+                      ? 'rgba(29, 233, 182, 0.8)' // Default teal glow
+                      : 'rgba(255, 255, 255, 0.8)'; // Default white glow
 
                 return (
                   <motion.div
@@ -527,18 +550,31 @@ function ThreeCircleLayout({
                 const size = 0.5 + Math.random() * 1;
 
                 // Color based on position to ensure even distribution
+                // Use purple colors when loading/streaming
                 const colorGroup = i % 3;
-                const color = colorGroup === 0
-                  ? 'rgba(0, 198, 215, 0.8)'
-                  : colorGroup === 1
-                    ? 'rgba(29, 233, 182, 0.8)'
-                    : 'rgba(255, 255, 255, 0.8)';
+                const color = showLoading || isCurrentStepInProgress
+                  ? colorGroup === 0
+                    ? 'rgba(147, 51, 234, 0.8)' // Purple (purple-600)
+                    : colorGroup === 1
+                      ? 'rgba(168, 85, 247, 0.8)' // Light purple (purple-500)
+                      : 'rgba(192, 132, 252, 0.8)' // Very light purple (purple-400)
+                  : colorGroup === 0
+                    ? 'rgba(0, 198, 215, 0.8)' // Default cyan
+                    : colorGroup === 1
+                      ? 'rgba(29, 233, 182, 0.8)' // Default teal
+                      : 'rgba(255, 255, 255, 0.8)'; // Default white
 
-                const glow = colorGroup === 0
-                  ? '0 0 3px rgba(0, 198, 215, 0.6)'
-                  : colorGroup === 1
-                    ? '0 0 3px rgba(29, 233, 182, 0.6)'
-                    : '0 0 3px rgba(255, 255, 255, 0.6)';
+                const glow = showLoading || isCurrentStepInProgress
+                  ? colorGroup === 0
+                    ? '0 0 3px rgba(147, 51, 234, 0.6)' // Purple glow
+                    : colorGroup === 1
+                      ? '0 0 3px rgba(168, 85, 247, 0.6)' // Light purple glow
+                      : '0 0 3px rgba(192, 132, 252, 0.6)' // Very light purple glow
+                  : colorGroup === 0
+                    ? '0 0 3px rgba(0, 198, 215, 0.6)' // Default cyan glow
+                    : colorGroup === 1
+                      ? '0 0 3px rgba(29, 233, 182, 0.6)' // Default teal glow
+                      : '0 0 3px rgba(255, 255, 255, 0.6)'; // Default white glow
 
                 // Generate waypoints that stay mostly in the assigned quadrant
                 const generateWaypoint = () => {
@@ -652,7 +688,7 @@ function ThreeCircleLayout({
                 />
               </div>
 
-              {showLoading ? (
+              {showLoading || isCurrentStepInProgress ? (
                 <div className="relative">
                   <Loader2 className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 animate-spin text-white drop-shadow-glow" />
                   <motion.div
@@ -702,64 +738,60 @@ function ThreeCircleLayout({
             </div>
           </div>
 
-          {/* Next step circle (right) */}
-          <div className="relative">
-            {nextStepInfo ? (
-              <>
-                {/* Connector line from current to next - desktop */}
+          {/* Next step circle (right) - only show if there's a next step */}
+          {nextStepInfo ? (
+            <div className="relative">
+              {/* Connector line from current to next - desktop */}
+              <motion.div
+                className="absolute top-1/2 -left-8 w-8 h-2 -translate-y-1/2
+                           bg-border/40
+                           hidden md:block"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              />
+
+              {/* Connector line from current to next - mobile (vertical) */}
+              <div className="absolute -top-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
-                  className="absolute top-1/2 -left-8 w-8 h-2 -translate-y-1/2
-                             bg-border/40
-                             hidden md:block"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
+                  className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
+                             bg-gradient-to-t from-border/40 to-border/40"
+                  initial={{ scaleY: 0, originY: 1 }}
+                  animate={{ scaleY: 1 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 />
+              </div>
 
-                {/* Connector line from current to next - mobile (vertical) */}
-                <div className="absolute -top-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
-                  <motion.div
-                    className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
-                               bg-gradient-to-t from-border/40 to-border/40"
-                    initial={{ scaleY: 0, originY: 1 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                  />
-                </div>
+              <motion.div
+                className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md bg-card border border-border text-muted-foreground z-10 relative"
+                initial={{ scale: 0.9, opacity: 0.8 }}
+                animate={{
+                  scale: 1,
+                  opacity: 1,
+                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)"
+                }}
+                transition={{ duration: 0.5 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                {getStepIcon(nextStepInfo.title, 24)}
+              </motion.div>
 
-                <motion.div
-                  className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-md bg-card border border-border text-muted-foreground z-10 relative"
-                  initial={{ scale: 0.9, opacity: 0.8 }}
-                  animate={{
-                    scale: 1,
-                    opacity: 1,
-                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)"
-                  }}
-                  transition={{ duration: 0.5 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {getStepIcon(nextStepInfo.title, 24)}
-                </motion.div>
+              {/* Step number badge */}
+              <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 z-20">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm bg-card border border-border text-muted-foreground">
+                  {nextStepIndex !== null ? nextStepIndex + 1 : 0}
+                </div>
+              </div>
 
-                {/* Step number badge */}
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 z-20">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shadow-sm bg-card border border-border text-muted-foreground">
-                    {nextStepIndex !== null ? nextStepIndex + 1 : 0}
-                  </div>
-                </div>
-
-                {/* Next step title - responsive position */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 text-center hidden md:block">
-                  <p className="text-xs font-medium text-muted-foreground truncate">{nextStepInfo.title}</p>
-                </div>
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-26 text-center md:hidden">
-                  <p className="text-xs font-medium text-muted-foreground truncate">{nextStepInfo.title}</p>
-                </div>
-              </>
-            ) : (
-              <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 opacity-0"></div> // Placeholder to maintain layout
-            )}
-          </div>
+              {/* Next step title - responsive position */}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-24 text-center hidden md:block">
+                <p className="text-xs font-medium text-muted-foreground truncate">{nextStepInfo.title}</p>
+              </div>
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-26 text-center md:hidden">
+                <p className="text-xs font-medium text-muted-foreground truncate">{nextStepInfo.title}</p>
+              </div>
+            </div>
+          ) : null}
         </motion.div>
 
 
@@ -780,10 +812,10 @@ function ThreeCircleLayout({
               {currentStepInfo.description}
             </p>
 
-            {showLoading && (
+            {(showLoading || isCurrentStepInProgress) && (
               <Badge
                 variant="outline"
-                className="bg-primary/10 text-primary border-primary/20 px-3 py-1 text-sm font-normal"
+                className="bg-purple-600/10 text-purple-500 border-purple-500/20 px-3 py-1 text-sm font-normal"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Thinking...
@@ -828,27 +860,57 @@ function ThreeCircleLayout({
 }
 
 // Landscape flow visualization component
-function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalReport }: {
+function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalReport, currentSession }: {
   steps: { title: string; description: string }[];
   currentStep: number;
   isLoading: boolean;
   isStreaming: boolean;
   hasMedicalReport: boolean;
+  currentSession: any;
 }) {
   return (
     <div className="w-full overflow-x-auto pb-4 mt-6">
       <div className="flex items-center min-w-max px-4 py-2">
         {steps.map((step, index) => {
           // Calculate the actual step number in the full process
-          const actualStepNumber = hasMedicalReport ? index : index + 1;
+          const actualStepNumber = index;
 
           // Determine if this step is active
-          const isStepActive = hasMedicalReport
-            ? actualStepNumber === currentStep
-            : (index === 0 && (currentStep === 0 || currentStep === 1)) || actualStepNumber === currentStep;
+          const isStepActive = actualStepNumber === currentStep;
 
-          const isCompleted = actualStepNumber < currentStep;
-          const showLoading = isStepActive && (isLoading || isStreaming);
+          // Determine if this step is completed based on the presence of a response
+          const isCompleted =
+            // For Medical Analyst (index 0 when hasMedicalReport is true)
+            (hasMedicalReport && index === 0 && currentSession?.medical_analyst_response) ||
+            // For General Physician (index 0 when no medical report, or index 1 when hasMedicalReport is true)
+            ((hasMedicalReport ? index === 1 : index === 0) && currentSession?.general_physician_response) ||
+            // For Specialist Doctor
+            ((hasMedicalReport ? index === 2 : index === 1) && currentSession?.specialist_doctor_response) ||
+            // For Pathologist
+            ((hasMedicalReport ? index === 3 : index === 2) && currentSession?.pathologist_response) ||
+            // For Nutritionist
+            ((hasMedicalReport ? index === 4 : index === 3) && currentSession?.nutritionist_response) ||
+            // For Pharmacist
+            ((hasMedicalReport ? index === 5 : index === 4) && currentSession?.pharmacist_response) ||
+            // For Follow-up Specialist
+            ((hasMedicalReport ? index === 6 : index === 5) && currentSession?.follow_up_specialist_response) ||
+            // For Summarizer
+            ((hasMedicalReport ? index === 7 : index === 6) && currentSession?.summarizer_response);
+
+          // Determine if this step is in progress (has started but not completed)
+          const isStepInProgress = isStepActive && (
+            (index === 0 && !currentSession?.medical_analyst_response) ||
+            (index === 1 && !currentSession?.general_physician_response) ||
+            (index === 2 && !currentSession?.specialist_doctor_response) ||
+            (index === 3 && !currentSession?.pathologist_response) ||
+            (index === 4 && !currentSession?.nutritionist_response) ||
+            (index === 5 && !currentSession?.pharmacist_response) ||
+            (index === 6 && !currentSession?.follow_up_specialist_response) ||
+            (index === 7 && !currentSession?.summarizer_response)
+          );
+
+          // Show loading indicator when the step is active and API is in progress
+          const showLoading = isStepActive && (isLoading || isStreaming || (currentSession?.status === 'in_progress' && isStepInProgress));
 
           return (
             <React.Fragment key={index}>
@@ -906,7 +968,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                   {showLoading && (
                     <Badge
                       variant="outline"
-                      className="mt-1 bg-primary/10 text-primary border-primary/20 px-1 py-0 text-[10px] font-normal"
+                      className="mt-1 bg-purple-600/10 text-purple-500 border-purple-500/20 px-1 py-0 text-[10px] font-normal"
                     >
                       <Sparkles className="h-2 w-2 mr-0.5" />
                       Thinking...
@@ -994,10 +1056,55 @@ export function ChainDiagnosisProgressIndicator({
   // If no medical report, skip the Medical Analyst step
   const steps = hasMedicalReport ? allSteps : allSteps.slice(1);
 
-  // Calculate the actual current step (adjusted for medical report)
-  const adjustedCurrentStep = hasMedicalReport
-    ? currentStep
-    : (currentStep === 0 ? 1 : currentStep);
+  // Calculate the actual current step based on responses in the session
+  // This ensures the ThreeCircleLayout shows the correct current role
+  let adjustedCurrentStep = currentStep;
+
+  // If we have a session, determine the current step based on responses
+  if (currentSession) {
+    if (!hasMedicalReport) {
+      // When no medical report, start with General Physician (step 0 in the adjusted steps array)
+      if (currentSession.general_physician_response && !currentSession.specialist_doctor_response) {
+        adjustedCurrentStep = 1; // Specialist Doctor is next
+      } else if (currentSession.specialist_doctor_response && !currentSession.pathologist_response) {
+        adjustedCurrentStep = 2; // Pathologist is next
+      } else if (currentSession.pathologist_response && !currentSession.nutritionist_response) {
+        adjustedCurrentStep = 3; // Nutritionist is next
+      } else if (currentSession.nutritionist_response && !currentSession.pharmacist_response) {
+        adjustedCurrentStep = 4; // Pharmacist is next
+      } else if (currentSession.pharmacist_response && !currentSession.follow_up_specialist_response) {
+        adjustedCurrentStep = 5; // Follow-up Specialist is next
+      } else if (currentSession.follow_up_specialist_response && !currentSession.summarizer_response) {
+        adjustedCurrentStep = 6; // Summarizer is next
+      } else if (currentSession.summarizer_response) {
+        adjustedCurrentStep = 7; // All steps completed
+      }
+    } else {
+      // When medical report is present, start with Medical Analyst (step 0)
+      if (currentSession.medical_analyst_response && !currentSession.general_physician_response) {
+        adjustedCurrentStep = 1; // General Physician is next
+      } else if (currentSession.general_physician_response && !currentSession.specialist_doctor_response) {
+        adjustedCurrentStep = 2; // Specialist Doctor is next
+      } else if (currentSession.specialist_doctor_response && !currentSession.pathologist_response) {
+        adjustedCurrentStep = 3; // Pathologist is next
+      } else if (currentSession.pathologist_response && !currentSession.nutritionist_response) {
+        adjustedCurrentStep = 4; // Nutritionist is next
+      } else if (currentSession.nutritionist_response && !currentSession.pharmacist_response) {
+        adjustedCurrentStep = 5; // Pharmacist is next
+      } else if (currentSession.pharmacist_response && !currentSession.follow_up_specialist_response) {
+        adjustedCurrentStep = 6; // Follow-up Specialist is next
+      } else if (currentSession.follow_up_specialist_response && !currentSession.summarizer_response) {
+        adjustedCurrentStep = 7; // Summarizer is next
+      } else if (currentSession.summarizer_response) {
+        adjustedCurrentStep = 8; // All steps completed
+      }
+    }
+  } else {
+    // If no session, use the currentStep from context
+    adjustedCurrentStep = hasMedicalReport
+      ? currentStep
+      : (currentStep === 0 ? 0 : currentStep);
+  }
 
   return (
     <motion.div
@@ -1031,6 +1138,7 @@ export function ChainDiagnosisProgressIndicator({
         error={error}
         onContinue={onContinue}
         isProcessing={isProcessing}
+        currentSession={currentSession}
       />
 
 
@@ -1047,6 +1155,7 @@ export function ChainDiagnosisProgressIndicator({
           isLoading={isLoading}
           isStreaming={isStreaming}
           hasMedicalReport={hasMedicalReport}
+          currentSession={currentSession}
         />
       </div>
     </motion.div>

@@ -158,6 +158,9 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
           resetStreamingContent(role as keyof typeof streamingContent);
         });
 
+        // Set streaming state to true immediately to show "Thinking" tag
+        setIsStreaming(true);
+
         // Automatically process the first step (Medical Analyst)
         setTimeout(async () => {
           try {
@@ -166,6 +169,8 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             }
           } catch {
             setError('Error starting diagnosis process. Please try again.');
+            // Make sure to reset streaming state if there's an error
+            setIsStreaming(false);
           }
         }, 1000);
 
@@ -198,6 +203,9 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
         // Show a warning to the user
         setError('Warning: Using temporary session. Your diagnosis will not be saved permanently.');
 
+        // Set streaming state to true immediately to show "Thinking" tag
+        setIsStreaming(true);
+
         // Automatically process the first step (Medical Analyst) even in fallback mode
         setTimeout(async () => {
           try {
@@ -206,6 +214,8 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             }
           } catch {
             setError('Error starting diagnosis process. Please try again.');
+            // Make sure to reset streaming state if there's an error
+            setIsStreaming(false);
           }
         }, 1000);
 
@@ -267,7 +277,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               sessionId,
               session.user_input,
               session.medical_analyst_response,
-              false,  // Changed from true to false to disable streaming
+              true,  // Enable streaming to show "Thinking" tag
               (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
             );
 
@@ -361,12 +371,15 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               // Automatically process the General Physician step
               setTimeout(async () => {
                 try {
+                  // Set streaming state to true to show "Thinking" tag
+                  setIsStreaming(true);
+
                   // Process General Physician step
                   const response = await processGeneralPhysician(
                     sessionId,
                     userInput,
                     undefined,
-                    false,  // Changed from true to false to disable streaming
+                    true,  // Enable streaming to show "Thinking" tag
                     (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
                   );
 
@@ -441,11 +454,15 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                     try {
                       // Process General Physician step
                       resetStreamingContent('generalPhysician');
+
+                      // Set streaming state to true to show "Thinking" tag
+                      setIsStreaming(true);
+
                       const gpResponse = await processGeneralPhysician(
                         sessionId,
                         userInput,
                         response,
-                        false,  // Disable streaming
+                        true,  // Enable streaming to show "Thinking" tag
                         (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
                       );
 
@@ -485,11 +502,15 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
 
         case 1: // General Physician
           resetStreamingContent('generalPhysician');
+
+          // Set streaming state to true to show "Thinking" tag
+          setIsStreaming(true);
+
           const response = await processGeneralPhysician(
             sessionId,
             userInput,
             currentSession.medical_analyst_response,
-            false,  // Changed from true to false to disable streaming
+            true,  // Enable streaming to show "Thinking" tag
             (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
           );
 
