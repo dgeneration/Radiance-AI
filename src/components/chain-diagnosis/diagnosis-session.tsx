@@ -128,32 +128,6 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
     loadSession(sessionId);
   }, [sessionId, loadSession]);
 
-  // Check if we should auto-continue to General Physician after reload
-  useEffect(() => {
-    const shouldAutoContinue = localStorage.getItem('auto_continue_to_general_physician') === 'true';
-    const storedSessionId = localStorage.getItem('auto_continue_session_id');
-
-    if (shouldAutoContinue && storedSessionId === sessionId &&
-        currentSession?.medical_analyst_response && currentStep === 0 && !isLoading && !isStreaming) {
-      // Clear the flags
-      localStorage.removeItem('auto_continue_to_general_physician');
-      localStorage.removeItem('auto_continue_session_id');
-
-      console.log('Auto-continuing to General Physician...');
-
-      // Wait a short delay to ensure the UI is fully loaded
-      const timer = setTimeout(() => {
-        // Set currentStep to 1 to indicate we're on the General Physician step
-        // This will trigger the processNextStep function in the context
-        processNextStep();
-
-        // Switch to detailed view
-        setViewMode('detailed');
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentSession, currentStep, sessionId, isLoading, isStreaming, processNextStep]);
 
   // Handle downloading the final report
   const handleDownloadReport = () => {

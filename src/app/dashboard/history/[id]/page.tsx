@@ -96,7 +96,7 @@ export default async function DiagnosisDetailPage({ params }: any) {
                         Diagnosis Details
                       </GradientHeading>
                       <p className="text-muted-foreground mb-2">
-                        Diagnosis from {new Date(diagnosis.created_at).toLocaleDateString()}
+                        Diagnosis from {new Date(diagnosis.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}
                       </p>
                     </div>
                   </div>

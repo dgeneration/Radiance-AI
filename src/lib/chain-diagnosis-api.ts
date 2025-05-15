@@ -1971,6 +1971,12 @@ export async function getChainDiagnosisSession(sessionId: string): Promise<Chain
  */
 export async function getUserChainDiagnosisSessions(userId: string): Promise<ChainDiagnosisSession[]> {
   try {
+    if (!userId) {
+      console.error('getUserChainDiagnosisSessions called with invalid userId:', userId);
+      return [];
+    }
+
+    console.log(`Fetching chain diagnosis sessions for user ${userId}`);
     const supabase = createClient();
     const { data, error } = await supabase
       .from('chain_diagnosis_sessions')
@@ -1983,7 +1989,23 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
       return [];
     }
 
-    return data as ChainDiagnosisSession[];
+    const sessions = data as ChainDiagnosisSession[];
+    console.log(`Retrieved ${sessions.length} chain diagnosis sessions for user ${userId}`);
+
+    // Validate the sessions data
+    const validSessions = sessions.filter(session => {
+      if (!session || !session.id) {
+        console.warn('Found invalid session object:', session);
+        return false;
+      }
+      return true;
+    });
+
+    if (validSessions.length !== sessions.length) {
+      console.warn(`Filtered out ${sessions.length - validSessions.length} invalid sessions`);
+    }
+
+    return validSessions;
   } catch (error) {
     console.error('Error in getUserChainDiagnosisSessions:', error);
     return [];

@@ -22,11 +22,43 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
 
   // Load user sessions when the component mounts
   useEffect(() => {
-    loadUserSessions(userId);
+    console.log('Loading user sessions for userId:', userId);
+    loadUserSessions(userId)
+      .then(success => {
+        console.log('Sessions loaded successfully:', success);
+      })
+      .catch(err => {
+        console.error('Error loading sessions:', err);
+      });
   }, [userId, loadUserSessions]);
 
   // Use the sessions from context if available, otherwise use the initial sessions
-  const sessions = userSessions.length > 0 ? userSessions : initialSessions;
+  // Make sure we have valid arrays
+  const validUserSessions = Array.isArray(userSessions) ? userSessions : [];
+  const validInitialSessions = Array.isArray(initialSessions) ? initialSessions : [];
+  const sessions = validUserSessions.length > 0 ? validUserSessions : validInitialSessions;
+
+  // Debug log the sessions
+  useEffect(() => {
+    console.log('Initial sessions:', initialSessions?.length, initialSessions);
+    console.log('User sessions from context:', userSessions?.length, userSessions);
+    console.log('Combined sessions being used:', sessions?.length, sessions);
+
+    // Check if sessions have the expected structure
+    if (sessions?.length > 0) {
+      const firstSession = sessions[0];
+      console.log('First session structure:', {
+        id: firstSession.id,
+        user_id: firstSession.user_id,
+        created_at: firstSession.created_at,
+        status: firstSession.status,
+        current_step: firstSession.current_step,
+        hasUserInput: !!firstSession.user_input,
+        userInputKeys: firstSession.user_input ? Object.keys(firstSession.user_input) : [],
+        hasSymptomsList: !!firstSession.user_input?.symptoms_info?.symptoms_list
+      });
+    }
+  }, [initialSessions, userSessions, sessions]);
 
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
@@ -92,10 +124,13 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
     );
   }
 
+  // Add a direct console log right before rendering
+  console.log('Rendering sessions list with', sessions.length, 'sessions');
+
   return (
     <AnimatedSection className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Your Sessions</h2>
+        <h2 className="text-xl font-semibold">Your Sessions ({sessions.length})</h2>
         <Button onClick={handleNewSession} className="bg-primary hover:bg-primary/90">
           New Diagnosis
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -103,19 +138,44 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {sessions.map((session) => {
-          const createdAt = new Date(session.created_at);
-          const timeAgo = formatDistanceToNow(createdAt, { addSuffix: true });
+        {Array.isArray(sessions) && sessions.map(session => {
+          try {
+            if (!session || !session.id) {
+              console.error('Invalid session object:', session);
+              return null;
+            }
 
-          // Get the primary symptoms
-          const primarySymptoms = session.user_input.symptoms_info.symptoms_list.slice(0, 3);
+            const createdAt = new Date(session.created_at || new Date().toISOString());
+            const timeAgo = formatDistanceToNow(createdAt, { addSuffix: true });
 
-          // Determine session status
-          const isCompleted = session.status === 'completed';
-          const isInProgress = session.status === 'in_progress';
-          const hasError = session.status === 'error';
+            // Create a fallback symptoms_info if it's missing
+            if (!session.user_input) {
+              session.user_input = {
+                user_details: { id: session.user_id, first_name: '', last_name: '', gender: '', birth_year: 0, age: 0 },
+                symptoms_info: { symptoms_list: ['No symptoms data'], duration: '' }
+              };
+            } else if (!session.user_input.symptoms_info) {
+              session.user_input.symptoms_info = { symptoms_list: ['No symptoms data'], duration: '' };
+            } else if (!session.user_input.symptoms_info.symptoms_list) {
+              session.user_input.symptoms_info.symptoms_list = ['No symptoms data'];
+            } else if (!Array.isArray(session.user_input.symptoms_info.symptoms_list)) {
+              session.user_input.symptoms_info.symptoms_list = ['No symptoms data'];
+            }
 
-          return (
+            // Get the primary symptoms with fallback for missing data
+            const primarySymptoms = session.user_input.symptoms_info.symptoms_list.slice(0, 3);
+
+            // Ensure session status is valid
+            if (!session.status) {
+              session.status = 'in_progress';
+            }
+
+            // Determine session status
+            const isCompleted = session.status === 'completed';
+            const isInProgress = session.status === 'in_progress';
+            const hasError = session.status === 'error';
+
+            return (
             <Card
               key={session.id}
               className="bg-card/50 backdrop-blur-sm border-primary/10 hover:shadow-md transition-all"
@@ -142,7 +202,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
 
                 <CardDescription className="flex items-center gap-1 mt-1">
                   <Calendar className="h-3 w-3" />
-                  <span>{createdAt.toLocaleDateString()}</span>
+                  <span>{createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}</span>
                   <span className="mx-1">•</span>
                   <Clock className="h-3 w-3" />
                   <span>{timeAgo}</span>
@@ -178,11 +238,11 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                         className={`h-2 rounded-full ${
                           hasError ? "bg-destructive" : "bg-primary"
                         }`}
-                        style={{ width: `${(session.current_step / 8) * 100}%` }}
+                        style={{ width: `${((session.current_step || 0) / 8) * 100}%` }}
                       ></div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Step {session.current_step} of 8 completed
+                      Step {session.current_step || 0} of 8 completed
                     </p>
                   </div>
                 </div>
@@ -213,7 +273,11 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                 </Button>
               </CardFooter>
             </Card>
-          );
+            );
+          } catch (error) {
+            console.error('Error rendering session card:', error, session);
+            return null;
+          }
         })}
       </div>
     </AnimatedSection>

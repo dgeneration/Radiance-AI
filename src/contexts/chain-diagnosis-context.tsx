@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import {
   ChainDiagnosisSession
 } from '@/types/chain-diagnosis';
@@ -68,6 +68,14 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   const [userSessions, setUserSessions] = useState<ChainDiagnosisSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Ensure userSessions is always an array
+  useEffect(() => {
+    if (!Array.isArray(userSessions)) {
+      console.error('userSessions is not an array, resetting to empty array');
+      setUserSessions([]);
+    }
+  }, [userSessions]);
 
   // Streaming state
   const [streamingContent, setStreamingContent] = useState({
@@ -277,7 +285,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               sessionId,
               session.user_input,
               session.medical_analyst_response,
-              true,  // Enable streaming to show "Thinking" tag
+              false,  // Enable streaming to show "Thinking" tag
               (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
             );
 
@@ -323,14 +331,33 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   // Load all sessions for a user
   const loadUserSessions = useCallback(async (userId: string): Promise<boolean> => {
     try {
+      if (!userId) {
+        console.error('loadUserSessions called with invalid userId:', userId);
+        setError('Invalid user ID. Please try again.');
+        return false;
+      }
+
+      console.log('Loading user sessions for userId:', userId);
       setIsLoading(true);
       setError(null);
 
       const sessions = await getUserChainDiagnosisSessions(userId);
+      console.log(`Retrieved ${sessions.length} sessions from API`);
+
+      // Ensure sessions is an array
+      if (!Array.isArray(sessions)) {
+        console.error('Sessions is not an array:', sessions);
+        setUserSessions([]);
+        setError('Failed to load your diagnosis history. Please try again.');
+        return false;
+      }
+
       setUserSessions(sessions);
+      console.log('User sessions set in context');
 
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Error in loadUserSessions:', error);
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {
@@ -379,7 +406,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                     sessionId,
                     userInput,
                     undefined,
-                    true,  // Enable streaming to show "Thinking" tag
+                    false,  // Enable streaming to show "Thinking" tag
                     (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
                   );
 
@@ -413,7 +440,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               const response = await processMedicalAnalyst(
                 sessionId,
                 userInput,
-                !hasImageUrl, // Disable streaming for image URLs
+                false,
                 hasImageUrl ? undefined : (chunk, isComplete) => handleStreamingResponse('medicalAnalyst', chunk, isComplete)
               );
 
@@ -462,7 +489,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
                         sessionId,
                         userInput,
                         response,
-                        true,  // Enable streaming to show "Thinking" tag
+                        false,  // Enable streaming to show "Thinking" tag
                         (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
                       );
 
@@ -510,7 +537,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             sessionId,
             userInput,
             currentSession.medical_analyst_response,
-            true,  // Enable streaming to show "Thinking" tag
+            false,  // Enable streaming to show "Thinking" tag
             (chunk, isComplete) => handleStreamingResponse('generalPhysician', chunk, isComplete)
           );
 
@@ -544,7 +571,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             userInput,
             currentSession.general_physician_response,
             currentSession.medical_analyst_response,
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('specialistDoctor', chunk, isComplete)
           );
 

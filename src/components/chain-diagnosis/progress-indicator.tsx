@@ -38,10 +38,6 @@ function getStepIcon(title: string, size: number = 24) {
   }
 }
 
-
-
-
-
 // Single three-circle layout component
 function ThreeCircleLayout({
   steps,
@@ -75,18 +71,6 @@ function ThreeCircleLayout({
 
   // Show loading animation if streaming or loading
   const showLoading = isLoading || isStreaming;
-
-  // Determine if the current step is in progress (has started but not completed)
-  const isCurrentStepInProgress = showLoading || (
-    // Check if the current step's response is missing
-    (currentStep === 0 && !currentSession?.medical_analyst_response) ||
-    (currentStep === 1 && !currentSession?.general_physician_response) ||
-    (currentStep === 2 && !currentSession?.specialist_doctor_response) ||
-    (currentStep === 3 && !currentSession?.pathologist_response) ||
-    (currentStep === 4 && !currentSession?.nutritionist_response) ||
-    (currentStep === 5 && !currentSession?.pharmacist_response) ||
-    (currentStep === 6 && !currentSession?.follow_up_specialist_response) ||
-    (currentStep === 7 && !currentSession?.summarizer_response));
 
   // Handle responsive icon sizes
   const [iconSize, setIconSize] = React.useState(40);
@@ -461,7 +445,7 @@ function ThreeCircleLayout({
                 // Color based on position to ensure even distribution
                 // Use purple colors when loading/streaming
                 const colorGroup = i % 3;
-                const color = showLoading || isCurrentStepInProgress
+                const color = showLoading
                   ? colorGroup === 0
                     ? 'rgba(147, 51, 234, 0.9)' // Purple (purple-600)
                     : colorGroup === 1
@@ -473,7 +457,7 @@ function ThreeCircleLayout({
                       ? 'rgba(29, 233, 182, 0.9)' // Default teal
                       : 'rgba(255, 255, 255, 0.9)'; // Default white
 
-                const glow = showLoading || isCurrentStepInProgress
+                const glow = showLoading
                   ? colorGroup === 0
                     ? 'rgba(147, 51, 234, 0.8)' // Purple glow
                     : colorGroup === 1
@@ -553,7 +537,7 @@ function ThreeCircleLayout({
                 // Color based on position to ensure even distribution
                 // Use purple colors when loading/streaming
                 const colorGroup = i % 3;
-                const color = showLoading || isCurrentStepInProgress
+                const color = showLoading
                   ? colorGroup === 0
                     ? 'rgba(147, 51, 234, 0.8)' // Purple (purple-600)
                     : colorGroup === 1
@@ -565,7 +549,7 @@ function ThreeCircleLayout({
                       ? 'rgba(29, 233, 182, 0.8)' // Default teal
                       : 'rgba(255, 255, 255, 0.8)'; // Default white
 
-                const glow = showLoading || isCurrentStepInProgress
+                const glow = showLoading
                   ? colorGroup === 0
                     ? '0 0 3px rgba(147, 51, 234, 0.6)' // Purple glow
                     : colorGroup === 1
@@ -689,7 +673,7 @@ function ThreeCircleLayout({
                 />
               </div>
 
-              {showLoading || isCurrentStepInProgress ? (
+              {showLoading? (
                 <div className="relative">
                   <Loader2 className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 animate-spin text-white drop-shadow-glow" />
                   <motion.div
@@ -813,7 +797,7 @@ function ThreeCircleLayout({
               {currentStepInfo.description}
             </p>
 
-            {(showLoading || isCurrentStepInProgress) && (
+            {(showLoading) && (
               <Badge
                 variant="outline"
                 className="bg-purple-600/10 text-purple-500 border-purple-500/20 px-3 py-1 text-sm font-normal"
@@ -911,7 +895,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
           );
 
           // Show loading indicator when the step is active and API is in progress
-          const showLoading = isStepActive && (isLoading || isStreaming || (currentSession?.status === 'in_progress' && isStepInProgress));
+          const showLoading = isLoading || isStreaming;
 
           return (
             <React.Fragment key={index}>
@@ -937,7 +921,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                   >
                     {isCompleted ? (
                       <Check className="h-7 w-7" />
-                    ) : showLoading ? (
+                    ) : showLoading && isStepActive ? (
                       <Loader2 className="h-7 w-7 animate-spin" />
                     ) : (
                       getStepIcon(step.title, isStepActive ? 24 : 20)
@@ -966,7 +950,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                     {step.title}
                   </p>
 
-                  {showLoading && (
+                  {!isCompleted && showLoading && isStepActive && (
                     <Badge
                       variant="outline"
                       className="mt-1 bg-purple-600/10 text-purple-500 border-purple-500/20 px-1 py-0 text-[10px] font-normal"
@@ -1123,7 +1107,7 @@ export function ChainDiagnosisProgressIndicator({
             Diagnosis Progress
           </h2>
           <p className="text-sm text-muted-foreground">
-            Step {currentStep + 1} of {steps.length}
+            Step {adjustedCurrentStep + 1} of {steps.length}
           </p>
         </div>
       </div>

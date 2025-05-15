@@ -115,7 +115,7 @@ export default async function HistoryPage() {
                                 {diagnosis.diagnosis}
                               </h3>
                               <div className="text-sm text-muted-foreground">
-                                {new Date(diagnosis.created_at).toLocaleDateString()}
+                                {new Date(diagnosis.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' })}
                                 {diagnosis.icd_code && <span className="ml-2 px-2 py-0.5 bg-primary/10 rounded-full text-xs font-medium text-primary">ICD: {diagnosis.icd_code}</span>}
                               </div>
                             </div>
