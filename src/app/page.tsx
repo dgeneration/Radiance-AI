@@ -852,7 +852,7 @@ export default function Home() {
                   iconPosition="right"
                   className="w-full"
                 >
-                  <Link href="/signup">
+                  <Link href="/auth/signup">
                     Create Free Account
                   </Link>
                 </ProfessionalButton>
