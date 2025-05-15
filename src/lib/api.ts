@@ -123,7 +123,7 @@ export async function getDiagnosis(symptomData: SymptomFormData): Promise<{
     console.log("Using real Perplexity API with the deep research model");
 
     // Log the API request details
-    console.log("API Request URL:", process.env.NEXT_PUBLIC_API_URL || 'https://api.perplexity.ai/chat/completions');
+    console.log("API Request URL:", process.env.PERPLEXITY_API_URL || 'https://api.perplexity.ai/chat/completions');
     console.log("API Request Headers:", {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer [REDACTED]'
@@ -133,7 +133,7 @@ export async function getDiagnosis(symptomData: SymptomFormData): Promise<{
     const prompt = formatPrompt(symptomData);
 
     // Make the API request
-    const response = await fetch(process.env.NEXT_PUBLIC_API_URL || 'https://api.perplexity.ai/chat/completions', {
+    const response = await fetch(process.env.PERPLEXITY_API_URL || 'https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
