@@ -283,7 +283,7 @@ export function Footer() {
                 </Link>
               </motion.li>
               <motion.li variants={itemVariants}>
-                <Link href="/profile" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="/dashboard/profile" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <FaArrowRight size={10} className="text-primary/70 group-hover:translate-x-1 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Profile</span>
                 </Link>
@@ -331,7 +331,7 @@ export function Footer() {
                 </Link>
               </motion.li>
               <motion.li variants={itemVariants}>
-                <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <FaArrowRight size={10} className="text-primary/70 group-hover:translate-x-1 transition-transform" />
                   <span className="group-hover:translate-x-1 transition-transform">Contact Us</span>
                 </Link>
