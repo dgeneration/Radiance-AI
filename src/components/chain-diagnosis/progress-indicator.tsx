@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ChainDiagnosisSession } from '@/types/chain-diagnosis';
 
 
 
@@ -59,7 +60,7 @@ function ThreeCircleLayout({
   error: string | null;
   onContinue?: () => void;
   isProcessing?: boolean;
-  currentSession: any;
+  currentSession: ChainDiagnosisSession | null;
 }) {
   // Get current step info
   const currentStepInfo = steps[currentStep];
@@ -866,7 +867,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
   isLoading: boolean;
   isStreaming: boolean;
   hasMedicalReport: boolean;
-  currentSession: any;
+  currentSession: ChainDiagnosisSession | null;
 }) {
   return (
     <div className="w-full overflow-x-auto pb-4 mt-6">
