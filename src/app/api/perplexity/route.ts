@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get the API key from environment variables
-    const apiKey = process.env.PERPLEXITY_API_KEY;
+    // Get the API key from environment variables (with fallback)
+    const apiKey = process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
 
     if (!apiKey) {
       console.error('Perplexity API key is not configured');
@@ -80,8 +80,11 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    // Get the API URL from environment variables (with fallback)
+    const apiUrl = process.env.PERPLEXITY_API_URL || process.env.NEXT_PUBLIC_PERPLEXITY_API_URL || 'https://api.perplexity.ai/chat/completions';
+
     // Make the API request
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    const perplexityResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

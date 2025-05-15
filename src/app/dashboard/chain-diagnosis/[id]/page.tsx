@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
@@ -10,9 +12,14 @@ export const metadata: Metadata = {
   description: "View your comprehensive health analysis from 8 specialized AI roles",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function ChainDiagnosisSessionPage({ params }: any) {
-  const sessionId = params.id;
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default async function ChainDiagnosisSessionPage({ params }: PageProps) {
+  const { id: sessionId } = await params;
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();

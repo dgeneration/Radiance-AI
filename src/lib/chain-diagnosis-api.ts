@@ -171,8 +171,10 @@ async function makePerplexityRequest(
   hasImageUrl: boolean = false
 ): Promise<PerplexityResponse> {
   try {
-    // Use the correct environment variable name
-    const apiKey = process.env.PERPLEXITY_API_KEY;
+    // Use the correct environment variable name based on client/server context
+    const apiKey = typeof window !== 'undefined'
+      ? process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY
+      : process.env.PERPLEXITY_API_KEY;
 
     if (!apiKey) {
       throw new Error('Perplexity API key is not configured');
@@ -347,7 +349,16 @@ async function makePerplexityRequest(
       };
     }
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Use the environment variable for the API URL
+    const apiUrl = typeof window !== 'undefined'
+      ? process.env.NEXT_PUBLIC_PERPLEXITY_API_URL
+      : process.env.PERPLEXITY_API_URL;
+
+    if (!apiUrl) {
+      throw new Error('Perplexity API URL is not configured');
+    }
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
