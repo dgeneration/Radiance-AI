@@ -12,13 +12,8 @@ export const metadata: Metadata = {
   description: "View your comprehensive health analysis from 8 specialized AI roles",
 };
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
 
-export default async function ChainDiagnosisSessionPage({ params }: PageProps) {
+export default async function ChainDiagnosisSessionPage({ params }: any) {
   const { id: sessionId } = await params;
 
   const supabase = await createClient();
