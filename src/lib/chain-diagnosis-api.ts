@@ -172,7 +172,7 @@ async function makePerplexityRequest(
 ): Promise<PerplexityResponse> {
   try {
     // Use the correct environment variable name
-    const apiKey = process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
+    const apiKey = process.env.PERPLEXITY_API_KEY;
 
     if (!apiKey) {
       throw new Error('Perplexity API key is not configured');
