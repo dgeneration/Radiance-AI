@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { FollowUpSpecialistResponse } from '@/types/chain-diagnosis';
 // Define the response type based on the provided JSON
 interface NewFollowUpSpecialistResponse {
   follow_up_recommendations: {
@@ -35,6 +36,10 @@ interface NewFollowUpSpecialistResponse {
     };
   };
   disclaimer?: string; // Keep this for backward compatibility
+  synthesis_of_case_progression?: {
+    initial_concern: string;
+    key_insights_from_ais: string[];
+  };
 }
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +74,94 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
   const [activeTab, setActiveTab] = useState('monitoring');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
+  // Use the FollowUpSpecialistResponse type for type checking
+
+  // Helper function to adapt old response format to new format
+  const adaptResponseFormat = (response: unknown): NewFollowUpSpecialistResponse => {
+    // Type guard to check if it's already in the new format
+    if (typeof response === 'object' && response !== null &&
+        'follow_up_recommendations' in response) {
+      return response as NewFollowUpSpecialistResponse;
+    }
+
+    // Cast to the old format type for better type checking
+    const oldResponse = response as Partial<FollowUpSpecialistResponse>;
+
+    // Extract arrays safely
+    const redFlags = Array.isArray(oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS)
+      ? oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS
+      : [];
+
+    const symptomsToTrack = oldResponse.symptom_monitoring_guidelines &&
+      Array.isArray(oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely)
+      ? oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely
+      : [];
+
+    // Extract strings safely
+    const initialConsultation = oldResponse.recommended_follow_up_guidance?.initial_consultation ||
+      "Schedule as advised by your doctor.";
+
+    const postTreatmentFollowUp = oldResponse.recommended_follow_up_guidance?.post_treatment_follow_up ||
+      "Follow your doctor's guidance.";
+
+    const disclaimer = typeof oldResponse.disclaimer === 'string'
+      ? oldResponse.disclaimer
+      : "This information is for guidance only and does not replace professional medical advice.";
+
+    // Create synthesis of case progression if it exists
+    let synthesisPart = undefined;
+    if (oldResponse.synthesis_of_case_progression) {
+      const initialConcern = typeof oldResponse.synthesis_of_case_progression.initial_concern === 'string'
+        ? oldResponse.synthesis_of_case_progression.initial_concern
+        : "Initial concern not specified";
+
+      const insights = Array.isArray(oldResponse.synthesis_of_case_progression.key_insights_from_ais)
+        ? oldResponse.synthesis_of_case_progression.key_insights_from_ais
+        : [];
+
+      synthesisPart = {
+        initial_concern: initialConcern,
+        key_insights_from_ais: insights
+      };
+    }
+
+    // Return the adapted format
+    return {
+      follow_up_recommendations: {
+        symptom_monitoring: {
+          track_daily: symptomsToTrack,
+          use_symptom_diary: true,
+          photo_documentation: "Document any visible symptoms with photos for your healthcare provider."
+        },
+        follow_up_timeline: {
+          gastroenterologist: initialConsultation,
+          diagnostic_procedures: "As recommended by your specialist.",
+          follow_up_after_diagnosis: postTreatmentFollowUp
+        },
+        medication_guidance: {
+          continue: "Continue medications as prescribed.",
+          avoid: "Avoid self-medication without consulting your doctor.",
+          consider: "Consider discussing medication adjustments with your doctor if symptoms change."
+        },
+        dietary_recommendations: {
+          general_approach: "Follow a balanced diet unless otherwise advised.",
+          avoid: ["Avoid foods that trigger symptoms"],
+          ensure: "Ensure adequate hydration and nutrition."
+        },
+        urgent_care_indicators: {
+          seek_immediate_care_for: redFlags
+        },
+        next_steps: {
+          priority: "Follow up with recommended specialist.",
+          documentation: "Keep a record of all symptoms and changes.",
+          nutritional_support: "Consider nutritional guidance if recommended."
+        }
+      },
+      disclaimer: disclaimer,
+      synthesis_of_case_progression: synthesisPart
+    };
+  };
+
   // Parse the response from the session or streaming content
   useEffect(() => {
     try {
@@ -77,7 +170,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
         // Check if the response is already a parsed object
         if (typeof currentSession.follow_up_specialist_response === 'object' &&
             currentSession.follow_up_specialist_response !== null) {
-          setParsedResponse(currentSession.follow_up_specialist_response);
+          setParsedResponse(adaptResponseFormat(currentSession.follow_up_specialist_response));
           return;
         }
       }
@@ -91,7 +184,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
           if (jsonMatch && jsonMatch[1]) {
             try {
               const parsed = JSON.parse(jsonMatch[1]);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON from code block
@@ -101,7 +194,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
           // Try to parse the entire content as JSON
           try {
             const parsed = JSON.parse(streamingContent.followUpSpecialist);
-            setParsedResponse(parsed);
+            setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
             // Failed to parse entire content as JSON
@@ -119,7 +212,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
               jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
 
               const parsed = JSON.parse(jsonStr);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON-like structure

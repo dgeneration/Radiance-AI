@@ -53,6 +53,80 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
   const [activeTab, setActiveTab] = useState('medications');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
+  // Helper function to adapt old response format to new format
+  const adaptResponseFormat = (response: unknown): NewPharmacistResponse => {
+    // Type guard to check if it's already in the new format
+    if (typeof response === 'object' && response !== null &&
+        'potential_medications' in response &&
+        'medications_to_avoid' in response &&
+        'allergy_considerations' in response &&
+        'general_advice' in response) {
+      return response as NewPharmacistResponse;
+    }
+
+    // Cast to a generic object for safety
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const oldResponse = response as Record<string, any>;
+
+    // Create default empty arrays for required fields
+    const potentialMedications: NewPharmacistResponse['potential_medications'] = [];
+    const medicationsToAvoid: NewPharmacistResponse['medications_to_avoid'] = [];
+    const allergyConsiderations: NewPharmacistResponse['allergy_considerations'] = [];
+    const generalAdvice: string[] = [];
+
+    // Try to extract data from old format if available
+    if (Array.isArray(oldResponse.potential_medications)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      oldResponse.potential_medications.forEach((med: Record<string, any>) => {
+        potentialMedications.push({
+          name: typeof med.name === 'string' ? med.name : "Unknown",
+          class: typeof med.class === 'string' ? med.class : "Not specified",
+          indication: typeof med.indication === 'string' ? med.indication : "Not specified",
+          notes: typeof med.notes === 'string' ? med.notes : ""
+        });
+      });
+    }
+
+    if (Array.isArray(oldResponse.medications_to_avoid)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      oldResponse.medications_to_avoid.forEach((med: Record<string, any>) => {
+        medicationsToAvoid.push({
+          name: typeof med.name === 'string' ? med.name : "Unknown",
+          reason: typeof med.reason === 'string' ? med.reason : "Not specified"
+        });
+      });
+    }
+
+    if (Array.isArray(oldResponse.allergy_considerations)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      oldResponse.allergy_considerations.forEach((allergy: Record<string, any>) => {
+        allergyConsiderations.push({
+          allergen: typeof allergy.allergen === 'string' ? allergy.allergen : "Unknown",
+          relevance: typeof allergy.relevance === 'string' ? allergy.relevance : "Not specified"
+        });
+      });
+    }
+
+    if (Array.isArray(oldResponse.general_advice)) {
+      oldResponse.general_advice.forEach((advice: string) => {
+        if (typeof advice === 'string') {
+          generalAdvice.push(advice);
+        }
+      });
+    }
+
+    // Return the adapted format
+    return {
+      potential_medications: potentialMedications,
+      medications_to_avoid: medicationsToAvoid,
+      allergy_considerations: allergyConsiderations,
+      general_advice: generalAdvice,
+      disclaimer: typeof oldResponse.disclaimer === 'string'
+        ? oldResponse.disclaimer
+        : "This information is for guidance only and does not replace professional medical advice."
+    };
+  };
+
   // Parse the response from the session or streaming content
   useEffect(() => {
     try {
@@ -61,7 +135,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
         // Check if the response is already a parsed object
         if (typeof currentSession.pharmacist_response === 'object' &&
             currentSession.pharmacist_response !== null) {
-          setParsedResponse(currentSession.pharmacist_response);
+          setParsedResponse(adaptResponseFormat(currentSession.pharmacist_response));
           return;
         }
       }
@@ -75,7 +149,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
           if (jsonMatch && jsonMatch[1]) {
             try {
               const parsed = JSON.parse(jsonMatch[1]);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON from code block
@@ -85,7 +159,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
           // Try to parse the entire content as JSON
           try {
             const parsed = JSON.parse(streamingContent.pharmacist);
-            setParsedResponse(parsed);
+            setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
             // Failed to parse entire content as JSON
@@ -103,7 +177,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
 
               const parsed = JSON.parse(jsonStr);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON-like structure

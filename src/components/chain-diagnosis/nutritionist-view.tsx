@@ -60,6 +60,78 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
   const [activeTab, setActiveTab] = useState('recommendations');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
+  // Helper function to adapt old response format to new format
+  const adaptResponseFormat = (response: unknown): NewNutritionistResponse => {
+    // Type guard to check if it's already in the new format
+    if (typeof response === 'object' && response !== null &&
+        'patient_id' in response && 'name' in response) {
+      return response as NewNutritionistResponse;
+    }
+
+    // Cast to a generic object for safety
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const oldResponse = response as Record<string, any>;
+
+    // Extract arrays safely
+    const medicalConditions = Array.isArray(oldResponse.medical_conditions)
+      ? oldResponse.medical_conditions
+      : [];
+
+    const currentSymptoms = Array.isArray(oldResponse.current_symptoms)
+      ? oldResponse.current_symptoms
+      : [];
+
+    const currentMedications = Array.isArray(oldResponse.current_medications)
+      ? oldResponse.current_medications
+      : [];
+
+    const potentialDiagnoses = Array.isArray(oldResponse.potential_diagnoses)
+      ? oldResponse.potential_diagnoses
+      : [];
+
+    const nutritionRecommendations = Array.isArray(oldResponse.nutrition_recommendations)
+      ? oldResponse.nutrition_recommendations
+      : [];
+
+    const foodsToInclude = Array.isArray(oldResponse.foods_to_include)
+      ? oldResponse.foods_to_include
+      : [];
+
+    const foodsToAvoid = Array.isArray(oldResponse.foods_to_avoid)
+      ? oldResponse.foods_to_avoid
+      : [];
+
+    const lifestyleTips = Array.isArray(oldResponse.lifestyle_tips)
+      ? oldResponse.lifestyle_tips
+      : [];
+
+    // Return the adapted format with default values for required fields
+    return {
+      patient_id: oldResponse.patient_id || "unknown",
+      name: oldResponse.name || "Patient",
+      age: typeof oldResponse.age === 'number' ? oldResponse.age : 0,
+      gender: oldResponse.gender || "Not specified",
+      location: {
+        city: oldResponse.location?.city || "Unknown",
+        state: oldResponse.location?.state || "Unknown",
+        country: oldResponse.location?.country || "Unknown",
+        zip_code: oldResponse.location?.zip_code || "Unknown"
+      },
+      medical_conditions: medicalConditions,
+      current_symptoms: currentSymptoms,
+      current_medications: currentMedications,
+      dietary_preference: oldResponse.dietary_preference || "Not specified",
+      specialist_direction: oldResponse.specialist_direction || "",
+      potential_diagnoses: potentialDiagnoses,
+      nutrition_recommendations: nutritionRecommendations,
+      foods_to_include: foodsToInclude,
+      foods_to_avoid: foodsToAvoid,
+      lifestyle_tips: lifestyleTips,
+      notes: oldResponse.notes || "",
+      disclaimer: oldResponse.disclaimer || "This information is for guidance only and does not replace professional medical advice."
+    };
+  };
+
   // Parse the response from the session or streaming content
   useEffect(() => {
     try {
@@ -68,7 +140,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
         // Check if the response is already a parsed object
         if (typeof currentSession.nutritionist_response === 'object' &&
             currentSession.nutritionist_response !== null) {
-          setParsedResponse(currentSession.nutritionist_response);
+          setParsedResponse(adaptResponseFormat(currentSession.nutritionist_response));
           return;
         }
       }
@@ -82,7 +154,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
           if (jsonMatch && jsonMatch[1]) {
             try {
               const parsed = JSON.parse(jsonMatch[1]);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON from code block
@@ -92,7 +164,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
           // Try to parse the entire content as JSON
           try {
             const parsed = JSON.parse(streamingContent.nutritionist);
-            setParsedResponse(parsed);
+            setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
             // Failed to parse entire content as JSON
@@ -110,7 +182,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
 
               const parsed = JSON.parse(jsonStr);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON-like structure

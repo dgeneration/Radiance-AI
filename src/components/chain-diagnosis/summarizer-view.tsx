@@ -10,6 +10,7 @@ interface NewRadianceAISummarizerResponse {
   patient_id: string;
   patient_name: string;
   date_of_report: string;
+  introduction?: string; // Optional introduction field
   follow_up_plan: {
     timeline: string;
     specialist_referral: string;
@@ -66,6 +67,93 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
   const [activeTab, setActiveTab] = useState('overview');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
+  // Helper function to adapt old response format to new format
+  const adaptResponseFormat = (response: unknown): NewRadianceAISummarizerResponse => {
+    // Type guard to check if it's already in the new format
+    if (typeof response === 'object' && response !== null &&
+        'medication_guidance' in response &&
+        'dietary_recommendations' in response &&
+        'lifestyle_recommendations' in response) {
+      return response as NewRadianceAISummarizerResponse;
+    }
+
+    // Cast to a generic object for safety
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const oldResponse = response as Record<string, any>;
+
+    // Extract arrays safely
+    const primaryConcerns = Array.isArray(oldResponse.primary_concerns)
+      ? oldResponse.primary_concerns
+      : [];
+
+    const recommendedTests = Array.isArray(oldResponse.recommended_tests)
+      ? oldResponse.recommended_tests
+      : [];
+
+    const currentMedications = Array.isArray(oldResponse.current_medications)
+      ? oldResponse.current_medications
+      : [];
+
+    const medicationsToAvoid = Array.isArray(oldResponse.medications_to_avoid)
+      ? oldResponse.medications_to_avoid
+      : [];
+
+    const potentialMedications = Array.isArray(oldResponse.potential_medications)
+      ? oldResponse.potential_medications
+      : [];
+
+    const potentialDiagnoses = Array.isArray(oldResponse.potential_diagnoses)
+      ? oldResponse.potential_diagnoses
+      : [];
+
+    const urgentCareIndicators = Array.isArray(oldResponse.urgent_care_indicators)
+      ? oldResponse.urgent_care_indicators
+      : [];
+
+    const foodsToAvoid = Array.isArray(oldResponse.foods_to_avoid)
+      ? oldResponse.foods_to_avoid
+      : [];
+
+    const foodsToInclude = Array.isArray(oldResponse.foods_to_include)
+      ? oldResponse.foods_to_include
+      : [];
+
+    const lifestyleRecommendations = Array.isArray(oldResponse.lifestyle_recommendations)
+      ? oldResponse.lifestyle_recommendations
+      : [];
+
+    // Return the adapted format with default values for required fields
+    return {
+      patient_id: typeof oldResponse.patient_id === 'string' ? oldResponse.patient_id : "unknown",
+      patient_name: typeof oldResponse.patient_name === 'string' ? oldResponse.patient_name : "Patient",
+      age: typeof oldResponse.age === 'number' ? oldResponse.age : 0,
+      gender: typeof oldResponse.gender === 'string' ? oldResponse.gender : "Not specified",
+      date_of_report: typeof oldResponse.date_of_report === 'string' ? oldResponse.date_of_report : new Date().toISOString().split('T')[0],
+      introduction: typeof oldResponse.introduction === 'string' ? oldResponse.introduction : undefined,
+      follow_up_plan: {
+        timeline: typeof oldResponse.follow_up_plan?.timeline === 'string' ? oldResponse.follow_up_plan.timeline : "As recommended by your doctor",
+        specialist_referral: typeof oldResponse.follow_up_plan?.specialist_referral === 'string' ? oldResponse.follow_up_plan.specialist_referral : "As needed",
+        documentation_needed: typeof oldResponse.follow_up_plan?.documentation_needed === 'string' ? oldResponse.follow_up_plan.documentation_needed : "Medical records"
+      },
+      primary_concerns: primaryConcerns,
+      recommended_tests: recommendedTests,
+      medication_guidance: {
+        current_medications: currentMedications,
+        medications_to_avoid: medicationsToAvoid,
+        potential_medications: potentialMedications
+      },
+      potential_diagnoses: potentialDiagnoses,
+      summary_of_condition: typeof oldResponse.summary_of_condition === 'string' ? oldResponse.summary_of_condition : "",
+      urgent_care_indicators: urgentCareIndicators,
+      dietary_recommendations: {
+        foods_to_avoid: foodsToAvoid,
+        foods_to_include: foodsToInclude
+      },
+      lifestyle_recommendations: lifestyleRecommendations,
+      disclaimer: typeof oldResponse.disclaimer === 'string' ? oldResponse.disclaimer : "This information is for guidance only and does not replace professional medical advice."
+    };
+  };
+
   // Parse the response from the session or streaming content
   useEffect(() => {
     try {
@@ -74,7 +162,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
         // Check if the response is already a parsed object
         if (typeof currentSession.summarizer_response === 'object' &&
             currentSession.summarizer_response !== null) {
-          setParsedResponse(currentSession.summarizer_response);
+          setParsedResponse(adaptResponseFormat(currentSession.summarizer_response));
           return;
         }
       }
@@ -88,7 +176,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
           if (jsonMatch && jsonMatch[1]) {
             try {
               const parsed = JSON.parse(jsonMatch[1]);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON from code block
@@ -98,7 +186,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
           // Try to parse the entire content as JSON
           try {
             const parsed = JSON.parse(streamingContent.summarizer);
-            setParsedResponse(parsed);
+            setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
             // Failed to parse entire content as JSON
@@ -116,7 +204,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
               jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
 
               const parsed = JSON.parse(jsonStr);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON-like structure

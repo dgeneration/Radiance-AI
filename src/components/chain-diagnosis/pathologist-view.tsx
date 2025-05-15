@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-// Import necessary types and components
 
 // Define the new response type based on the provided JSON
 interface NewPathologistResponse {
@@ -43,6 +42,61 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
   const [activeTab, setActiveTab] = useState('lab-tests');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
+  // Helper function to adapt old response format to new format
+  const adaptResponseFormat = (response: unknown): NewPathologistResponse => {
+    // Type guard to check if it's already in the new format
+    if (typeof response === 'object' && response !== null &&
+        'lab_tests_relevance' in response &&
+        'findings_interpretation' in response &&
+        'pathologist_recommendations' in response) {
+      return response as NewPathologistResponse;
+    }
+
+    // Cast to a generic object for safety
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const oldResponse = response as Record<string, any>;
+
+    // Create default empty objects for required fields
+    const labTestsRelevance: Record<string, string> = {};
+    const findingsInterpretation: Record<string, string> = {};
+    const pathologistRecommendations: Record<string, string> = {};
+
+    // Try to extract data from old format if available
+    if (oldResponse.lab_tests && typeof oldResponse.lab_tests === 'object') {
+      Object.entries(oldResponse.lab_tests).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          labTestsRelevance[key] = value;
+        }
+      });
+    }
+
+    if (oldResponse.findings && typeof oldResponse.findings === 'object') {
+      Object.entries(oldResponse.findings).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          findingsInterpretation[key] = value;
+        }
+      });
+    }
+
+    if (oldResponse.recommendations && typeof oldResponse.recommendations === 'object') {
+      Object.entries(oldResponse.recommendations).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          pathologistRecommendations[key] = value;
+        }
+      });
+    }
+
+    // Return the adapted format
+    return {
+      lab_tests_relevance: labTestsRelevance,
+      findings_interpretation: findingsInterpretation,
+      pathologist_recommendations: pathologistRecommendations,
+      disclaimer: typeof oldResponse.disclaimer === 'string'
+        ? oldResponse.disclaimer
+        : "This information is for guidance only and does not replace professional medical advice."
+    };
+  };
+
   // Parse the response from the session or streaming content
   useEffect(() => {
     try {
@@ -51,7 +105,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
         // Check if the response is already a parsed object
         if (typeof currentSession.pathologist_response === 'object' &&
             currentSession.pathologist_response !== null) {
-          setParsedResponse(currentSession.pathologist_response);
+          setParsedResponse(adaptResponseFormat(currentSession.pathologist_response));
           return;
         }
       }
@@ -65,7 +119,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
           if (jsonMatch && jsonMatch[1]) {
             try {
               const parsed = JSON.parse(jsonMatch[1]);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON from code block
@@ -75,7 +129,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
           // Try to parse the entire content as JSON
           try {
             const parsed = JSON.parse(streamingContent.pathologist);
-            setParsedResponse(parsed);
+            setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
             // Failed to parse entire content as JSON
@@ -93,7 +147,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
               jsonStr = jsonStr.replace(/: *([^",\{\[\]\}\d][^",\{\[\]\}]*?)([,\}\]])/g, ': "$1"$2');
 
               const parsed = JSON.parse(jsonStr);
-              setParsedResponse(parsed);
+              setParsedResponse(adaptResponseFormat(parsed));
               return;
             } catch {
               // Failed to parse JSON-like structure
