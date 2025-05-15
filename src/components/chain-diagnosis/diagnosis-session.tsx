@@ -7,6 +7,11 @@ import { ChainDiagnosisStreamingContent } from './streaming-content';
 import { MedicalAnalystView } from './medical-analyst-view';
 import { GeneralPhysicianView } from './general-physician-view';
 import { SpecialistDoctorView } from './specialist-doctor-view';
+import { PathologistView } from './pathologist-view';
+import { NutritionistView } from './nutritionist-view';
+import { PharmacistView } from './pharmacist-view';
+import { FollowUpSpecialistView } from './follow-up-specialist-view';
+import { SummarizerView } from './summarizer-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -76,9 +81,19 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   const medicalAnalystRef = React.useRef<HTMLDivElement>(null);
   const generalPhysicianRef = React.useRef<HTMLDivElement>(null);
   const specialistDoctorRef = React.useRef<HTMLDivElement>(null);
+  const pathologistRef = React.useRef<HTMLDivElement>(null);
+  const nutritionistRef = React.useRef<HTMLDivElement>(null);
+  const pharmacistRef = React.useRef<HTMLDivElement>(null);
+  const followUpSpecialistRef = React.useRef<HTMLDivElement>(null);
+  const summarizerRef = React.useRef<HTMLDivElement>(null);
 
   // Determine the last completed role
   const getLastCompletedRole = () => {
+    if (currentSession?.summarizer_response) return 'summarizer';
+    if (currentSession?.follow_up_specialist_response) return 'followup';
+    if (currentSession?.pharmacist_response) return 'pharmacist';
+    if (currentSession?.nutritionist_response) return 'nutritionist';
+    if (currentSession?.pathologist_response) return 'pathologist';
     if (currentSession?.specialist_doctor_response) return 'specialist';
     if (currentSession?.general_physician_response) return 'physician';
     if (currentSession?.medical_analyst_response) return 'analyst';
@@ -106,7 +121,17 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
         // Then scroll to the last completed role after a short delay
         setTimeout(() => {
-          if (lastCompletedRole === 'specialist' && specialistDoctorRef.current) {
+          if (lastCompletedRole === 'summarizer' && summarizerRef.current) {
+            summarizerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'followup' && followUpSpecialistRef.current) {
+            followUpSpecialistRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'pharmacist' && pharmacistRef.current) {
+            pharmacistRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'nutritionist' && nutritionistRef.current) {
+            nutritionistRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'pathologist' && pathologistRef.current) {
+            pathologistRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else if (lastCompletedRole === 'specialist' && specialistDoctorRef.current) {
             specialistDoctorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
           } else if (lastCompletedRole === 'physician' && generalPhysicianRef.current) {
             generalPhysicianRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -340,21 +365,58 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                     </div>
                   )}
 
-                  {/* Other AI role views will be added in subsequent phases */}
-                  {currentStep > 2 && (
-                    <div className="bg-card/50 backdrop-blur-sm p-5 rounded-xl border border-border/50 shadow-sm text-center">
-                      <div className="flex flex-col items-center gap-3 py-6">
-                        <div className="p-3 rounded-full bg-primary/10 text-primary">
-                          <Brain className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-medium mb-1">Coming Soon</h3>
-                          <p className="text-muted-foreground max-w-md mx-auto">
-                            Detailed views for Pathologist, Nutritionist, Pharmacist,
-                            Follow-up Specialist, and Summarizer will be implemented in subsequent phases.
-                          </p>
-                        </div>
-                      </div>
+                  {/* Pathologist View */}
+                  {(currentStep >= 3 || currentSession?.pathologist_response) && (
+                    <div ref={pathologistRef}>
+                      <PathologistView
+                        isActive={currentStep === 3}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'pathologist'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Nutritionist View */}
+                  {(currentStep >= 4 || currentSession?.nutritionist_response) && (
+                    <div ref={nutritionistRef}>
+                      <NutritionistView
+                        isActive={currentStep === 4}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'nutritionist'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Pharmacist View */}
+                  {(currentStep >= 5 || currentSession?.pharmacist_response) && (
+                    <div ref={pharmacistRef}>
+                      <PharmacistView
+                        isActive={currentStep === 5}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'pharmacist'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Follow-up Specialist View */}
+                  {(currentStep >= 6 || currentSession?.follow_up_specialist_response) && (
+                    <div ref={followUpSpecialistRef}>
+                      <FollowUpSpecialistView
+                        isActive={currentStep === 6}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'followup'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Summarizer View */}
+                  {(currentStep >= 7 || currentSession?.summarizer_response) && (
+                    <div ref={summarizerRef}>
+                      <SummarizerView
+                        isActive={currentStep === 7}
+                        onContinue={handleContinue}
+                        isLastRole={lastCompletedRole === 'summarizer'}
+                      />
                     </div>
                   )}
                 </div>

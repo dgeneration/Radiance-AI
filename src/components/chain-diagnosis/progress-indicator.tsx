@@ -15,7 +15,12 @@ import { ChainDiagnosisSession } from '@/types/chain-diagnosis';
 
 
 // Helper function to get the appropriate icon for each step
-function getStepIcon(title: string, size: number = 24) {
+function getStepIcon(title: string | undefined, size: number = 24) {
+  // Safety check for undefined or empty title
+  if (!title) {
+    return <Activity size={size} />;
+  }
+
   switch (title) {
     case "Medical Analyst":
       return <Microscope size={size} />;
@@ -56,16 +61,21 @@ function ThreeCircleLayout({
   onContinue?: () => void;
   isProcessing?: boolean;
 }) {
-  // Get current step info
-  const currentStepInfo = steps[currentStep];
+  // Get current step info with safety check
+  // If currentStep is beyond the array length, use the last step but mark as completed
+  const currentStepInfo = currentStep < steps.length
+    ? steps[currentStep]
+    : steps.length > 0
+      ? { ...steps[steps.length - 1], description: "Completed" }
+      : { title: "Unknown", description: "Completed" };
 
   // Get previous step info (if exists)
   const prevStepIndex = currentStep > 0 ? currentStep - 1 : null;
-  const prevStepInfo = prevStepIndex !== null ? steps[prevStepIndex] : null;
+  const prevStepInfo = prevStepIndex !== null && prevStepIndex < steps.length ? steps[prevStepIndex] : null;
 
   // Get next step info (if exists)
   const nextStepIndex = currentStep < steps.length - 1 ? currentStep + 1 : null;
-  const nextStepInfo = nextStepIndex !== null ? steps[nextStepIndex] : null;
+  const nextStepInfo = nextStepIndex !== null && nextStepIndex < steps.length ? steps[nextStepIndex] : null;
 
   // Show loading animation if streaming or loading
   const showLoading = isLoading || isStreaming;
@@ -103,8 +113,8 @@ function ThreeCircleLayout({
     };
   }, []);
 
-  // Get icon with responsive size
-  const currentIcon = getStepIcon(currentStepInfo.title, iconSize);
+  // Get icon with responsive size and safety check
+  const currentIcon = currentStepInfo && currentStepInfo.title ? getStepIcon(currentStepInfo.title, iconSize) : <Activity size={iconSize} />;
 
   return (
     <div className="relative py-8">
@@ -112,7 +122,7 @@ function ThreeCircleLayout({
       <div className="flex flex-col items-center">
         {/* Circles container - vertical for mobile, horizontal for desktop */}
         <motion.div
-          className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-8 mb-8"
+          className="flex flex-col md:flex-row items-center justify-center gap-16 md:gap-8 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -155,13 +165,14 @@ function ThreeCircleLayout({
               />
 
               {/* Connector line from previous to current - mobile (vertical) */}
-              <div className="absolute -bottom-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
+              <div className="absolute -bottom-12 right-1/2 translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
                   className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
                              bg-gradient-to-b from-green-500 to-primary"
                   initial={{ scaleY: 0, originY: 0 }}
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
+                  style={{ boxShadow: '0 0 8px rgba(34, 197, 94, 0.3)' }}
                 />
               </div>
 
@@ -671,7 +682,7 @@ function ThreeCircleLayout({
                 />
               </div>
 
-              {showLoading? (
+              {showLoading ? (
                 <div className="relative">
                   <Loader2 className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 animate-spin text-white drop-shadow-glow" />
                   <motion.div
@@ -707,6 +718,7 @@ function ThreeCircleLayout({
                       repeatType: "mirror"
                     }}
                   >
+                    {/* Show the current role icon, even when completed */}
                     {currentIcon}
                   </motion.div>
                 </div>
@@ -735,13 +747,14 @@ function ThreeCircleLayout({
               />
 
               {/* Connector line from current to next - mobile (vertical) */}
-              <div className="absolute -top-12 left-[28px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
                   className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
                              bg-gradient-to-t from-border/40 to-border/40"
                   initial={{ scaleY: 0, originY: 1 }}
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
+                  style={{ boxShadow: '0 0 8px rgba(0, 198, 215, 0.2)' }}
                 />
               </div>
 
@@ -789,10 +802,15 @@ function ThreeCircleLayout({
           >
             <h2 className="text-xl font-semibold text-primary mb-2">
               {currentStepInfo.title}
+              {currentStep >= steps.length && (
+                <span className="ml-2 text-green-500">(Completed)</span>
+              )}
             </h2>
 
             <p className="text-muted-foreground mb-4">
-              {currentStepInfo.description}
+              {currentStep >= steps.length
+                ? "All steps have been completed successfully"
+                : currentStepInfo.description}
             </p>
 
             {(showLoading) && (
@@ -859,7 +877,10 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
           const actualStepNumber = index;
 
           // Determine if this step is active
-          const isStepActive = actualStepNumber === currentStep;
+          // If currentStep is beyond the array length, mark the last step as active
+          const isStepActive = currentStep >= steps.length
+            ? actualStepNumber === steps.length - 1
+            : actualStepNumber === currentStep;
 
           // Determine if this step is completed based on the presence of a response
           const isCompleted =
@@ -911,7 +932,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                     ) : showLoading && isStepActive ? (
                       <Loader2 className="h-7 w-7 animate-spin" />
                     ) : (
-                      getStepIcon(step.title, isStepActive ? 24 : 20)
+                      getStepIcon(step?.title, isStepActive ? 24 : 20)
                     )}
                   </motion.div>
 
@@ -934,7 +955,7 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                     isStepActive && "text-primary",
                     isCompleted && "text-green-500"
                   )}>
-                    {step.title}
+                    {step?.title || "Unknown"}
                   </p>
 
                   {!isCompleted && showLoading && isStepActive && (
@@ -944,6 +965,17 @@ function LandscapeFlow({ steps, currentStep, isLoading, isStreaming, hasMedicalR
                     >
                       <Sparkles className="h-2 w-2 mr-0.5" />
                       Thinking...
+                    </Badge>
+                  )}
+
+                  {/* Show "Completed" badge for the last step when all steps are done */}
+                  {currentStep >= steps.length && index === steps.length - 1 && (
+                    <Badge
+                      variant="outline"
+                      className="mt-1 bg-green-500/10 text-green-500 border-green-500/20 px-1 py-0 text-[10px] font-normal"
+                    >
+                      <Check className="h-2 w-2 mr-0.5" />
+                      Completed
                     </Badge>
                   )}
                 </div>
@@ -1031,6 +1063,11 @@ export function ChainDiagnosisProgressIndicator({
   // Calculate the actual current step based on responses in the session
   // This ensures the ThreeCircleLayout shows the correct current role
   let adjustedCurrentStep = currentStep;
+
+  // Safety check to ensure adjustedCurrentStep is within bounds
+  if (adjustedCurrentStep >= steps.length) {
+    adjustedCurrentStep = steps.length - 1;
+  }
 
   // If we have a session, determine the current step based on responses
   if (currentSession) {
