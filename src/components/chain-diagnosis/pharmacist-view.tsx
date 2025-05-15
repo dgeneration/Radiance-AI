@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { PharmacistResponse } from '@/types/chain-diagnosis';
-
-// Define the new response type based on the provided JSON
+// Define the response type based on the provided JSON
 interface NewPharmacistResponse {
   potential_medications: {
     name: string;
@@ -28,9 +26,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, AlertCircle, CheckCircle,
-  Activity, FileText, ClipboardList, AlertTriangle,
-  ChevronDown, ChevronUp, Pill, Stethoscope,
-  Tablets, ShieldAlert
+  ChevronDown, ChevronUp, Pill, ShieldAlert,
+  ClipboardList
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -80,7 +77,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -90,7 +87,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
             const parsed = JSON.parse(streamingContent.pharmacist);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -108,15 +105,15 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in pharmacist response parsing
     }
   }, [streamingContent.pharmacist, currentSession?.pharmacist_response]);

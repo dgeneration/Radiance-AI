@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { RadianceAISummarizerResponse } from '@/types/chain-diagnosis';
-
-// Define the new response type based on the provided JSON
+// Define the response type based on the provided JSON
 interface NewRadianceAISummarizerResponse {
   age: number;
   gender: string;
@@ -38,9 +36,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, AlertCircle, CheckCircle,
-  Activity, FileText, ClipboardList,
+  Activity, FileText,
   ChevronDown, ChevronUp, Brain, User,
-  ListChecks, Download, Share2, TestTube,
+  Download, Share2, TestTube,
   Pill, Utensils, Calendar, ShieldAlert,
   Stethoscope, AlertTriangle
 } from 'lucide-react';
@@ -92,7 +90,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
               const parsed = JSON.parse(jsonMatch[1]);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON from code block
             }
           }
@@ -102,7 +100,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
             const parsed = JSON.parse(streamingContent.summarizer);
             setParsedResponse(parsed);
             return;
-          } catch (e) {
+          } catch {
             // Failed to parse entire content as JSON
           }
 
@@ -120,15 +118,15 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
               const parsed = JSON.parse(jsonStr);
               setParsedResponse(parsed);
               return;
-            } catch (e) {
+            } catch {
               // Failed to parse JSON-like structure
             }
           }
-        } catch (e) {
+        } catch {
           // Error in streaming content parsing
         }
       }
-    } catch (e) {
+    } catch {
       // Error in summarizer response parsing
     }
   }, [streamingContent.summarizer, currentSession?.summarizer_response]);
