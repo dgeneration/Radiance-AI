@@ -8,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Calendar, ArrowRight, AlertCircle, CheckCircle, Clock, Brain, PlusCircle, FileText } from 'lucide-react';
+import { Loader2, ArrowRight, AlertCircle, CheckCircle, Brain, PlusCircle, FileText, Calendar } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
 

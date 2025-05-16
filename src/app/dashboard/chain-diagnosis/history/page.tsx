@@ -6,7 +6,7 @@ import { ChainDiagnosisProvider } from "@/contexts/chain-diagnosis-context";
 import { ChainDiagnosisHistory } from "@/components/chain-diagnosis/diagnosis-history";
 import { AnimatedSection, FloatingElement, AnimatedIcon } from "@/components/animations";
 import { GradientHeading } from "@/components/ui/gradient-heading";
-import { History, Clock, Calendar } from "lucide-react";
+import { History } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Chain Diagnosis History | Radiance AI",
