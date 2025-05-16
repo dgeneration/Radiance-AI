@@ -479,10 +479,11 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
             )}
           </CardContent>
           </motion.div>
-
+          
+        {!currentSession?.general_physician_response && (
           <CardFooter>
           {/* Only show the continue button if there's a Medical Analyst response and no General Physician response yet */}
-          {currentSession?.medical_analyst_response && !currentSession?.general_physician_response ? (
+          {currentSession?.medical_analyst_response && !currentSession?.general_physician_response && (
             <Button
               onClick={onContinue}
               className="w-full bg-primary hover:bg-primary/90"
@@ -497,20 +498,16 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
                 "Continue to General Physician"
               )}
             </Button>
-          ) : currentSession?.general_physician_response ? (
-            <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-              <p className="text-sm text-green-500">
-                General Physician analysis is complete
-              </p>
-            </div>
-          ) : (
+          )} 
+          {!currentSession?.general_physician_response && (
             <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
               <p className="text-sm text-amber-500">
                 {isLoading || isStreaming ? "Processing medical report..." : "Waiting for Medical Analyst response..."}
               </p>
             </div>
           )}
-        </CardFooter>
+          </CardFooter>
+        )}
       </Card>
       </motion.div>
     </AnimatedSection>

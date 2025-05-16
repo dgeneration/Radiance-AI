@@ -122,7 +122,7 @@ function ThreeCircleLayout({
       <div className="flex flex-col items-center">
         {/* Circles container - vertical for mobile, horizontal for desktop */}
         <motion.div
-          className="flex flex-col md:flex-row items-center justify-center gap-16 md:gap-8 mb-8"
+          className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-8 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -165,7 +165,7 @@ function ThreeCircleLayout({
               />
 
               {/* Connector line from previous to current - mobile (vertical) */}
-              <div className="absolute -bottom-12 right-1/2 translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
+              <div className="absolute -bottom-12 right-[35px] translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
                   className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
                              bg-gradient-to-b from-green-500 to-primary"
@@ -747,7 +747,7 @@ function ThreeCircleLayout({
               />
 
               {/* Connector line from current to next - mobile (vertical) */}
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
+              <div className="absolute -top-12 right-[35px] -translate-x-1/2 z-0 md:hidden" style={{ height: '55px' }}>
                 <motion.div
                   className="absolute top-0 left-0 right-0 mx-auto w-2 h-full
                              bg-gradient-to-t from-border/40 to-border/40"

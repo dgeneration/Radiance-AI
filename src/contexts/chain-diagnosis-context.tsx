@@ -591,7 +591,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             currentSession.specialist_doctor_response,
             currentSession.general_physician_response,
             currentSession.medical_analyst_response,
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('pathologist', chunk, isComplete)
           );
           setCurrentStep(4);
@@ -609,7 +609,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             userInput,
             currentSession.specialist_doctor_response,
             currentSession.pathologist_response,
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('nutritionist', chunk, isComplete)
           );
           setCurrentStep(5);
@@ -630,7 +630,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
             currentSession.specialist_doctor_response,
             currentSession.pathologist_response,
             currentSession.nutritionist_response,
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('pharmacist', chunk, isComplete)
           );
           setCurrentStep(6);
@@ -658,7 +658,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               nutritionist: currentSession.nutritionist_response,
               pharmacist: currentSession.pharmacist_response
             },
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('followUpSpecialist', chunk, isComplete)
           );
           setCurrentStep(7);
@@ -688,7 +688,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
               pharmacist: currentSession.pharmacist_response,
               followUpSpecialist: currentSession.follow_up_specialist_response
             },
-            true,
+            false,
             (chunk, isComplete) => handleStreamingResponse('summarizer', chunk, isComplete)
           );
           setCurrentStep(8);

@@ -547,7 +547,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               )}
             </CardContent>
           </motion.div>
-
+          {!currentSession?.follow_up_specialist_response && (
           <CardFooter>
             {/* Only show the continue button if there's a Pharmacist response and no Follow-up Specialist response yet */}
             {currentSession?.pharmacist_response && !currentSession?.follow_up_specialist_response ? (
@@ -565,12 +565,6 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                   "Continue to Follow-up Specialist"
                 )}
               </Button>
-            ) : currentSession?.follow_up_specialist_response ? (
-              <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                <p className="text-sm text-green-500">
-                  Follow-up Specialist analysis is complete
-                </p>
-              </div>
             ) : (
               <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
                 <p className="text-sm text-amber-500">
@@ -579,6 +573,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               </div>
             )}
           </CardFooter>
+          )}
         </Card>
       </motion.div>
     </AnimatedSection>

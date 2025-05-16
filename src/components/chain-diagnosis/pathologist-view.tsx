@@ -476,7 +476,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
               )}
             </CardContent>
           </motion.div>
-
+          {!currentSession?.nutritionist_response && (
           <CardFooter>
             {/* Only show the continue button if there's a Pathologist response and no Nutritionist response yet */}
             {currentSession?.pathologist_response && !currentSession?.nutritionist_response ? (
@@ -494,12 +494,6 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
                   "Continue to Nutritionist"
                 )}
               </Button>
-            ) : currentSession?.nutritionist_response ? (
-              <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                <p className="text-sm text-green-500">
-                  Nutritionist analysis is complete
-                </p>
-              </div>
             ) : (
               <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
                 <p className="text-sm text-amber-500">
@@ -508,6 +502,7 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
               </div>
             )}
           </CardFooter>
+          )}
         </Card>
       </motion.div>
     </AnimatedSection>

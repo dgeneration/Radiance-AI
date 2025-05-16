@@ -636,7 +636,8 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               )}
             </CardContent>
           </motion.div>
-
+          
+          {!currentSession?.pharmacist_response && (
           <CardFooter>
             {/* Only show the continue button if there's a Nutritionist response and no Pharmacist response yet */}
             {currentSession?.nutritionist_response && !currentSession?.pharmacist_response ? (
@@ -654,12 +655,6 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                   "Continue to Pharmacist"
                 )}
               </Button>
-            ) : currentSession?.pharmacist_response ? (
-              <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                <p className="text-sm text-green-500">
-                  Pharmacist analysis is complete
-                </p>
-              </div>
             ) : (
               <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
                 <p className="text-sm text-amber-500">
@@ -668,6 +663,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               </div>
             )}
           </CardFooter>
+          )}
         </Card>
       </motion.div>
     </AnimatedSection>

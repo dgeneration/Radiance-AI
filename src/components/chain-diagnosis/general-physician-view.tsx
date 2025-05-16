@@ -492,38 +492,33 @@ export function GeneralPhysicianView({ isActive, onContinue, isLastRole = false 
           )}
         </CardContent>
           </motion.div>
-
-        <CardFooter>
-          {/* Only show the continue button if there's a General Physician response and no Specialist Doctor response yet */}
-          {currentSession?.general_physician_response && !currentSession?.specialist_doctor_response ? (
-            <Button
-              onClick={onContinue}
-              className="w-full bg-primary hover:bg-primary/90"
-              disabled={isLoading || (isActive && isStreaming)}
-            >
-              {isLoading || (isActive && isStreaming) ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Continue to Specialist Doctor"
-              )}
-            </Button>
-          ) : currentSession?.specialist_doctor_response ? (
-            <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-              <p className="text-sm text-green-500">
-                Specialist Doctor analysis is complete
-              </p>
-            </div>
-          ) : (
-            <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
-              <p className="text-sm text-amber-500">
-                {isLoading || isStreaming ? "Processing symptoms..." : "Waiting for General Physician response..."}
-              </p>
-            </div>
-          )}
-        </CardFooter>
+        {!currentSession?.specialist_doctor_response && (
+          <CardFooter>
+            {/* Only show the continue button if there's a General Physician response and no Specialist Doctor response yet */}
+            {currentSession?.general_physician_response && !currentSession?.specialist_doctor_response ? (
+              <Button
+                onClick={onContinue}
+                className="w-full bg-primary hover:bg-primary/90"
+                disabled={isLoading || (isActive && isStreaming)}
+              >
+                {isLoading || (isActive && isStreaming) ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Continue to Specialist Doctor"
+                )}
+              </Button>
+            ) : (
+              <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
+                <p className="text-sm text-amber-500">
+                  {isLoading || isStreaming ? "Processing symptoms..." : "Waiting for General Physician response..."}
+                </p>
+              </div>
+            )}
+          </CardFooter>
+        )}
       </Card>
       </motion.div>
     </AnimatedSection>

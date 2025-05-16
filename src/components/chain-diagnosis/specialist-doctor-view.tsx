@@ -223,6 +223,15 @@ export function SpecialistDoctorView({ isActive, onContinue, isLastRole = false 
                   )}
                 </div>
               </div>
+              {parsedResponse && !isStreaming && (
+                <Badge
+                  variant="outline"
+                  className="bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0.5 text-xs font-normal"
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Analysis Complete
+                </Badge>
+              )}
             </div>
           </CardHeader>
 
@@ -455,7 +464,7 @@ export function SpecialistDoctorView({ isActive, onContinue, isLastRole = false 
               )}
             </CardContent>
           )}
-
+          {!currentSession?.pathologist_response && (
           <CardFooter>
             {/* Only show the continue button if there's a Specialist Doctor response and no Pathologist response yet */}
             {currentSession?.specialist_doctor_response && !currentSession?.pathologist_response ? (
@@ -473,12 +482,6 @@ export function SpecialistDoctorView({ isActive, onContinue, isLastRole = false 
                   "Continue to Pathologist"
                 )}
               </Button>
-            ) : currentSession?.pathologist_response ? (
-              <div className="w-full p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-center">
-                <p className="text-sm text-green-500">
-                  Pathologist analysis is complete
-                </p>
-              </div>
             ) : (
               <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
                 <p className="text-sm text-amber-500">
@@ -487,6 +490,7 @@ export function SpecialistDoctorView({ isActive, onContinue, isLastRole = false 
               </div>
             )}
           </CardFooter>
+          )}
         </Card>
       </motion.div>
     </AnimatedSection>
