@@ -1131,7 +1131,7 @@ export function ChainDiagnosisProgressIndicator({
             Diagnosis Progress
           </h2>
           <p className="text-sm text-muted-foreground">
-            Step {adjustedCurrentStep + 1} of {steps.length}
+            Step {adjustedCurrentStep} of {steps.length}
           </p>
         </div>
       </div>
