@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
-  User, Calendar, Clock, MapPin, AlertTriangle,
+  User, Calendar, AlertTriangle,
   Activity, FileText, TestTube, Pill, Utensils,
   CalendarCheck, ShieldAlert, Info, CheckCircle,
   XCircle, AlertCircle

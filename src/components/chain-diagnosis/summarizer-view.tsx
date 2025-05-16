@@ -40,8 +40,7 @@ import {
   Activity, FileText,
   ChevronDown, ChevronUp, Brain, User,
   Download, Share2, TestTube,
-  Pill, Utensils, Calendar, ShieldAlert,
-  Stethoscope, AlertTriangle
+  Pill, Utensils, ShieldAlert
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -457,7 +456,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                             : []
                         },
                         potential_diagnoses: Array.isArray(parsedResponse.potential_diagnoses)
-                          ? parsedResponse.potential_diagnoses.map((diag: any) => {
+                          ? parsedResponse.potential_diagnoses.map((diag: unknown) => {
                               if (typeof diag === 'string') {
                                 return {
                                   name: diag,
@@ -468,11 +467,11 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                                 };
                               }
                               return {
-                                name: typeof diag === 'object' && diag !== null ? (diag.name || 'Unknown') : String(diag),
-                                description: typeof diag === 'object' && diag !== null ? (diag.description || '') : '',
-                                confidence_level: typeof diag === 'object' && diag !== null ? (diag.confidence_level || '') : '',
-                                symptoms_matched: typeof diag === 'object' && diag !== null && Array.isArray(diag.symptoms_matched) ? diag.symptoms_matched : [],
-                                symptoms_not_matched: typeof diag === 'object' && diag !== null && Array.isArray(diag.symptoms_not_matched) ? diag.symptoms_not_matched : []
+                                name: typeof diag === 'object' && diag !== null ? ((diag as Record<string, unknown>).name as string || 'Unknown') : String(diag),
+                                description: typeof diag === 'object' && diag !== null ? ((diag as Record<string, unknown>).description as string || '') : '',
+                                confidence_level: typeof diag === 'object' && diag !== null ? ((diag as Record<string, unknown>).confidence_level as string || '') : '',
+                                symptoms_matched: typeof diag === 'object' && diag !== null && Array.isArray((diag as Record<string, unknown>).symptoms_matched) ? ((diag as Record<string, unknown>).symptoms_matched as string[]) : [],
+                                symptoms_not_matched: typeof diag === 'object' && diag !== null && Array.isArray((diag as Record<string, unknown>).symptoms_not_matched) ? ((diag as Record<string, unknown>).symptoms_not_matched as string[]) : []
                               };
                             })
                           : [],
