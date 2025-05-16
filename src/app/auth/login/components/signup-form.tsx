@@ -214,7 +214,7 @@ export function SignupForm({
         <form onSubmit={handleSignup} className="space-y-6">
           {/* Step indicator */}
           <div className="flex justify-center mb-6">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-[1px]">
               {/* Step 1: Account */}
               <div className="flex flex-col items-center">
                 <div
@@ -223,7 +223,7 @@ export function SignupForm({
                       ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg'
                       : formStep > 1
                         ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground'
+                        : 'bg-gradient-to-t from-border/40 to-border/40 text-muted-foreground'
                   }`}
                 >
                   {formStep > 1 ? <CheckCircle className="h-4 w-4" /> : 1}
@@ -234,7 +234,7 @@ export function SignupForm({
               </div>
 
               {/* Line between Step 1 and 2 */}
-              <div className="w-12 h-1 bg-muted rounded-full mt-[-10px]">
+              <div className="w-12 h-1 bg-gradient-to-t from-border/40 to-border/40 rounded-full mt-[-20px]">
                 <div
                   className={`h-full bg-gradient-to-r from-primary to-accent rounded-full ${
                     formStep >= 2 ? 'w-full' : 'w-0'
@@ -250,7 +250,7 @@ export function SignupForm({
                       ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg'
                       : formStep > 2
                         ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground'
+                        : 'bg-gradient-to-t from-border/40 to-border/40 text-muted-foreground'
                   }`}
                 >
                   {formStep > 2 ? <CheckCircle className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
@@ -261,7 +261,7 @@ export function SignupForm({
               </div>
 
               {/* Line between Step 2 and 3 */}
-              <div className="w-12 h-1 bg-muted rounded-full mt-[-10px]">
+              <div className="w-12 h-1 bg-gradient-to-t from-border/40 to-border/40 rounded-full mt-[-20px]">
                 <div
                   className={`h-full bg-gradient-to-r from-primary to-accent rounded-full ${
                     formStep >= 3 ? 'w-full' : 'w-0'
@@ -277,7 +277,7 @@ export function SignupForm({
                       ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg'
                       : formStep > 3
                         ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground'
+                        : 'bg-gradient-to-t from-border/40 to-border/40 text-muted-foreground'
                   }`}
                 >
                   {formStep > 3 ? <CheckCircle className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
@@ -288,7 +288,7 @@ export function SignupForm({
               </div>
 
               {/* Line between Step 3 and 4 */}
-              <div className="w-12 h-1 bg-muted rounded-full mt-[-10px]">
+              <div className="w-12 h-1 bg-gradient-to-t from-border/40 to-border/40 rounded-full mt-[-20px] mr-[5px]">
                 <div
                   className={`h-full bg-gradient-to-r from-primary to-accent rounded-full ${
                     formStep >= 4 ? 'w-full' : 'w-0'
@@ -302,7 +302,7 @@ export function SignupForm({
                   className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${
                     formStep === 4
                       ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg'
-                      : 'bg-muted text-muted-foreground'
+                      : 'bg-gradient-to-t from-border/40 to-border/40 text-muted-foreground'
                   }`}
                 >
                   <Heart className="h-4 w-4" />
