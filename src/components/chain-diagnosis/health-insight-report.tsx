@@ -454,4 +454,4 @@ export function HealthInsightReport({ report, className }: HealthInsightReportPr
         </CardContent>
       </Card>
     </div>
-  );
+  )};
