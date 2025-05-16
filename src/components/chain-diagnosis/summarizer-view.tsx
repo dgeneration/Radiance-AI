@@ -47,6 +47,7 @@ import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { HealthInsightReport } from './health-insight-report';
 
 interface SummarizerViewProps {
   isActive: boolean;
@@ -428,111 +429,68 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
                   {parsedResponse ? (
-                    <div className="space-y-4">
-                      {/* Patient Information */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <User className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Patient Information</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Name:</span>
-                              <span className="font-medium">{parsedResponse.patient_name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Age:</span>
-                              <span>{parsedResponse.age}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Gender:</span>
-                              <span>{parsedResponse.gender}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Patient ID:</span>
-                              <span className="font-mono text-xs">{parsedResponse.patient_id}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Primary Concerns */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <AlertCircle className="h-4 w-4 text-amber-500" />
-                          <h3 className="text-sm font-medium">Primary Concerns</h3>
-                        </div>
-
-                        <div className="space-y-2">
-                          {parsedResponse.primary_concerns.map((concern, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <div className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                {index + 1}
-                              </div>
-                              <span className="text-sm">{concern}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Potential Diagnoses */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Stethoscope className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Potential Diagnoses</h3>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {parsedResponse.potential_diagnoses.map((diagnosis, index) => (
-                            <Badge key={index} variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                              {diagnosis}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Follow-up Plan */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Calendar className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Follow-up Plan</h3>
-                        </div>
-
-                        <div className="space-y-3 text-sm">
-                          <div className="flex items-start gap-2">
-                            <span className="text-muted-foreground w-32">Timeline:</span>
-                            <span>{parsedResponse.follow_up_plan.timeline}</span>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <span className="text-muted-foreground w-32">Specialist Referral:</span>
-                            <span>{parsedResponse.follow_up_plan.specialist_referral}</span>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <span className="text-muted-foreground w-32">Documentation:</span>
-                            <span>{parsedResponse.follow_up_plan.documentation_needed}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Urgent Care Indicators */}
-                      <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <ShieldAlert className="h-4 w-4 text-red-500" />
-                          <h3 className="text-sm font-medium text-red-500">Urgent Care Indicators</h3>
-                        </div>
-
-                        <div className="space-y-2">
-                          {parsedResponse.urgent_care_indicators.map((indicator, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm">{indicator}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    <HealthInsightReport
+                      report={{
+                        age: parsedResponse.age || 0,
+                        gender: parsedResponse.gender || 'Not specified',
+                        disclaimer: parsedResponse.disclaimer || 'This information is for guidance only and does not replace professional medical advice.',
+                        patient_id: parsedResponse.patient_id || 'Unknown',
+                        patient_name: parsedResponse.patient_name || 'Patient',
+                        date_of_report: parsedResponse.date_of_report || new Date().toLocaleDateString(),
+                        introduction: parsedResponse.introduction,
+                        follow_up_plan: {
+                          timeline: parsedResponse.follow_up_plan?.timeline || 'As recommended',
+                          specialist_referral: parsedResponse.follow_up_plan?.specialist_referral || 'As needed',
+                          documentation_needed: parsedResponse.follow_up_plan?.documentation_needed || 'Medical records'
+                        },
+                        primary_concerns: Array.isArray(parsedResponse.primary_concerns) ? parsedResponse.primary_concerns : [],
+                        recommended_tests: Array.isArray(parsedResponse.recommended_tests) ? parsedResponse.recommended_tests : [],
+                        medication_guidance: {
+                          current_medications: Array.isArray(parsedResponse.medication_guidance?.current_medications)
+                            ? parsedResponse.medication_guidance.current_medications
+                            : [],
+                          medications_to_avoid: Array.isArray(parsedResponse.medication_guidance?.medications_to_avoid)
+                            ? parsedResponse.medication_guidance.medications_to_avoid
+                            : [],
+                          potential_medications: Array.isArray(parsedResponse.medication_guidance?.potential_medications)
+                            ? parsedResponse.medication_guidance.potential_medications
+                            : []
+                        },
+                        potential_diagnoses: Array.isArray(parsedResponse.potential_diagnoses)
+                          ? parsedResponse.potential_diagnoses.map((diag: any) => {
+                              if (typeof diag === 'string') {
+                                return {
+                                  name: diag,
+                                  description: '',
+                                  confidence_level: '',
+                                  symptoms_matched: [],
+                                  symptoms_not_matched: []
+                                };
+                              }
+                              return {
+                                name: typeof diag === 'object' && diag !== null ? (diag.name || 'Unknown') : String(diag),
+                                description: typeof diag === 'object' && diag !== null ? (diag.description || '') : '',
+                                confidence_level: typeof diag === 'object' && diag !== null ? (diag.confidence_level || '') : '',
+                                symptoms_matched: typeof diag === 'object' && diag !== null && Array.isArray(diag.symptoms_matched) ? diag.symptoms_matched : [],
+                                symptoms_not_matched: typeof diag === 'object' && diag !== null && Array.isArray(diag.symptoms_not_matched) ? diag.symptoms_not_matched : []
+                              };
+                            })
+                          : [],
+                        condition_summary: parsedResponse.summary_of_condition || '',
+                        urgent_care_indicators: {
+                          present: Array.isArray(parsedResponse.urgent_care_indicators) && parsedResponse.urgent_care_indicators.length > 0,
+                          indicators: Array.isArray(parsedResponse.urgent_care_indicators) ? parsedResponse.urgent_care_indicators : []
+                        },
+                        dietary_recommendations: Array.isArray(parsedResponse.dietary_recommendations)
+                          ? parsedResponse.dietary_recommendations
+                          : (parsedResponse.dietary_recommendations?.foods_to_include || []).concat(
+                              parsedResponse.dietary_recommendations?.foods_to_avoid?.map(food => `Avoid: ${food}`) || []
+                            ),
+                        lifestyle_recommendations: Array.isArray(parsedResponse.lifestyle_recommendations)
+                          ? parsedResponse.lifestyle_recommendations
+                          : []
+                      }}
+                    />
                   ) : (
                     <div className="text-center py-10 text-muted-foreground">
                       {isStreaming && isActive ? (
