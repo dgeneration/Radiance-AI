@@ -499,7 +499,7 @@ export function MedicalAnalystView({ isActive, onContinue, isLastRole = false }:
               )}
             </Button>
           )} 
-          {!currentSession?.general_physician_response && (
+          {!currentSession?.general_physician_response && !currentSession?.medical_analyst_response && (
             <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
               <p className="text-sm text-amber-500">
                 {isLoading || isStreaming ? "Processing medical report..." : "Waiting for Medical Analyst response..."}
