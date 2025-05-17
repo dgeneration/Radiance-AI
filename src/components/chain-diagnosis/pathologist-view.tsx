@@ -3,12 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 
-// Define the new response type based on the provided JSON
+// Define the response type based on the system prompt JSON structure
 interface NewPathologistResponse {
-  lab_tests_relevance: Record<string, string>;
-  findings_interpretation: Record<string, string>;
-  pathologist_recommendations: Record<string, string>;
-  disclaimer?: string; // Keep this for backward compatibility
+  role_name: string;
+  context_from_specialist: {
+    specialist_type_consulted: string;
+    potential_conditions_under_review: string[];
+    suggested_investigations_by_specialist: string[];
+  };
+  pathological_insights_for_potential_conditions: {
+    condition_hypothesis: string;
+    relevant_lab_tests_and_expected_findings: {
+      test_name: string;
+      potential_findings_explained: string;
+    }[];
+  }[];
+  notes_on_test_interpretation: string[];
+  reference_data_for_next_role: {
+    pathology_summary: string;
+    critical_markers_highlighted: string[];
+  };
+  disclaimer: string;
 }
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,9 +61,9 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
   const adaptResponseFormat = (response: unknown): NewPathologistResponse => {
     // Type guard to check if it's already in the new format
     if (typeof response === 'object' && response !== null &&
-        'lab_tests_relevance' in response &&
-        'findings_interpretation' in response &&
-        'pathologist_recommendations' in response) {
+        'role_name' in response &&
+        'context_from_specialist' in response &&
+        'pathological_insights_for_potential_conditions' in response) {
       return response as NewPathologistResponse;
     }
 
@@ -56,44 +71,69 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const oldResponse = response as Record<string, any>;
 
-    // Create default empty objects for required fields
-    const labTestsRelevance: Record<string, string> = {};
-    const findingsInterpretation: Record<string, string> = {};
-    const pathologistRecommendations: Record<string, string> = {};
+    // Create default values for required fields
+    const contextFromSpecialist = {
+      specialist_type_consulted: "Unknown Specialist",
+      potential_conditions_under_review: ["Not specified"],
+      suggested_investigations_by_specialist: ["Not specified"]
+    };
+
+    const pathologicalInsights: NewPathologistResponse['pathological_insights_for_potential_conditions'] = [];
+    const notesOnTestInterpretation: string[] = [];
 
     // Try to extract data from old format if available
-    if (oldResponse.lab_tests && typeof oldResponse.lab_tests === 'object') {
-      Object.entries(oldResponse.lab_tests).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          labTestsRelevance[key] = value;
+    // Convert old lab_tests_relevance to pathological_insights
+    if (oldResponse.lab_tests_relevance && typeof oldResponse.lab_tests_relevance === 'object') {
+      const labTests: {test_name: string; potential_findings_explained: string}[] = [];
+
+      Object.entries(oldResponse.lab_tests_relevance).forEach(([testName, relevance]) => {
+        if (typeof relevance === 'string') {
+          labTests.push({
+            test_name: testName,
+            potential_findings_explained: relevance
+          });
+        }
+      });
+
+      if (labTests.length > 0) {
+        pathologicalInsights.push({
+          condition_hypothesis: "Condition from old format",
+          relevant_lab_tests_and_expected_findings: labTests
+        });
+      }
+    }
+
+    // Convert old findings_interpretation to notes_on_test_interpretation
+    if (oldResponse.findings_interpretation && typeof oldResponse.findings_interpretation === 'object') {
+      Object.entries(oldResponse.findings_interpretation).forEach(([finding, interpretation]) => {
+        if (typeof interpretation === 'string') {
+          notesOnTestInterpretation.push(`${finding}: ${interpretation}`);
         }
       });
     }
 
-    if (oldResponse.findings && typeof oldResponse.findings === 'object') {
-      Object.entries(oldResponse.findings).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          findingsInterpretation[key] = value;
-        }
-      });
-    }
-
-    if (oldResponse.recommendations && typeof oldResponse.recommendations === 'object') {
-      Object.entries(oldResponse.recommendations).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          pathologistRecommendations[key] = value;
+    // Convert old pathologist_recommendations to additional notes
+    if (oldResponse.pathologist_recommendations && typeof oldResponse.pathologist_recommendations === 'object') {
+      Object.entries(oldResponse.pathologist_recommendations).forEach(([title, recommendation]) => {
+        if (typeof recommendation === 'string') {
+          notesOnTestInterpretation.push(`Recommendation - ${title}: ${recommendation}`);
         }
       });
     }
 
     // Return the adapted format
     return {
-      lab_tests_relevance: labTestsRelevance,
-      findings_interpretation: findingsInterpretation,
-      pathologist_recommendations: pathologistRecommendations,
+      role_name: "Pathologist AI (Radiance AI)",
+      context_from_specialist: contextFromSpecialist,
+      pathological_insights_for_potential_conditions: pathologicalInsights,
+      notes_on_test_interpretation: notesOnTestInterpretation,
+      reference_data_for_next_role: {
+        pathology_summary: "Pathology information adapted from old format",
+        critical_markers_highlighted: ["None specified in old format"]
+      },
       disclaimer: typeof oldResponse.disclaimer === 'string'
         ? oldResponse.disclaimer
-        : "This information is for guidance only and does not replace professional medical advice."
+        : "This information explains potential pathological findings and is for educational purposes. It does not interpret specific results for this patient without actual test data. All diagnostic testing should be ordered and interpreted by qualified healthcare professionals. Radiance AI."
     };
   };
 
@@ -308,27 +348,59 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
           >
             <CardContent className={cn("space-y-5", !isExpanded && "hidden")}>
               {/* Tabs for different sections */}
-              <Tabs defaultValue="lab-tests" value={activeTab} onValueChange={setActiveTab}>
+              {/* Context from Specialist */}
+              {parsedResponse?.context_from_specialist && (
+                <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Microscope className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium">Context from {parsedResponse.context_from_specialist.specialist_type_consulted}</h3>
+                  </div>
+
+                  <div className="space-y-3 text-sm">
+                    {/* Potential Conditions */}
+                    <div>
+                      <p className="text-muted-foreground mb-1">Potential Conditions Under Review:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {parsedResponse.context_from_specialist.potential_conditions_under_review.map((condition, index) => (
+                          <li key={index}>{condition}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Suggested Investigations */}
+                    <div>
+                      <p className="text-muted-foreground mb-1">Suggested Investigations:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {parsedResponse.context_from_specialist.suggested_investigations_by_specialist.map((investigation, index) => (
+                          <li key={index}>{investigation}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Tabs defaultValue="insights" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
-                  <TabsTrigger value="lab-tests" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="insights" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <TestTube className="h-3.5 w-3.5 mr-1.5" />
-                    Lab Tests
+                    Pathological Insights
                   </TabsTrigger>
-                  <TabsTrigger value="findings" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="notes" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Microscope className="h-3.5 w-3.5 mr-1.5" />
-                    Findings
+                    Test Interpretation
                   </TabsTrigger>
-                  <TabsTrigger value="recommendations" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="reference" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Beaker className="h-3.5 w-3.5 mr-1.5" />
-                    Recommendations
+                    Reference Data
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Lab Tests Tab */}
-                <TabsContent value="lab-tests" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.lab_tests_relevance && Object.keys(parsedResponse.lab_tests_relevance).length > 0 ? (
-                    <div className="space-y-4">
-                      {Object.entries(parsedResponse.lab_tests_relevance).map(([testName, relevance], index) => (
+                {/* Pathological Insights Tab */}
+                <TabsContent value="insights" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.pathological_insights_for_potential_conditions && parsedResponse.pathological_insights_for_potential_conditions.length > 0 ? (
+                    <div className="space-y-6">
+                      {parsedResponse.pathological_insights_for_potential_conditions.map((condition, index) => (
                         <motion.div
                           key={index}
                           className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
@@ -336,11 +408,19 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
                         >
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-3">
                             <TestTube className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-medium">{testName}</h3>
+                            <h3 className="text-sm font-medium">{condition.condition_hypothesis}</h3>
                           </div>
-                          <p className="text-sm text-muted-foreground pl-6">{relevance}</p>
+
+                          <div className="space-y-4">
+                            {condition.relevant_lab_tests_and_expected_findings.map((test, testIndex) => (
+                              <div key={testIndex} className="pl-4 border-l-2 border-primary/20">
+                                <p className="text-sm font-medium mb-1">{test.test_name}</p>
+                                <p className="text-sm text-muted-foreground">{test.potential_findings_explained}</p>
+                              </div>
+                            ))}
+                          </div>
                         </motion.div>
                       ))}
                     </div>
@@ -353,81 +433,34 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Analyzing lab tests...</p>
+                            <p className="font-medium text-primary">Analyzing pathological insights...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <TestTube className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No lab test information available</p>
+                          <p>No pathological insights available</p>
                         </div>
                       )}
                     </div>
                   )}
                 </TabsContent>
 
-                {/* Findings Interpretation Tab */}
-                <TabsContent value="findings" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.findings_interpretation && Object.keys(parsedResponse.findings_interpretation).length > 0 ? (
+                {/* Test Interpretation Notes Tab */}
+                <TabsContent value="notes" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.notes_on_test_interpretation && parsedResponse.notes_on_test_interpretation.length > 0 ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <Microscope className="h-4 w-4 text-primary" />
-                        <h3 className="text-sm font-medium">Findings Interpretation</h3>
+                        <h3 className="text-sm font-medium">Notes on Test Interpretation</h3>
                       </div>
 
-                      <div className="space-y-4">
-                        {Object.entries(parsedResponse.findings_interpretation).map(([finding, interpretation], index) => (
-                          <motion.div
+                      <ul className="space-y-3">
+                        {parsedResponse.notes_on_test_interpretation.map((note, index) => (
+                          <motion.li
                             key={index}
-                            className="pl-4 border-l-2 border-primary/20"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                          >
-                            <p className="text-sm font-medium mb-1">{finding}</p>
-                            <p className="text-sm text-muted-foreground">{interpretation}</p>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                      {isStreaming && isActive ? (
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
-                            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-primary">Interpreting findings...</p>
-                            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <AlertCircle className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No findings interpretation available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Recommendations Tab */}
-                <TabsContent value="recommendations" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.pathologist_recommendations && Object.keys(parsedResponse.pathologist_recommendations).length > 0 ? (
-                    <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <FlaskRound className="h-4 w-4 text-primary" />
-                        <h3 className="text-sm font-medium">Pathologist Recommendations</h3>
-                      </div>
-
-                      <div className="space-y-4">
-                        {Object.entries(parsedResponse.pathologist_recommendations).map(([title, recommendation], index) => (
-                          <motion.div
-                            key={index}
-                            className="flex items-start gap-3"
+                            className="flex items-start gap-2 text-sm"
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -435,12 +468,59 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
                             <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                               {index + 1}
                             </div>
-                            <div>
-                              <p className="text-sm font-medium">{title}</p>
-                              <p className="text-sm text-muted-foreground">{recommendation}</p>
-                            </div>
-                          </motion.div>
+                            <span>{note}</span>
+                          </motion.li>
                         ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                      {isStreaming && isActive ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary">Preparing test interpretation notes...</p>
+                            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <AlertCircle className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No test interpretation notes available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Reference Data Tab */}
+                <TabsContent value="reference" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.reference_data_for_next_role ? (
+                    <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FlaskRound className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-medium">Reference Data for Next Role</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Pathology Summary */}
+                        <div className="pl-4 border-l-2 border-primary/20">
+                          <p className="text-muted-foreground mb-1">Pathology Summary:</p>
+                          <p className="text-sm">{parsedResponse.reference_data_for_next_role.pathology_summary}</p>
+                        </div>
+
+                        {/* Critical Markers */}
+                        <div className="pl-4 border-l-2 border-primary/20">
+                          <p className="text-muted-foreground mb-1">Critical Markers Highlighted:</p>
+                          <ul className="list-disc pl-5 space-y-1 text-sm">
+                            {parsedResponse.reference_data_for_next_role.critical_markers_highlighted.map((marker, index) => (
+                              <li key={index}>{marker}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -452,14 +532,14 @@ export function PathologistView({ isActive, onContinue, isLastRole = false }: Pa
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Preparing recommendations...</p>
+                            <p className="font-medium text-primary">Preparing reference data...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <AlertCircle className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No pathologist recommendations available</p>
+                          <FlaskRound className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No reference data available</p>
                         </div>
                       )}
                     </div>

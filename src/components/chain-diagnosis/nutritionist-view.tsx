@@ -2,30 +2,29 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-// Define the response type based on the provided JSON
+// Define the response type based on the system prompt JSON structure
 interface NewNutritionistResponse {
-  patient_id: string;
-  name: string;
-  age: number;
-  gender: string;
-  location: {
-    city: string;
-    state: string;
-    country: string;
-    zip_code: string;
+  role_name: string;
+  nutritional_assessment_overview: {
+    bmi_status: string;
+    dietary_preference: string;
+    key_considerations_from_medical_context: string[];
   };
-  medical_conditions: string[];
-  current_symptoms: string[];
-  current_medications: string[];
-  dietary_preference: string;
-  specialist_direction: string;
-  potential_diagnoses: string[];
-  nutrition_recommendations: string[];
-  foods_to_include: string[];
-  foods_to_avoid: string[];
-  lifestyle_tips: string[];
-  notes: string;
-  disclaimer?: string; // Keep this for backward compatibility
+  general_dietary_goals: string[];
+  dietary_recommendations: {
+    foods_to_emphasize: {
+      category: string;
+      examples: string[];
+    }[];
+    foods_to_consider_limiting_during_illness: string[];
+    meal_frequency_and_timing_tips: string[];
+  };
+  addressing_weight_concerns: string[];
+  reference_data_for_next_role: {
+    nutrition_summary: string;
+    weight_concern_highlight: string;
+  };
+  disclaimer: string;
 }
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,9 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
   const adaptResponseFormat = (response: unknown): NewNutritionistResponse => {
     // Type guard to check if it's already in the new format
     if (typeof response === 'object' && response !== null &&
-        'patient_id' in response && 'name' in response) {
+        'role_name' in response &&
+        'nutritional_assessment_overview' in response &&
+        'dietary_recommendations' in response) {
       return response as NewNutritionistResponse;
     }
 
@@ -72,63 +73,77 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const oldResponse = response as Record<string, any>;
 
-    // Extract arrays safely
-    const medicalConditions = Array.isArray(oldResponse.medical_conditions)
-      ? oldResponse.medical_conditions
-      : [];
-
-    const currentSymptoms = Array.isArray(oldResponse.current_symptoms)
-      ? oldResponse.current_symptoms
-      : [];
-
-    const currentMedications = Array.isArray(oldResponse.current_medications)
-      ? oldResponse.current_medications
-      : [];
-
-    const potentialDiagnoses = Array.isArray(oldResponse.potential_diagnoses)
-      ? oldResponse.potential_diagnoses
-      : [];
-
-    const nutritionRecommendations = Array.isArray(oldResponse.nutrition_recommendations)
-      ? oldResponse.nutrition_recommendations
-      : [];
-
-    const foodsToInclude = Array.isArray(oldResponse.foods_to_include)
-      ? oldResponse.foods_to_include
-      : [];
-
-    const foodsToAvoid = Array.isArray(oldResponse.foods_to_avoid)
-      ? oldResponse.foods_to_avoid
-      : [];
-
-    const lifestyleTips = Array.isArray(oldResponse.lifestyle_tips)
-      ? oldResponse.lifestyle_tips
-      : [];
-
-    // Return the adapted format with default values for required fields
-    return {
-      patient_id: oldResponse.patient_id || "unknown",
-      name: oldResponse.name || "Patient",
-      age: typeof oldResponse.age === 'number' ? oldResponse.age : 0,
-      gender: oldResponse.gender || "Not specified",
-      location: {
-        city: oldResponse.location?.city || "Unknown",
-        state: oldResponse.location?.state || "Unknown",
-        country: oldResponse.location?.country || "Unknown",
-        zip_code: oldResponse.location?.zip_code || "Unknown"
-      },
-      medical_conditions: medicalConditions,
-      current_symptoms: currentSymptoms,
-      current_medications: currentMedications,
+    // Create default values for required fields
+    const nutritionalAssessment = {
+      bmi_status: "Not specified",
       dietary_preference: oldResponse.dietary_preference || "Not specified",
-      specialist_direction: oldResponse.specialist_direction || "",
-      potential_diagnoses: potentialDiagnoses,
-      nutrition_recommendations: nutritionRecommendations,
-      foods_to_include: foodsToInclude,
-      foods_to_avoid: foodsToAvoid,
-      lifestyle_tips: lifestyleTips,
-      notes: oldResponse.notes || "",
-      disclaimer: oldResponse.disclaimer || "This information is for guidance only and does not replace professional medical advice."
+      key_considerations_from_medical_context: []
+    };
+
+    // Convert old medical_conditions to key_considerations
+    if (Array.isArray(oldResponse.medical_conditions) && oldResponse.medical_conditions.length > 0) {
+      nutritionalAssessment.key_considerations_from_medical_context.push(
+        `Medical conditions: ${oldResponse.medical_conditions.join(', ')}`
+      );
+    }
+
+    // Convert old current_symptoms to key_considerations
+    if (Array.isArray(oldResponse.current_symptoms) && oldResponse.current_symptoms.length > 0) {
+      nutritionalAssessment.key_considerations_from_medical_context.push(
+        `Current symptoms: ${oldResponse.current_symptoms.join(', ')}`
+      );
+    }
+
+    // If no considerations were added, add a default one
+    if (nutritionalAssessment.key_considerations_from_medical_context.length === 0) {
+      nutritionalAssessment.key_considerations_from_medical_context.push("No specific medical considerations noted");
+    }
+
+    // Convert old nutrition_recommendations to general_dietary_goals
+    const generalDietaryGoals = Array.isArray(oldResponse.nutrition_recommendations)
+      ? oldResponse.nutrition_recommendations
+      : ["Maintain a balanced diet", "Stay hydrated", "Consume adequate protein"];
+
+    // Convert old foods_to_include to foods_to_emphasize
+    const foodsToEmphasize = [];
+    if (Array.isArray(oldResponse.foods_to_include) && oldResponse.foods_to_include.length > 0) {
+      foodsToEmphasize.push({
+        category: "Recommended Foods",
+        examples: oldResponse.foods_to_include
+      });
+    } else {
+      foodsToEmphasize.push({
+        category: "Nutrient-Dense Foods",
+        examples: ["Fruits", "Vegetables", "Lean proteins", "Whole grains"]
+      });
+    }
+
+    // Convert old foods_to_avoid to foods_to_consider_limiting
+    const foodsToLimit = Array.isArray(oldResponse.foods_to_avoid)
+      ? oldResponse.foods_to_avoid
+      : ["Highly processed foods", "Excessive sugar", "Excessive salt"];
+
+    // Convert old lifestyle_tips to addressing_weight_concerns
+    const addressingWeightConcerns = Array.isArray(oldResponse.lifestyle_tips)
+      ? oldResponse.lifestyle_tips
+      : ["Focus on nutrient-dense foods", "Stay physically active as appropriate", "Maintain regular meal patterns"];
+
+    // Return the adapted format
+    return {
+      role_name: "Nutritionist AI (Radiance AI)",
+      nutritional_assessment_overview: nutritionalAssessment,
+      general_dietary_goals: generalDietaryGoals,
+      dietary_recommendations: {
+        foods_to_emphasize: foodsToEmphasize,
+        foods_to_consider_limiting_during_illness: foodsToLimit,
+        meal_frequency_and_timing_tips: ["Eat regular meals", "Consider smaller, more frequent meals if appetite is low"]
+      },
+      addressing_weight_concerns: addressingWeightConcerns,
+      reference_data_for_next_role: {
+        nutrition_summary: "Nutritional information adapted from old format",
+        weight_concern_highlight: "No specific weight concerns noted in old format"
+      },
+      disclaimer: oldResponse.disclaimer || "These are general nutritional guidelines for informational purposes and not a personalized meal plan. Consult with a registered dietitian or healthcare provider for tailored advice, especially considering your medical condition and weight status. Radiance AI."
     };
   };
 
@@ -342,67 +357,41 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
             className="overflow-hidden"
           >
             <CardContent className={cn("space-y-5", !isExpanded && "hidden")}>
-              {/* Patient Overview */}
+              {/* Nutritional Assessment Overview */}
               <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
                   <User className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-medium">Patient Overview</h3>
+                  <h3 className="text-sm font-medium">Nutritional Assessment Overview</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div className="space-y-2">
-                    {parsedResponse?.name && (
+                    {parsedResponse?.nutritional_assessment_overview?.bmi_status && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Name:</span>
-                        <span className="font-medium">{parsedResponse.name}</span>
+                        <span className="text-muted-foreground">BMI Status:</span>
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          {parsedResponse.nutritional_assessment_overview.bmi_status}
+                        </Badge>
                       </div>
                     )}
-                    {parsedResponse?.age && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Age:</span>
-                        <span>{parsedResponse.age} years</span>
-                      </div>
-                    )}
-                    {parsedResponse?.gender && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Gender:</span>
-                        <span>{parsedResponse.gender}</span>
-                      </div>
-                    )}
-                    {parsedResponse?.location && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Location:</span>
-                        <span>{parsedResponse.location.city}, {parsedResponse.location.state}</span>
-                      </div>
-                    )}
-                    {parsedResponse?.dietary_preference && (
+                    {parsedResponse?.nutritional_assessment_overview?.dietary_preference && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Dietary Preference:</span>
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          {parsedResponse.dietary_preference}
+                          {parsedResponse.nutritional_assessment_overview.dietary_preference}
                         </Badge>
                       </div>
                     )}
                   </div>
 
                   <div className="space-y-3">
-                    {parsedResponse?.medical_conditions && parsedResponse.medical_conditions.length > 0 && (
+                    {parsedResponse?.nutritional_assessment_overview?.key_considerations_from_medical_context &&
+                     parsedResponse.nutritional_assessment_overview.key_considerations_from_medical_context.length > 0 && (
                       <div>
-                        <p className="text-muted-foreground mb-1">Medical Conditions:</p>
+                        <p className="text-muted-foreground mb-1">Key Medical Considerations:</p>
                         <ul className="list-disc pl-5 space-y-1">
-                          {parsedResponse.medical_conditions.map((condition, index) => (
-                            <li key={index} className="text-sm">{condition}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {parsedResponse?.current_medications && parsedResponse.current_medications.length > 0 && (
-                      <div>
-                        <p className="text-muted-foreground mb-1">Current Medications:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          {parsedResponse.current_medications.map((medication, index) => (
-                            <li key={index} className="text-sm">{medication}</li>
+                          {parsedResponse.nutritional_assessment_overview.key_considerations_from_medical_context.map((consideration, index) => (
+                            <li key={index} className="text-sm">{consideration}</li>
                           ))}
                         </ul>
                       </div>
@@ -411,77 +400,133 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                 </div>
               </div>
 
-              {/* Potential Diagnoses */}
-              {parsedResponse?.potential_diagnoses && parsedResponse.potential_diagnoses.length > 0 && (
+              {/* General Dietary Goals */}
+              {parsedResponse?.general_dietary_goals && parsedResponse.general_dietary_goals.length > 0 && (
                 <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <Stethoscope className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-medium">Potential Diagnoses</h3>
+                    <h3 className="text-sm font-medium">General Dietary Goals</h3>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {parsedResponse.potential_diagnoses.map((diagnosis, index) => (
-                      <Badge key={index} variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-                        {diagnosis}
-                      </Badge>
+                  <ul className="space-y-2">
+                    {parsedResponse.general_dietary_goals.map((goal, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                          {index + 1}
+                        </div>
+                        <span>{goal}</span>
+                      </li>
                     ))}
-                  </div>
-
-                  {parsedResponse?.specialist_direction && (
-                    <div className="mt-3 text-sm text-muted-foreground">
-                      <p className="italic">{parsedResponse.specialist_direction}</p>
-                    </div>
-                  )}
+                  </ul>
                 </div>
               )}
 
               {/* Tabs for different sections */}
-              <Tabs defaultValue="recommendations" value={activeTab} onValueChange={setActiveTab}>
+              <Tabs defaultValue="foods" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
-                  <TabsTrigger value="recommendations" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                    <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
-                    Recommendations
-                  </TabsTrigger>
                   <TabsTrigger value="foods" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Utensils className="h-3.5 w-3.5 mr-1.5" />
                     Foods
                   </TabsTrigger>
-                  <TabsTrigger value="lifestyle" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="weight" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Activity className="h-3.5 w-3.5 mr-1.5" />
-                    Lifestyle
+                    Weight Concerns
+                  </TabsTrigger>
+                  <TabsTrigger value="reference" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                    <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
+                    Reference Data
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Nutrition Recommendations Tab */}
-                <TabsContent value="recommendations" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.nutrition_recommendations && parsedResponse.nutrition_recommendations.length > 0 ? (
-                    <div className="space-y-3">
-                      {parsedResponse.nutrition_recommendations.map((recommendation, index) => {
-                        // Split the recommendation into title and description
-                        const parts = recommendation.split(': ');
-                        const title = parts[0];
-                        const description = parts.length > 1 ? parts.slice(1).join(': ') : '';
+                {/* Foods Tab */}
+                <TabsContent value="foods" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.dietary_recommendations ? (
+                    <div className="space-y-6">
+                      {/* Foods to Emphasize */}
+                      {parsedResponse.dietary_recommendations.foods_to_emphasize &&
+                       parsedResponse.dietary_recommendations.foods_to_emphasize.length > 0 && (
+                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Salad className="h-4 w-4 text-green-500" />
+                            <h3 className="text-sm font-medium">Foods to Emphasize</h3>
+                          </div>
 
-                        return (
-                          <motion.div
-                            key={index}
-                            className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                          >
-                            <div className="flex gap-3">
-                              <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                                {index + 1}
-                              </div>
-                              <div>
-                                <p className="font-medium">{title}</p>
-                                {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                          <div className="space-y-4">
+                            {parsedResponse.dietary_recommendations.foods_to_emphasize.map((category, index) => (
+                              <motion.div
+                                key={index}
+                                className="pl-4 border-l-2 border-green-500/20"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <p className="text-sm font-medium mb-1">{category.category}</p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {category.examples.map((example, exIndex) => (
+                                    <li key={exIndex} className="text-sm text-muted-foreground">{example}</li>
+                                  ))}
+                                </ul>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Foods to Limit */}
+                      {parsedResponse.dietary_recommendations.foods_to_consider_limiting_during_illness &&
+                       parsedResponse.dietary_recommendations.foods_to_consider_limiting_during_illness.length > 0 && (
+                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <h3 className="text-sm font-medium">Foods to Consider Limiting</h3>
+                          </div>
+
+                          <ul className="space-y-2">
+                            {parsedResponse.dietary_recommendations.foods_to_consider_limiting_during_illness.map((food, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2 text-sm"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span>{food}</span>
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Meal Frequency and Timing Tips */}
+                      {parsedResponse.dietary_recommendations.meal_frequency_and_timing_tips &&
+                       parsedResponse.dietary_recommendations.meal_frequency_and_timing_tips.length > 0 && (
+                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ClipboardList className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-medium">Meal Frequency & Timing Tips</h3>
+                          </div>
+
+                          <ul className="space-y-2">
+                            {parsedResponse.dietary_recommendations.meal_frequency_and_timing_tips.map((tip, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2 text-sm"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span>{tip}</span>
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-10 text-muted-foreground">
@@ -492,94 +537,31 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Preparing nutrition recommendations...</p>
+                            <p className="font-medium text-primary">Preparing dietary recommendations...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <ClipboardList className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No nutrition recommendations available</p>
+                          <Utensils className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No dietary recommendations available</p>
                         </div>
                       )}
                     </div>
                   )}
                 </TabsContent>
 
-                {/* Foods Tab */}
-                <TabsContent value="foods" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Foods to Include */}
-                    {parsedResponse?.foods_to_include && parsedResponse.foods_to_include.length > 0 ? (
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Salad className="h-4 w-4 text-green-500" />
-                          <h3 className="text-sm font-medium text-green-500">Foods to Include</h3>
-                        </div>
-
-                        <ul className="list-disc pl-5 space-y-1">
-                          {parsedResponse.foods_to_include.map((food, index) => (
-                            <motion.li
-                              key={index}
-                              className="text-sm"
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                            >
-                              {food}
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm flex flex-col items-center justify-center py-6">
-                        <Salad className="h-6 w-6 text-muted-foreground/70 mb-2" />
-                        <p className="text-sm text-muted-foreground">No foods to include available</p>
-                      </div>
-                    )}
-
-                    {/* Foods to Avoid */}
-                    {parsedResponse?.foods_to_avoid && parsedResponse.foods_to_avoid.length > 0 ? (
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          <h3 className="text-sm font-medium text-amber-500">Foods to Avoid</h3>
-                        </div>
-
-                        <ul className="list-disc pl-5 space-y-1">
-                          {parsedResponse.foods_to_avoid.map((food, index) => (
-                            <motion.li
-                              key={index}
-                              className="text-sm"
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                            >
-                              {food}
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm flex flex-col items-center justify-center py-6">
-                        <AlertTriangle className="h-6 w-6 text-muted-foreground/70 mb-2" />
-                        <p className="text-sm text-muted-foreground">No foods to avoid available</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-
-                {/* Lifestyle Tips Tab */}
-                <TabsContent value="lifestyle" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.lifestyle_tips && parsedResponse.lifestyle_tips.length > 0 ? (
+                {/* Weight Concerns Tab */}
+                <TabsContent value="weight" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.addressing_weight_concerns && parsedResponse.addressing_weight_concerns.length > 0 ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <Activity className="h-4 w-4 text-primary" />
-                        <h3 className="text-sm font-medium">Lifestyle Tips</h3>
+                        <h3 className="text-sm font-medium">Addressing Weight Concerns</h3>
                       </div>
 
                       <ul className="space-y-3">
-                        {parsedResponse.lifestyle_tips.map((tip, index) => (
+                        {parsedResponse.addressing_weight_concerns.map((concern, index) => (
                           <motion.li
                             key={index}
                             className="flex items-start gap-2 text-sm"
@@ -590,7 +572,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                             <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                               {index + 1}
                             </div>
-                            <span>{tip}</span>
+                            <span>{concern}</span>
                           </motion.li>
                         ))}
                       </ul>
@@ -604,14 +586,60 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Preparing lifestyle tips...</p>
+                            <p className="font-medium text-primary">Analyzing weight concerns...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <Activity className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No lifestyle tips available</p>
+                          <p>No weight concerns information available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Reference Data Tab */}
+                <TabsContent value="reference" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.reference_data_for_next_role ? (
+                    <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ClipboardList className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-medium">Reference Data for Next Role</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Nutrition Summary */}
+                        <div className="pl-4 border-l-2 border-primary/20">
+                          <p className="text-muted-foreground mb-1">Nutrition Summary:</p>
+                          <p className="text-sm">{parsedResponse.reference_data_for_next_role.nutrition_summary}</p>
+                        </div>
+
+                        {/* Weight Concern Highlight */}
+                        <div className="pl-4 border-l-2 border-amber-500/20">
+                          <p className="text-muted-foreground mb-1">Weight Concern Highlight:</p>
+                          <p className="text-sm text-amber-600">{parsedResponse.reference_data_for_next_role.weight_concern_highlight}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                      {isStreaming && isActive ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary">Generating reference data...</p>
+                            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <ClipboardList className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No reference data available</p>
                         </div>
                       )}
                     </div>
@@ -619,13 +647,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
                 </TabsContent>
               </Tabs>
 
-              {/* Notes */}
-              {parsedResponse?.notes && (
-                <div className="bg-card/80 p-4 rounded-lg border border-border/50 text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Important Notes:</p>
-                  <p>{parsedResponse.notes}</p>
-                </div>
-              )}
+
 
               {/* Disclaimer (for backward compatibility) */}
               {parsedResponse?.disclaimer && (
@@ -636,7 +658,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
               )}
             </CardContent>
           </motion.div>
-          
+
           {!currentSession?.pharmacist_response && (
           <CardFooter>
             {/* Only show the continue button if there's a Nutritionist response and no Pharmacist response yet */}

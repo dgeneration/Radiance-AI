@@ -2,24 +2,31 @@
 
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-// Define the response type based on the provided JSON
+// Define the response type based on the updated system prompt JSON structure
 interface NewPharmacistResponse {
-  potential_medications: {
-    name: string;
-    class: string;
-    indication: string;
-    notes: string;
+  role_name: string;
+  patient_medication_profile_review: {
+    allergies: string;
+    current_medications: string;
+    current_conditions_relevant_to_meds: string;
+  };
+  medication_classes_potentially_relevant: {
+    medication_class: string;
+    context: string;
+    alternative_examples_due_to_allergy?: string[];
+    general_administration_notes: string;
+    common_class_side_effects: string[];
+    types?: {
+      name: string;
+      notes: string;
+    }[];
   }[];
-  medications_to_avoid: {
-    name: string;
-    reason: string;
-  }[];
-  allergy_considerations: {
-    allergen: string;
-    relevance: string;
-  }[];
-  general_advice: string[];
-  disclaimer?: string; // Keep this for backward compatibility
+  key_pharmacological_considerations: string[];
+  reference_data_for_next_role: {
+    pharmacist_summary: string;
+    allergy_alert: string;
+  };
+  disclaimer: string;
 }
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,10 +64,10 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
   const adaptResponseFormat = (response: unknown): NewPharmacistResponse => {
     // Type guard to check if it's already in the new format
     if (typeof response === 'object' && response !== null &&
-        'potential_medications' in response &&
-        'medications_to_avoid' in response &&
-        'allergy_considerations' in response &&
-        'general_advice' in response) {
+        'role_name' in response &&
+        'patient_medication_profile_review' in response &&
+        'medication_classes_potentially_relevant' in response &&
+        'key_pharmacological_considerations' in response) {
       return response as NewPharmacistResponse;
     }
 
@@ -68,62 +75,70 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const oldResponse = response as Record<string, any>;
 
-    // Create default empty arrays for required fields
-    const potentialMedications: NewPharmacistResponse['potential_medications'] = [];
-    const medicationsToAvoid: NewPharmacistResponse['medications_to_avoid'] = [];
-    const allergyConsiderations: NewPharmacistResponse['allergy_considerations'] = [];
-    const generalAdvice: string[] = [];
+    // Create default values for required fields
+    const medicationClasses: NewPharmacistResponse['medication_classes_potentially_relevant'] = [];
+    const keyConsiderations: string[] = [];
 
     // Try to extract data from old format if available
+    // Convert old potential_medications to new medication_classes_potentially_relevant
     if (Array.isArray(oldResponse.potential_medications)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       oldResponse.potential_medications.forEach((med: Record<string, any>) => {
-        potentialMedications.push({
-          name: typeof med.name === 'string' ? med.name : "Unknown",
-          class: typeof med.class === 'string' ? med.class : "Not specified",
-          indication: typeof med.indication === 'string' ? med.indication : "Not specified",
-          notes: typeof med.notes === 'string' ? med.notes : ""
+        medicationClasses.push({
+          medication_class: typeof med.class === 'string' ? med.class : "Not specified",
+          context: typeof med.indication === 'string' ? med.indication : "Not specified",
+          general_administration_notes: typeof med.notes === 'string' ? med.notes : "Take as directed by your healthcare provider.",
+          common_class_side_effects: ["Common side effects may include nausea, dizziness, or headache."],
         });
       });
     }
 
+    // Convert old medications_to_avoid to key_pharmacological_considerations
     if (Array.isArray(oldResponse.medications_to_avoid)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       oldResponse.medications_to_avoid.forEach((med: Record<string, any>) => {
-        medicationsToAvoid.push({
-          name: typeof med.name === 'string' ? med.name : "Unknown",
-          reason: typeof med.reason === 'string' ? med.reason : "Not specified"
-        });
+        if (typeof med.name === 'string' && typeof med.reason === 'string') {
+          keyConsiderations.push(`Avoid ${med.name}: ${med.reason}`);
+        }
       });
     }
 
-    if (Array.isArray(oldResponse.allergy_considerations)) {
+    // Convert old allergy_considerations to patient_medication_profile_review.allergies
+    let allergiesText = "None reported";
+    if (Array.isArray(oldResponse.allergy_considerations) && oldResponse.allergy_considerations.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      oldResponse.allergy_considerations.forEach((allergy: Record<string, any>) => {
-        allergyConsiderations.push({
-          allergen: typeof allergy.allergen === 'string' ? allergy.allergen : "Unknown",
-          relevance: typeof allergy.relevance === 'string' ? allergy.relevance : "Not specified"
-        });
-      });
+      const allergens = oldResponse.allergy_considerations.map((allergy: Record<string, any>) =>
+        typeof allergy.allergen === 'string' ? allergy.allergen : "Unknown allergen"
+      );
+      allergiesText = allergens.join(", ");
     }
 
+    // Convert old general_advice to key_pharmacological_considerations
     if (Array.isArray(oldResponse.general_advice)) {
       oldResponse.general_advice.forEach((advice: string) => {
         if (typeof advice === 'string') {
-          generalAdvice.push(advice);
+          keyConsiderations.push(advice);
         }
       });
     }
 
     // Return the adapted format
     return {
-      potential_medications: potentialMedications,
-      medications_to_avoid: medicationsToAvoid,
-      allergy_considerations: allergyConsiderations,
-      general_advice: generalAdvice,
+      role_name: "Pharmacist AI (Radiance AI)",
+      patient_medication_profile_review: {
+        allergies: allergiesText,
+        current_medications: "None reported in old format",
+        current_conditions_relevant_to_meds: "Not specified in old format"
+      },
+      medication_classes_potentially_relevant: medicationClasses,
+      key_pharmacological_considerations: keyConsiderations,
+      reference_data_for_next_role: {
+        pharmacist_summary: "Medication information adapted from old format",
+        allergy_alert: allergiesText
+      },
       disclaimer: typeof oldResponse.disclaimer === 'string'
         ? oldResponse.disclaimer
-        : "This information is for guidance only and does not replace professional medical advice."
+        : "This information is for guidance only and does not replace professional medical advice. Always consult your doctor or pharmacist for specific medication guidance, dosages, and to discuss your full medical history and allergies. Radiance AI."
     };
   };
 
@@ -337,28 +352,40 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
             className="overflow-hidden"
           >
             <CardContent className={cn("space-y-5", !isExpanded && "hidden")}>
-              {/* Allergy Considerations */}
-              {parsedResponse?.allergy_considerations && parsedResponse.allergy_considerations.length > 0 && (
+              {/* Patient Medication Profile */}
+              {parsedResponse?.patient_medication_profile_review && (
                 <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <ShieldAlert className="h-4 w-4 text-amber-500" />
-                    <h3 className="text-sm font-medium">Allergy Considerations</h3>
+                    <h3 className="text-sm font-medium">Patient Medication Profile</h3>
                   </div>
 
                   <div className="space-y-3 text-sm">
-                    {parsedResponse.allergy_considerations.map((allergy, index) => (
-                      <div key={index} className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Allergen:</span>
-                          <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-                            {allergy.allergen}
-                          </Badge>
-                        </div>
-                        <div className="pl-4 border-l-2 border-amber-500/20 mt-1">
-                          <p className="text-sm">{allergy.relevance}</p>
-                        </div>
+                    {/* Allergies */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Allergies:</span>
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
+                          {parsedResponse.patient_medication_profile_review.allergies || "None reported"}
+                        </Badge>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Current Medications */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-start gap-2">
+                        <span className="text-muted-foreground">Current Medications:</span>
+                        <span className="flex-1">{parsedResponse.patient_medication_profile_review.current_medications || "None reported"}</span>
+                      </div>
+                    </div>
+
+                    {/* Current Conditions */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-start gap-2">
+                        <span className="text-muted-foreground">Current Conditions:</span>
+                        <span className="flex-1">{parsedResponse.patient_medication_profile_review.current_conditions_relevant_to_meds || "None specified"}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -368,23 +395,23 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                 <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
                   <TabsTrigger value="medications" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Pill className="h-3.5 w-3.5 mr-1.5" />
-                    Potential Medications
+                    Medication Classes
                   </TabsTrigger>
-                  <TabsTrigger value="avoid" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="considerations" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-                    Medications to Avoid
+                    Key Considerations
                   </TabsTrigger>
-                  <TabsTrigger value="advice" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                  <TabsTrigger value="reference" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
-                    General Advice
+                    Reference Data
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Potential Medications Tab */}
+                {/* Medication Classes Tab */}
                 <TabsContent value="medications" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.potential_medications && parsedResponse.potential_medications.length > 0 ? (
+                  {parsedResponse?.medication_classes_potentially_relevant && parsedResponse.medication_classes_potentially_relevant.length > 0 ? (
                     <div className="space-y-4">
-                      {parsedResponse.potential_medications.map((medication, index) => (
+                      {parsedResponse.medication_classes_potentially_relevant.map((medicationClass, index) => (
                         <motion.div
                           key={index}
                           className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
@@ -394,23 +421,57 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                         >
                           <div className="flex items-center gap-2 mb-3">
                             <Pill className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-medium">{medication.name}</h3>
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 ml-auto">
-                              {medication.class}
-                            </Badge>
+                            <h3 className="text-sm font-medium">{medicationClass.medication_class}</h3>
                           </div>
 
                           <div className="space-y-3 text-sm">
-                            {/* Indication */}
+                            {/* Context */}
                             <div className="pl-4 border-l-2 border-primary/20">
-                              <p className="text-muted-foreground mb-1">Indication:</p>
-                              <p>{medication.indication}</p>
+                              <p className="text-muted-foreground mb-1">Context:</p>
+                              <p>{medicationClass.context}</p>
                             </div>
 
-                            {/* Notes */}
+                            {/* Alternative Examples (if available) */}
+                            {medicationClass.alternative_examples_due_to_allergy && medicationClass.alternative_examples_due_to_allergy.length > 0 && (
+                              <div className="pl-4 border-l-2 border-amber-500/20">
+                                <p className="text-muted-foreground mb-1">Alternative Examples (Due to Allergy):</p>
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {medicationClass.alternative_examples_due_to_allergy.map((alt, altIndex) => (
+                                    <li key={altIndex}>{alt}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Types (if available) */}
+                            {medicationClass.types && medicationClass.types.length > 0 && (
+                              <div className="pl-4 border-l-2 border-primary/20">
+                                <p className="text-muted-foreground mb-1">Types:</p>
+                                <div className="space-y-2">
+                                  {medicationClass.types.map((type, typeIndex) => (
+                                    <div key={typeIndex} className="bg-card/50 p-2 rounded border border-border/30">
+                                      <p className="font-medium">{type.name}</p>
+                                      <p className="text-sm text-muted-foreground">{type.notes}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Administration Notes */}
                             <div className="pl-4 border-l-2 border-primary/20">
-                              <p className="text-muted-foreground mb-1">Notes:</p>
-                              <p>{medication.notes}</p>
+                              <p className="text-muted-foreground mb-1">Administration Notes:</p>
+                              <p>{medicationClass.general_administration_notes}</p>
+                            </div>
+
+                            {/* Side Effects */}
+                            <div className="pl-4 border-l-2 border-amber-500/20">
+                              <p className="text-muted-foreground mb-1">Common Side Effects:</p>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {medicationClass.common_class_side_effects.map((effect, effectIndex) => (
+                                  <li key={effectIndex}>{effect}</li>
+                                ))}
+                              </ul>
                             </div>
                           </div>
                         </motion.div>
@@ -425,80 +486,31 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Analyzing medication options...</p>
+                            <p className="font-medium text-primary">Analyzing medication classes...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <Pill className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No potential medications available</p>
+                          <p>No medication classes available</p>
                         </div>
                       )}
                     </div>
                   )}
                 </TabsContent>
 
-                {/* Medications to Avoid Tab */}
-                <TabsContent value="avoid" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.medications_to_avoid && parsedResponse.medications_to_avoid.length > 0 ? (
+                {/* Key Considerations Tab */}
+                <TabsContent value="considerations" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.key_pharmacological_considerations && parsedResponse.key_pharmacological_considerations.length > 0 ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
-                        <ShieldAlert className="h-4 w-4 text-red-500" />
-                        <h3 className="text-sm font-medium">Medications to Avoid</h3>
-                      </div>
-
-                      <div className="space-y-4">
-                        {parsedResponse.medications_to_avoid.map((medication, index) => (
-                          <motion.div
-                            key={index}
-                            className="pl-4 border-l-2 border-red-500/20"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-red-500">{medication.name}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">{medication.reason}</p>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                      {isStreaming && isActive ? (
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="relative">
-                            <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
-                            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-primary">Analyzing medications to avoid...</p>
-                            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <ShieldAlert className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No medications to avoid available</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* General Advice Tab */}
-                <TabsContent value="advice" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.general_advice && parsedResponse.general_advice.length > 0 ? (
-                    <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ClipboardList className="h-4 w-4 text-primary" />
-                        <h3 className="text-sm font-medium">General Advice</h3>
+                        <ShieldAlert className="h-4 w-4 text-amber-500" />
+                        <h3 className="text-sm font-medium">Key Pharmacological Considerations</h3>
                       </div>
 
                       <ul className="space-y-3">
-                        {parsedResponse.general_advice.map((advice, index) => (
+                        {parsedResponse.key_pharmacological_considerations.map((consideration, index) => (
                           <motion.li
                             key={index}
                             className="flex items-start gap-2 text-sm"
@@ -506,10 +518,10 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.05 }}
                           >
-                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                               {index + 1}
                             </div>
-                            <span>{advice}</span>
+                            <span>{consideration}</span>
                           </motion.li>
                         ))}
                       </ul>
@@ -523,14 +535,60 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Preparing general advice...</p>
+                            <p className="font-medium text-primary">Analyzing key considerations...</p>
+                            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <ShieldAlert className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No key considerations available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Reference Data Tab */}
+                <TabsContent value="reference" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.reference_data_for_next_role ? (
+                    <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ClipboardList className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-medium">Reference Data for Next Role</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Pharmacist Summary */}
+                        <div className="pl-4 border-l-2 border-primary/20">
+                          <p className="text-muted-foreground mb-1">Pharmacist Summary:</p>
+                          <p className="text-sm">{parsedResponse.reference_data_for_next_role.pharmacist_summary}</p>
+                        </div>
+
+                        {/* Allergy Alert */}
+                        <div className="pl-4 border-l-2 border-amber-500/20">
+                          <p className="text-muted-foreground mb-1">Allergy Alert:</p>
+                          <p className="text-sm text-amber-600">{parsedResponse.reference_data_for_next_role.allergy_alert}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                      {isStreaming && isActive ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping opacity-75"></div>
+                            <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary">Generating reference data...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <ClipboardList className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No general advice available</p>
+                          <p>No reference data available</p>
                         </div>
                       )}
                     </div>
