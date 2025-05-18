@@ -90,13 +90,21 @@ export function FileSelector({ userId, onFilesSelected, selectedFiles, multiple 
                 <div className="flex items-center space-x-3">
                   {file.type.startsWith('image/') ? (
                     <div className="relative h-10 w-10 rounded-md overflow-hidden border border-primary/10">
-                      <Image
-                        src={file.public_url || ''}
-                        alt={file.name}
-                        fill
-                        sizes="(max-width: 768px) 40px, 40px"
-                        className="object-cover"
-                      />
+                      {file.public_url?.startsWith('blob:') ? (
+                        <img
+                          src={file.public_url}
+                          alt={file.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={file.public_url || ''}
+                          alt={file.name}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      )}
                     </div>
                   ) : (
                     <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 border border-primary/10">

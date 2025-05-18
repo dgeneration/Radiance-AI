@@ -3,43 +3,29 @@
 import React, { useState, useEffect } from 'react';
 import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
 import { FollowUpSpecialistResponse } from '@/types/chain-diagnosis';
-// Define the response type based on the provided JSON
+// Define the response type based on the system prompt JSON structure
 interface NewFollowUpSpecialistResponse {
-  follow_up_recommendations: {
-    symptom_monitoring: {
-      track_daily: string[];
-      use_symptom_diary: boolean;
-      photo_documentation: string;
-    };
-    follow_up_timeline: {
-      gastroenterologist: string;
-      diagnostic_procedures: string;
-      follow_up_after_diagnosis: string;
-    };
-    medication_guidance: {
-      continue: string;
-      avoid: string;
-      consider: string;
-    };
-    dietary_recommendations: {
-      general_approach: string;
-      avoid: string[];
-      ensure: string;
-    };
-    urgent_care_indicators: {
-      seek_immediate_care_for: string[];
-    };
-    next_steps: {
-      priority: string;
-      documentation: string;
-      nutritional_support: string;
-    };
-  };
-  disclaimer?: string; // Keep this for backward compatibility
-  synthesis_of_case_progression?: {
+  role_name: string;
+  synthesis_of_case_progression: {
     initial_concern: string;
     key_insights_from_ais: string[];
   };
+  symptom_monitoring_guidelines: {
+    symptoms_to_track_closely: string[];
+    improvement_indicators: string[];
+  };
+  recommended_follow_up_guidance: {
+    initial_consultation: string;
+    post_treatment_follow_up: string;
+    routine_follow_up: string;
+  };
+  when_to_seek_urgent_medical_care_RED_FLAGS: string[];
+  reinforcement_of_key_advice: string[];
+  reference_data_for_next_role: {
+    follow_up_summary: string;
+    critical_takeaways_for_patient_journey: string;
+  };
+  disclaimer: string;
 }
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -80,7 +66,9 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
   const adaptResponseFormat = (response: unknown): NewFollowUpSpecialistResponse => {
     // Type guard to check if it's already in the new format
     if (typeof response === 'object' && response !== null &&
-        'follow_up_recommendations' in response) {
+        'role_name' in response &&
+        'symptom_monitoring_guidelines' in response &&
+        'recommended_follow_up_guidance' in response) {
       return response as NewFollowUpSpecialistResponse;
     }
 
@@ -88,14 +76,43 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
     const oldResponse = response as Partial<FollowUpSpecialistResponse>;
 
     // Extract arrays safely
-    const redFlags = Array.isArray(oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS)
-      ? oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS
-      : [];
+    let redFlags = ["Severe pain", "Difficulty breathing", "High fever"];
 
-    const symptomsToTrack = oldResponse.symptom_monitoring_guidelines &&
-      Array.isArray(oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely)
-      ? oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely
-      : [];
+    // Check if when_to_seek_urgent_medical_care_RED_FLAGS exists and is an array
+    if (oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS) {
+      if (Array.isArray(oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS)) {
+        redFlags = oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS;
+      } else if (typeof oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS === 'string') {
+        // Handle case where it might be a string
+        redFlags = [oldResponse.when_to_seek_urgent_medical_care_RED_FLAGS];
+      }
+    }
+
+    // Default values for symptoms to track
+    let symptomsToTrack = ["Pain levels", "Energy levels", "Sleep quality"];
+
+    // Check if symptoms_to_track_closely exists and is an array
+    if (oldResponse.symptom_monitoring_guidelines?.symptoms_to_track_closely) {
+      if (Array.isArray(oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely)) {
+        symptomsToTrack = oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely;
+      } else if (typeof oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely === 'string') {
+        // Handle case where it might be a string
+        symptomsToTrack = [oldResponse.symptom_monitoring_guidelines.symptoms_to_track_closely];
+      }
+    }
+
+    // Default values for improvement indicators
+    let improvementIndicators = ["Reduced pain", "Increased energy", "Better sleep"];
+
+    // Check if improvement_indicators exists and is an array
+    if (oldResponse.symptom_monitoring_guidelines?.improvement_indicators) {
+      if (Array.isArray(oldResponse.symptom_monitoring_guidelines.improvement_indicators)) {
+        improvementIndicators = oldResponse.symptom_monitoring_guidelines.improvement_indicators;
+      } else if (typeof oldResponse.symptom_monitoring_guidelines.improvement_indicators === 'string') {
+        // Handle case where it might be a string
+        improvementIndicators = [oldResponse.symptom_monitoring_guidelines.improvement_indicators];
+      }
+    }
 
     // Extract strings safely
     const initialConsultation = oldResponse.recommended_follow_up_guidance?.initial_consultation ||
@@ -104,61 +121,57 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
     const postTreatmentFollowUp = oldResponse.recommended_follow_up_guidance?.post_treatment_follow_up ||
       "Follow your doctor's guidance.";
 
+    const routineFollowUp = oldResponse.recommended_follow_up_guidance?.routine_follow_up ||
+      "Schedule regular check-ups as recommended.";
+
     const disclaimer = typeof oldResponse.disclaimer === 'string'
       ? oldResponse.disclaimer
-      : "This information is for guidance only and does not replace professional medical advice.";
+      : "This follow-up guidance is for informational purposes. Always follow the specific instructions and timelines provided by your treating healthcare professionals. If you are experiencing severe symptoms, seek immediate medical attention. Radiance AI.";
 
-    // Create synthesis of case progression if it exists
-    let synthesisPart = undefined;
-    if (oldResponse.synthesis_of_case_progression) {
-      const initialConcern = typeof oldResponse.synthesis_of_case_progression.initial_concern === 'string'
-        ? oldResponse.synthesis_of_case_progression.initial_concern
-        : "Initial concern not specified";
+    // Create synthesis of case progression
+    const initialConcern = oldResponse.synthesis_of_case_progression?.initial_concern ||
+      "Initial health concern reported by patient";
 
-      const insights = Array.isArray(oldResponse.synthesis_of_case_progression.key_insights_from_ais)
-        ? oldResponse.synthesis_of_case_progression.key_insights_from_ais
-        : [];
+    const insights = Array.isArray(oldResponse.synthesis_of_case_progression?.key_insights_from_ais)
+      ? oldResponse.synthesis_of_case_progression.key_insights_from_ais
+      : ["Consult with healthcare provider for proper diagnosis"];
 
-      synthesisPart = {
-        initial_concern: initialConcern,
-        key_insights_from_ais: insights
-      };
+    // Extract reinforcement of key advice
+    let keyAdvice = ["Follow medication instructions carefully", "Maintain a healthy lifestyle", "Keep all follow-up appointments"];
+
+    // Check if reinforcement_of_key_advice exists and is an array
+    if (oldResponse.reinforcement_of_key_advice) {
+      if (Array.isArray(oldResponse.reinforcement_of_key_advice)) {
+        keyAdvice = oldResponse.reinforcement_of_key_advice;
+      } else if (typeof oldResponse.reinforcement_of_key_advice === 'string') {
+        // Handle case where it might be a string
+        keyAdvice = [oldResponse.reinforcement_of_key_advice];
+      }
     }
 
     // Return the adapted format
     return {
-      follow_up_recommendations: {
-        symptom_monitoring: {
-          track_daily: symptomsToTrack,
-          use_symptom_diary: true,
-          photo_documentation: "Document any visible symptoms with photos for your healthcare provider."
-        },
-        follow_up_timeline: {
-          gastroenterologist: initialConsultation,
-          diagnostic_procedures: "As recommended by your specialist.",
-          follow_up_after_diagnosis: postTreatmentFollowUp
-        },
-        medication_guidance: {
-          continue: "Continue medications as prescribed.",
-          avoid: "Avoid self-medication without consulting your doctor.",
-          consider: "Consider discussing medication adjustments with your doctor if symptoms change."
-        },
-        dietary_recommendations: {
-          general_approach: "Follow a balanced diet unless otherwise advised.",
-          avoid: ["Avoid foods that trigger symptoms"],
-          ensure: "Ensure adequate hydration and nutrition."
-        },
-        urgent_care_indicators: {
-          seek_immediate_care_for: redFlags
-        },
-        next_steps: {
-          priority: "Follow up with recommended specialist.",
-          documentation: "Keep a record of all symptoms and changes.",
-          nutritional_support: "Consider nutritional guidance if recommended."
-        }
+      role_name: "Follow-up Specialist AI (Radiance AI)",
+      synthesis_of_case_progression: {
+        initial_concern: initialConcern,
+        key_insights_from_ais: insights
       },
-      disclaimer: disclaimer,
-      synthesis_of_case_progression: synthesisPart
+      symptom_monitoring_guidelines: {
+        symptoms_to_track_closely: symptomsToTrack,
+        improvement_indicators: improvementIndicators
+      },
+      recommended_follow_up_guidance: {
+        initial_consultation: initialConsultation,
+        post_treatment_follow_up: postTreatmentFollowUp,
+        routine_follow_up: routineFollowUp
+      },
+      when_to_seek_urgent_medical_care_RED_FLAGS: redFlags,
+      reinforcement_of_key_advice: keyAdvice,
+      reference_data_for_next_role: {
+        follow_up_summary: "Follow-up care and monitoring recommendations based on patient's condition",
+        critical_takeaways_for_patient_journey: "Monitor symptoms closely and seek medical attention if condition worsens"
+      },
+      disclaimer: disclaimer
     };
   };
 
@@ -421,61 +434,120 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
 
                 {/* Symptom Monitoring Tab */}
                 <TabsContent value="monitoring" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.follow_up_recommendations?.symptom_monitoring ? (
+                  {parsedResponse?.symptom_monitoring_guidelines ? (
                     <div className="space-y-4">
-                      {/* Symptoms to Track Daily */}
+                      {/* Symptoms to Track Closely */}
                       <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                         <div className="flex items-center gap-2 mb-3">
                           <HeartPulse className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Track Daily</h3>
+                          <h3 className="text-sm font-medium">Symptoms to Track Closely</h3>
                         </div>
 
                         <ul className="space-y-2">
-                          {parsedResponse.follow_up_recommendations.symptom_monitoring.track_daily.map((symptom, index) => (
-                            <motion.li
-                              key={index}
-                              className="flex items-start gap-2 text-sm"
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                            >
+                          {Array.isArray(parsedResponse.symptom_monitoring_guidelines.symptoms_to_track_closely) ?
+                            parsedResponse.symptom_monitoring_guidelines.symptoms_to_track_closely.map((symptom, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2 text-sm"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span>{symptom}</span>
+                              </motion.li>
+                            )) :
+                            <li className="flex items-start gap-2 text-sm">
                               <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                                {index + 1}
+                                1
                               </div>
-                              <span>{symptom}</span>
-                            </motion.li>
-                          ))}
+                              <span>Monitor your symptoms daily and note any changes</span>
+                            </li>
+                          }
                         </ul>
                       </div>
 
-                      {/* Symptom Diary */}
-                      {parsedResponse.follow_up_recommendations.symptom_monitoring.use_symptom_diary && (
-                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                          <div className="flex items-center gap-2 mb-3">
-                            <ClipboardList className="h-4 w-4 text-green-500" />
-                            <h3 className="text-sm font-medium text-green-500">Symptom Diary</h3>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                            <span>Use a symptom diary to track daily changes</span>
-                          </div>
+                      {/* Improvement Indicators */}
+                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <h3 className="text-sm font-medium text-green-500">Improvement Indicators</h3>
                         </div>
-                      )}
 
-                      {/* Photo Documentation */}
-                      {parsedResponse.follow_up_recommendations.symptom_monitoring.photo_documentation && (
-                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Camera className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-medium">Photo Documentation</h3>
-                          </div>
+                        <ul className="space-y-2">
+                          {Array.isArray(parsedResponse.symptom_monitoring_guidelines.improvement_indicators) ?
+                            parsedResponse.symptom_monitoring_guidelines.improvement_indicators.map((indicator, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2 text-sm"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span>{indicator}</span>
+                              </motion.li>
+                            )) :
+                            <li className="flex items-start gap-2 text-sm">
+                              <div className="w-5 h-5 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                1
+                              </div>
+                              <span>Reduced symptoms and improved overall well-being</span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
 
-                          <p className="text-sm">
-                            {parsedResponse.follow_up_recommendations.symptom_monitoring.photo_documentation}
-                          </p>
+                      {/* Key Advice */}
+                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                          <ClipboardList className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-medium">Key Advice</h3>
                         </div>
-                      )}
+
+                        <ul className="space-y-2">
+                          {parsedResponse.reinforcement_of_key_advice && Array.isArray(parsedResponse.reinforcement_of_key_advice) ?
+                            parsedResponse.reinforcement_of_key_advice.map((advice, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2 text-sm"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span>{advice}</span>
+                              </motion.li>
+                            )) : (
+                              <>
+                                <li className="flex items-start gap-2 text-sm">
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    1
+                                  </div>
+                                  <span>Follow your healthcare provider's advice for your specific condition</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm">
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    2
+                                  </div>
+                                  <span>Maintain a healthy lifestyle with proper nutrition and regular exercise as appropriate</span>
+                                </li>
+                                <li className="flex items-start gap-2 text-sm">
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    3
+                                  </div>
+                                  <span>Keep track of your symptoms and report any changes to your healthcare provider</span>
+                                </li>
+                              </>
+                            )}
+                        </ul>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-10 text-muted-foreground">
@@ -502,7 +574,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
 
                 {/* Timeline Tab */}
                 <TabsContent value="timeline" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.follow_up_recommendations?.follow_up_timeline ? (
+                  {parsedResponse?.recommended_follow_up_guidance ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <Calendar className="h-4 w-4 text-primary" />
@@ -510,27 +582,27 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
                       </div>
 
                       <div className="space-y-4">
-                        {/* Gastroenterologist */}
+                        {/* Initial Consultation */}
                         <div className="pl-4 border-l-2 border-primary/20">
-                          <p className="text-sm font-medium mb-1">Gastroenterologist</p>
+                          <p className="text-sm font-medium mb-1">Initial Consultation</p>
                           <p className="text-sm text-muted-foreground">
-                            {parsedResponse.follow_up_recommendations.follow_up_timeline.gastroenterologist}
+                            {parsedResponse.recommended_follow_up_guidance.initial_consultation}
                           </p>
                         </div>
 
-                        {/* Diagnostic Procedures */}
+                        {/* Post Treatment Follow-up */}
                         <div className="pl-4 border-l-2 border-primary/20">
-                          <p className="text-sm font-medium mb-1">Diagnostic Procedures</p>
+                          <p className="text-sm font-medium mb-1">Post Treatment Follow-up</p>
                           <p className="text-sm text-muted-foreground">
-                            {parsedResponse.follow_up_recommendations.follow_up_timeline.diagnostic_procedures}
+                            {parsedResponse.recommended_follow_up_guidance.post_treatment_follow_up}
                           </p>
                         </div>
 
-                        {/* Follow-up After Diagnosis */}
+                        {/* Routine Follow-up */}
                         <div className="pl-4 border-l-2 border-primary/20">
-                          <p className="text-sm font-medium mb-1">Follow-up After Diagnosis</p>
+                          <p className="text-sm font-medium mb-1">Routine Follow-up</p>
                           <p className="text-sm text-muted-foreground">
-                            {parsedResponse.follow_up_recommendations.follow_up_timeline.follow_up_after_diagnosis}
+                            {parsedResponse.recommended_follow_up_guidance.routine_follow_up}
                           </p>
                         </div>
                       </div>
@@ -560,135 +632,63 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
 
                 {/* Guidance Tab */}
                 <TabsContent value="guidance" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.follow_up_recommendations ? (
+                  {parsedResponse?.reinforcement_of_key_advice ? (
                     <div className="space-y-4">
-                      {/* Medication Guidance */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Pill className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Medication Guidance</h3>
-                        </div>
-
-                        <div className="space-y-3">
-                          {/* Continue */}
-                          <div className="flex items-start gap-2">
-                            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium">Continue</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.medication_guidance.continue}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Avoid */}
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium">Avoid</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.medication_guidance.avoid}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Consider */}
-                          <div className="flex items-start gap-2">
-                            <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium">Consider</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.medication_guidance.consider}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dietary Recommendations */}
-                      <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Utensils className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Dietary Recommendations</h3>
-                        </div>
-
-                        <div className="space-y-3">
-                          {/* General Approach */}
-                          <div className="pl-4 border-l-2 border-primary/20">
-                            <p className="text-sm font-medium mb-1">General Approach</p>
-                            <p className="text-sm text-muted-foreground">
-                              {parsedResponse.follow_up_recommendations.dietary_recommendations.general_approach}
-                            </p>
-                          </div>
-
-                          {/* Foods to Avoid */}
-                          <div className="pl-4 border-l-2 border-amber-500/20">
-                            <p className="text-sm font-medium mb-1 text-amber-500">Foods to Avoid</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {parsedResponse.follow_up_recommendations.dietary_recommendations.avoid.map((food, index) => (
-                                <li key={index} className="text-sm text-muted-foreground">{food}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          {/* Ensure */}
-                          <div className="pl-4 border-l-2 border-green-500/20">
-                            <p className="text-sm font-medium mb-1 text-green-500">Ensure</p>
-                            <p className="text-sm text-muted-foreground">
-                              {parsedResponse.follow_up_recommendations.dietary_recommendations.ensure}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Next Steps */}
+                      {/* Key Advice */}
                       <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                         <div className="flex items-center gap-2 mb-3">
                           <ClipboardList className="h-4 w-4 text-primary" />
-                          <h3 className="text-sm font-medium">Next Steps</h3>
+                          <h3 className="text-sm font-medium">Key Advice</h3>
                         </div>
 
-                        <div className="space-y-3">
-                          {/* Priority */}
-                          <div className="flex items-start gap-2">
-                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                              1
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Priority</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.next_steps.priority}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Documentation */}
-                          <div className="flex items-start gap-2">
-                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                              2
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Documentation</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.next_steps.documentation}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Nutritional Support */}
-                          <div className="flex items-start gap-2">
-                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                              3
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">Nutritional Support</p>
-                              <p className="text-sm text-muted-foreground">
-                                {parsedResponse.follow_up_recommendations.next_steps.nutritional_support}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        <ul className="space-y-3">
+                          {Array.isArray(parsedResponse.reinforcement_of_key_advice) ?
+                            parsedResponse.reinforcement_of_key_advice.map((advice, index) => (
+                              <motion.li
+                                key={index}
+                                className="flex items-start gap-2"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                              >
+                                <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <span className="text-sm">{advice}</span>
+                              </motion.li>
+                            )) :
+                            <li className="text-sm text-muted-foreground">No specific advice available</li>
+                          }
+                        </ul>
                       </div>
+
+                      {/* Reference Data */}
+                      {parsedResponse.reference_data_for_next_role && (
+                        <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-medium">Summary</h3>
+                          </div>
+
+                          <div className="space-y-3">
+                            {/* Follow-up Summary */}
+                            <div className="pl-4 border-l-2 border-primary/20">
+                              <p className="text-sm font-medium mb-1">Follow-up Summary</p>
+                              <p className="text-sm text-muted-foreground">
+                                {parsedResponse.reference_data_for_next_role.follow_up_summary || "Follow-up care recommendations based on your condition"}
+                              </p>
+                            </div>
+
+                            {/* Critical Takeaways */}
+                            <div className="pl-4 border-l-2 border-primary/20">
+                              <p className="text-sm font-medium mb-1">Critical Takeaways</p>
+                              <p className="text-sm text-muted-foreground">
+                                {parsedResponse.reference_data_for_next_role.critical_takeaways_for_patient_journey || "Monitor symptoms closely and seek medical attention if condition worsens"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-10 text-muted-foreground">
@@ -714,7 +714,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
                 </TabsContent>
                 {/* Urgent Care Tab */}
                 <TabsContent value="urgent" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.follow_up_recommendations?.urgent_care_indicators?.seek_immediate_care_for ? (
+                  {parsedResponse?.when_to_seek_urgent_medical_care_RED_FLAGS ? (
                     <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
                         <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -722,18 +722,24 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
                       </div>
 
                       <ul className="space-y-2">
-                        {parsedResponse.follow_up_recommendations.urgent_care_indicators.seek_immediate_care_for.map((flag, index) => (
-                          <motion.li
-                            key={index}
-                            className="flex items-start gap-2 text-sm"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                          >
+                        {Array.isArray(parsedResponse.when_to_seek_urgent_medical_care_RED_FLAGS) ?
+                          parsedResponse.when_to_seek_urgent_medical_care_RED_FLAGS.map((flag, index) => (
+                            <motion.li
+                              key={index}
+                              className="flex items-start gap-2 text-sm"
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                            >
+                              <ArrowUpRight className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                              <span className="text-red-500">{flag}</span>
+                            </motion.li>
+                          )) :
+                          <li className="flex items-start gap-2 text-sm">
                             <ArrowUpRight className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                            <span className="text-red-500">{flag}</span>
-                          </motion.li>
-                        ))}
+                            <span className="text-red-500">Seek immediate medical attention for severe or worsening symptoms</span>
+                          </li>
+                        }
                       </ul>
                     </div>
                   ) : (

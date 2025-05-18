@@ -153,7 +153,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
         <div className="relative h-full w-full flex items-center justify-center">
           {previewBlob ? (
             // Use regular img tag for blob URLs since Next.js Image doesn't support them
-            <Image
+            <img
               src={previewBlob}
               alt={previewFile.name}
               className="max-h-[70vh] w-auto object-contain"
@@ -715,21 +715,29 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
               <div className="p-3">
                 <div className="aspect-square w-full overflow-hidden rounded-md bg-primary/5 flex items-center justify-center">
                   {isImage ? (
-                    <Image
-                      src={file.public_url || ''}
-                      alt={file.name}
-                      width={200}
-                      height={200}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      className="h-full w-full object-cover"
-                      onError={async (e) => {
-                        // If the public URL fails, try to get a signed URL
-                        const signedUrl = await getSignedUrl(file.path, 300);
-                        if (signedUrl && e.target instanceof HTMLImageElement) {
-                          e.target.src = signedUrl;
-                        }
-                      }}
-                    />
+                    file.public_url?.startsWith('blob:') ? (
+                      <img
+                        src={file.public_url}
+                        alt={file.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={file.public_url || ''}
+                        alt={file.name}
+                        width={200}
+                        height={200}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        className="h-full w-full object-cover"
+                        onError={async (e) => {
+                          // If the public URL fails, try to get a signed URL
+                          const signedUrl = await getSignedUrl(file.path, 300);
+                          if (signedUrl && e.target instanceof HTMLImageElement) {
+                            e.target.src = signedUrl;
+                          }
+                        }}
+                      />
+                    )
                   ) : (
                     <div className="flex flex-col items-center justify-center p-4">
                       {/* Show different icons based on file type */}
