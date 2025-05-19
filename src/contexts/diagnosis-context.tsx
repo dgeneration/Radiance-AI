@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, ReactNode, useEffect } from 'react';
 import {
   ChainDiagnosisSession
-} from '@/types/chain-diagnosis';
+} from '@/types/diagnosis';
 import {
   initializeChainDiagnosisSession,
   processMedicalAnalyst,
@@ -16,9 +16,9 @@ import {
   processRadianceAISummarizer,
   getChainDiagnosisSession,
   getUserChainDiagnosisSessions
-} from '@/lib/chain-diagnosis-api';
+} from '@/lib/diagnosis-api';
 import { FileMetadata } from '@/utils/supabase/file-storage';
-import { convertToChainDiagnosisInput } from '@/utils/chain-diagnosis-file-utils';
+import { convertToChainDiagnosisInput } from '@/utils/diagnosis-file-utils';
 
 // Define the context type
 interface ChainDiagnosisContextType {

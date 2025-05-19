@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { MedicalAnalystResponse } from '@/types/chain-diagnosis';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
+import { MedicalAnalystResponse } from '@/types/diagnosis';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

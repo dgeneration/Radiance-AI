@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { ChainDiagnosisSession } from '@/types/chain-diagnosis';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
+import { ChainDiagnosisSession } from '@/types/diagnosis';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

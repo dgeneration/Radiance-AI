@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 // Define the response type based on the system prompt JSON structure
 interface NewNutritionistResponse {
   role_name: string;

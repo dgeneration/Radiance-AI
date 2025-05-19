@@ -91,7 +91,7 @@ export function FileSelector({ userId, onFilesSelected, selectedFiles, multiple 
                   {file.type.startsWith('image/') ? (
                     <div className="relative h-10 w-10 rounded-md overflow-hidden border border-primary/10">
                       {file.public_url?.startsWith('blob:') ? (
-                        <img
+                        <Image
                           src={file.public_url}
                           alt={file.name}
                           className="h-full w-full object-cover"

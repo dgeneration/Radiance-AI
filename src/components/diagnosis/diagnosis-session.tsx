@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { ChainDiagnosisProgressIndicator } from './progress-indicator';
 import { ChainDiagnosisStreamingContent } from './streaming-content';
 import { MedicalAnalystView } from './medical-analyst-view';

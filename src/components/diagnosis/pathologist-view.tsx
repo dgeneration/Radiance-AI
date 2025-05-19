@@ -1,30 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-// Define the response type based on the updated system prompt JSON structure
-interface NewPharmacistResponse {
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
+
+// Define the response type based on the system prompt JSON structure
+interface NewPathologistResponse {
   role_name: string;
-  patient_medication_profile_review: {
-    allergies: string;
-    current_medications: string;
-    current_conditions_relevant_to_meds: string;
+  context_from_specialist: {
+    specialist_type_consulted: string;
+    potential_conditions_under_review: string[];
+    suggested_investigations_by_specialist: string[];
   };
-  medication_classes_potentially_relevant: {
-    medication_class: string;
-    context: string;
-    alternative_examples_due_to_allergy?: string[];
-    general_administration_notes: string;
-    common_class_side_effects: string[];
-    types?: {
-      name: string;
-      notes: string;
+  pathological_insights_for_potential_conditions: {
+    condition_hypothesis: string;
+    relevant_lab_tests_and_expected_findings: {
+      test_name: string;
+      potential_findings_explained: string;
     }[];
   }[];
-  key_pharmacological_considerations: string[];
+  notes_on_test_interpretation: string[];
   reference_data_for_next_role: {
-    pharmacist_summary: string;
-    allergy_alert: string;
+    pathology_summary: string;
+    critical_markers_highlighted: string[];
   };
   disclaimer: string;
 }
@@ -33,21 +30,21 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, AlertCircle, CheckCircle,
-  ChevronDown, ChevronUp, Pill, ShieldAlert,
-  ClipboardList
+  ChevronDown, ChevronUp, TestTube, Microscope,
+  FlaskRound, Beaker
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-interface PharmacistViewProps {
+interface PathologistViewProps {
   isActive: boolean;
   onContinue: () => void;
   isLastRole?: boolean;
 }
 
-export function PharmacistView({ isActive, onContinue, isLastRole = false }: PharmacistViewProps) {
+export function PathologistView({ isActive, onContinue, isLastRole = false }: PathologistViewProps) {
   const {
     currentSession,
     streamingContent,
@@ -56,19 +53,18 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
     error
   } = useChainDiagnosis();
 
-  const [parsedResponse, setParsedResponse] = useState<NewPharmacistResponse | null>(null);
-  const [activeTab, setActiveTab] = useState('medications');
+  const [parsedResponse, setParsedResponse] = useState<NewPathologistResponse | null>(null);
+  const [activeTab, setActiveTab] = useState('lab-tests');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
   // Helper function to adapt old response format to new format
-  const adaptResponseFormat = (response: unknown): NewPharmacistResponse => {
+  const adaptResponseFormat = (response: unknown): NewPathologistResponse => {
     // Type guard to check if it's already in the new format
     if (typeof response === 'object' && response !== null &&
         'role_name' in response &&
-        'patient_medication_profile_review' in response &&
-        'medication_classes_potentially_relevant' in response &&
-        'key_pharmacological_considerations' in response) {
-      return response as NewPharmacistResponse;
+        'context_from_specialist' in response &&
+        'pathological_insights_for_potential_conditions' in response) {
+      return response as NewPathologistResponse;
     }
 
     // Cast to a generic object for safety
@@ -76,69 +72,68 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
     const oldResponse = response as Record<string, any>;
 
     // Create default values for required fields
-    const medicationClasses: NewPharmacistResponse['medication_classes_potentially_relevant'] = [];
-    const keyConsiderations: string[] = [];
+    const contextFromSpecialist = {
+      specialist_type_consulted: "Unknown Specialist",
+      potential_conditions_under_review: ["Not specified"],
+      suggested_investigations_by_specialist: ["Not specified"]
+    };
+
+    const pathologicalInsights: NewPathologistResponse['pathological_insights_for_potential_conditions'] = [];
+    const notesOnTestInterpretation: string[] = [];
 
     // Try to extract data from old format if available
-    // Convert old potential_medications to new medication_classes_potentially_relevant
-    if (Array.isArray(oldResponse.potential_medications)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      oldResponse.potential_medications.forEach((med: Record<string, any>) => {
-        medicationClasses.push({
-          medication_class: typeof med.class === 'string' ? med.class : "Not specified",
-          context: typeof med.indication === 'string' ? med.indication : "Not specified",
-          general_administration_notes: typeof med.notes === 'string' ? med.notes : "Take as directed by your healthcare provider.",
-          common_class_side_effects: ["Common side effects may include nausea, dizziness, or headache."],
-        });
+    // Convert old lab_tests_relevance to pathological_insights
+    if (oldResponse.lab_tests_relevance && typeof oldResponse.lab_tests_relevance === 'object') {
+      const labTests: {test_name: string; potential_findings_explained: string}[] = [];
+
+      Object.entries(oldResponse.lab_tests_relevance).forEach(([testName, relevance]) => {
+        if (typeof relevance === 'string') {
+          labTests.push({
+            test_name: testName,
+            potential_findings_explained: relevance
+          });
+        }
       });
+
+      if (labTests.length > 0) {
+        pathologicalInsights.push({
+          condition_hypothesis: "Condition from old format",
+          relevant_lab_tests_and_expected_findings: labTests
+        });
+      }
     }
 
-    // Convert old medications_to_avoid to key_pharmacological_considerations
-    if (Array.isArray(oldResponse.medications_to_avoid)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      oldResponse.medications_to_avoid.forEach((med: Record<string, any>) => {
-        if (typeof med.name === 'string' && typeof med.reason === 'string') {
-          keyConsiderations.push(`Avoid ${med.name}: ${med.reason}`);
+    // Convert old findings_interpretation to notes_on_test_interpretation
+    if (oldResponse.findings_interpretation && typeof oldResponse.findings_interpretation === 'object') {
+      Object.entries(oldResponse.findings_interpretation).forEach(([finding, interpretation]) => {
+        if (typeof interpretation === 'string') {
+          notesOnTestInterpretation.push(`${finding}: ${interpretation}`);
         }
       });
     }
 
-    // Convert old allergy_considerations to patient_medication_profile_review.allergies
-    let allergiesText = "None reported";
-    if (Array.isArray(oldResponse.allergy_considerations) && oldResponse.allergy_considerations.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const allergens = oldResponse.allergy_considerations.map((allergy: Record<string, any>) =>
-        typeof allergy.allergen === 'string' ? allergy.allergen : "Unknown allergen"
-      );
-      allergiesText = allergens.join(", ");
-    }
-
-    // Convert old general_advice to key_pharmacological_considerations
-    if (Array.isArray(oldResponse.general_advice)) {
-      oldResponse.general_advice.forEach((advice: string) => {
-        if (typeof advice === 'string') {
-          keyConsiderations.push(advice);
+    // Convert old pathologist_recommendations to additional notes
+    if (oldResponse.pathologist_recommendations && typeof oldResponse.pathologist_recommendations === 'object') {
+      Object.entries(oldResponse.pathologist_recommendations).forEach(([title, recommendation]) => {
+        if (typeof recommendation === 'string') {
+          notesOnTestInterpretation.push(`Recommendation - ${title}: ${recommendation}`);
         }
       });
     }
 
     // Return the adapted format
     return {
-      role_name: "Pharmacist AI (Radiance AI)",
-      patient_medication_profile_review: {
-        allergies: allergiesText,
-        current_medications: "None reported in old format",
-        current_conditions_relevant_to_meds: "Not specified in old format"
-      },
-      medication_classes_potentially_relevant: medicationClasses,
-      key_pharmacological_considerations: keyConsiderations,
+      role_name: "Pathologist AI (Radiance AI)",
+      context_from_specialist: contextFromSpecialist,
+      pathological_insights_for_potential_conditions: pathologicalInsights,
+      notes_on_test_interpretation: notesOnTestInterpretation,
       reference_data_for_next_role: {
-        pharmacist_summary: "Medication information adapted from old format",
-        allergy_alert: allergiesText
+        pathology_summary: "Pathology information adapted from old format",
+        critical_markers_highlighted: ["None specified in old format"]
       },
       disclaimer: typeof oldResponse.disclaimer === 'string'
         ? oldResponse.disclaimer
-        : "This information is for guidance only and does not replace professional medical advice. Always consult your doctor or pharmacist for specific medication guidance, dosages, and to discuss your full medical history and allergies. Radiance AI."
+        : "This information explains potential pathological findings and is for educational purposes. It does not interpret specific results for this patient without actual test data. All diagnostic testing should be ordered and interpreted by qualified healthcare professionals. Radiance AI."
     };
   };
 
@@ -146,20 +141,20 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
   useEffect(() => {
     try {
       // First priority: use the stored response if available
-      if (currentSession?.pharmacist_response) {
+      if (currentSession?.pathologist_response) {
         // Check if the response is already a parsed object
-        if (typeof currentSession.pharmacist_response === 'object' &&
-            currentSession.pharmacist_response !== null) {
-          setParsedResponse(adaptResponseFormat(currentSession.pharmacist_response));
+        if (typeof currentSession.pathologist_response === 'object' &&
+            currentSession.pathologist_response !== null) {
+          setParsedResponse(adaptResponseFormat(currentSession.pathologist_response));
           return;
         }
       }
 
       // Second priority: try to parse streaming content if available
-      if (streamingContent.pharmacist) {
+      if (streamingContent.pathologist) {
         try {
           // Try to extract JSON from the content
-          const jsonMatch = streamingContent.pharmacist.match(/```json\s*([\s\S]*?)\s*```/);
+          const jsonMatch = streamingContent.pathologist.match(/```json\s*([\s\S]*?)\s*```/);
 
           if (jsonMatch && jsonMatch[1]) {
             try {
@@ -173,7 +168,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
 
           // Try to parse the entire content as JSON
           try {
-            const parsed = JSON.parse(streamingContent.pharmacist);
+            const parsed = JSON.parse(streamingContent.pathologist);
             setParsedResponse(adaptResponseFormat(parsed));
             return;
           } catch {
@@ -181,7 +176,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
           }
 
           // If we get here, try to extract any JSON-like structure
-          const jsonLikeMatch = streamingContent.pharmacist.match(/(\{[\s\S]*\})/);
+          const jsonLikeMatch = streamingContent.pathologist.match(/(\{[\s\S]*\})/);
           if (jsonLikeMatch && jsonLikeMatch[1]) {
             try {
               // Try to fix common JSON issues
@@ -203,9 +198,9 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
         }
       }
     } catch {
-      // Error in pharmacist response parsing
+      // Error in pathologist response parsing
     }
-  }, [streamingContent.pharmacist, currentSession?.pharmacist_response]);
+  }, [streamingContent.pathologist, currentSession?.pathologist_response]);
 
   // If we're still loading and have no parsed response, show a loading state
   if (isLoading && !parsedResponse && isActive) {
@@ -215,12 +210,12 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/20 rounded-full">
-                <Pill className="h-5 w-5 text-primary" />
+                <TestTube className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle>Pharmacist AI</CardTitle>
+                <CardTitle>Pathologist AI</CardTitle>
                 <CardDescription>
-                  Analyzing medication options and considerations
+                  Analyzing lab tests and pathological findings
                 </CardDescription>
               </div>
             </div>
@@ -229,9 +224,9 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
           <CardContent>
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-lg font-medium mb-2">Analyzing Medication Options</p>
+              <p className="text-lg font-medium mb-2">Analyzing Pathological Findings</p>
               <p className="text-muted-foreground text-center max-w-md">
-                The Pharmacist AI is carefully reviewing potential medications related to your condition and considering your allergies and medical history.
+                The Pathologist AI is carefully reviewing potential lab tests and pathological findings related to your condition.
                 This may take a moment...
               </p>
             </div>
@@ -254,7 +249,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               <div>
                 <CardTitle>Error</CardTitle>
                 <CardDescription>
-                  There was an error processing the Pharmacist analysis
+                  There was an error processing the Pathologist analysis
                 </CardDescription>
               </div>
             </div>
@@ -294,7 +289,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <AnimatedIcon
-                  icon={<Pill className="h-5 w-5" />}
+                  icon={<TestTube className="h-5 w-5" />}
                   className={cn(
                     "p-3 rounded-full",
                     isActive ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground"
@@ -306,7 +301,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                 <div>
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">
-                      Pharmacist AI
+                      Pathologist AI
                     </CardTitle>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full ml-2">
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -314,8 +309,8 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                   </div>
                   <CardDescription className="text-sm">
                     {isStreaming && isActive
-                      ? "Analyzing medication options and considerations..."
-                      : "Medication information and guidance"}
+                      ? "Analyzing lab tests and pathological findings..."
+                      : "Insights on lab tests and pathological markers"}
                   </CardDescription>
 
                   {isStreaming && isActive && (
@@ -352,66 +347,60 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
             className="overflow-hidden"
           >
             <CardContent className={cn("space-y-5", !isExpanded && "hidden")}>
-              {/* Patient Medication Profile */}
-              {parsedResponse?.patient_medication_profile_review && (
-                <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
+              {/* Tabs for different sections */}
+              {/* Context from Specialist */}
+              {parsedResponse?.context_from_specialist && (
+                <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm mb-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <ShieldAlert className="h-4 w-4 text-amber-500" />
-                    <h3 className="text-sm font-medium">Patient Medication Profile</h3>
+                    <Microscope className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium">Context from {parsedResponse.context_from_specialist.specialist_type_consulted}</h3>
                   </div>
 
                   <div className="space-y-3 text-sm">
-                    {/* Allergies */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Allergies:</span>
-                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
-                          {parsedResponse.patient_medication_profile_review.allergies || "None reported"}
-                        </Badge>
-                      </div>
+                    {/* Potential Conditions */}
+                    <div>
+                      <p className="text-muted-foreground mb-1">Potential Conditions Under Review:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {parsedResponse.context_from_specialist.potential_conditions_under_review.map((condition, index) => (
+                          <li key={index}>{condition}</li>
+                        ))}
+                      </ul>
                     </div>
 
-                    {/* Current Medications */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground">Current Medications:</span>
-                        <span className="flex-1">{parsedResponse.patient_medication_profile_review.current_medications || "None reported"}</span>
-                      </div>
-                    </div>
-
-                    {/* Current Conditions */}
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-start gap-2">
-                        <span className="text-muted-foreground">Current Conditions:</span>
-                        <span className="flex-1">{parsedResponse.patient_medication_profile_review.current_conditions_relevant_to_meds || "None specified"}</span>
-                      </div>
+                    {/* Suggested Investigations */}
+                    <div>
+                      <p className="text-muted-foreground mb-1">Suggested Investigations:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {parsedResponse.context_from_specialist.suggested_investigations_by_specialist.map((investigation, index) => (
+                          <li key={index}>{investigation}</li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Tabs for different sections */}
-              <Tabs defaultValue="medications" value={activeTab} onValueChange={setActiveTab}>
+              <Tabs defaultValue="insights" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
-                  <TabsTrigger value="medications" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                    <Pill className="h-3.5 w-3.5 mr-1.5" />
-                    Medication Classes
+                  <TabsTrigger value="insights" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                    <TestTube className="h-3.5 w-3.5 mr-1.5" />
+                    Pathological Insights
                   </TabsTrigger>
-                  <TabsTrigger value="considerations" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                    <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-                    Key Considerations
+                  <TabsTrigger value="notes" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                    <Microscope className="h-3.5 w-3.5 mr-1.5" />
+                    Test Interpretation
                   </TabsTrigger>
                   <TabsTrigger value="reference" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                    <ClipboardList className="h-3.5 w-3.5 mr-1.5" />
+                    <Beaker className="h-3.5 w-3.5 mr-1.5" />
                     Reference Data
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Medication Classes Tab */}
-                <TabsContent value="medications" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.medication_classes_potentially_relevant && parsedResponse.medication_classes_potentially_relevant.length > 0 ? (
-                    <div className="space-y-4">
-                      {parsedResponse.medication_classes_potentially_relevant.map((medicationClass, index) => (
+                {/* Pathological Insights Tab */}
+                <TabsContent value="insights" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.pathological_insights_for_potential_conditions && parsedResponse.pathological_insights_for_potential_conditions.length > 0 ? (
+                    <div className="space-y-6">
+                      {parsedResponse.pathological_insights_for_potential_conditions.map((condition, index) => (
                         <motion.div
                           key={index}
                           className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm"
@@ -420,59 +409,17 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                           transition={{ duration: 0.3, delay: index * 0.05 }}
                         >
                           <div className="flex items-center gap-2 mb-3">
-                            <Pill className="h-4 w-4 text-primary" />
-                            <h3 className="text-sm font-medium">{medicationClass.medication_class}</h3>
+                            <TestTube className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-medium">{condition.condition_hypothesis}</h3>
                           </div>
 
-                          <div className="space-y-3 text-sm">
-                            {/* Context */}
-                            <div className="pl-4 border-l-2 border-primary/20">
-                              <p className="text-muted-foreground mb-1">Context:</p>
-                              <p>{medicationClass.context}</p>
-                            </div>
-
-                            {/* Alternative Examples (if available) */}
-                            {medicationClass.alternative_examples_due_to_allergy && medicationClass.alternative_examples_due_to_allergy.length > 0 && (
-                              <div className="pl-4 border-l-2 border-amber-500/20">
-                                <p className="text-muted-foreground mb-1">Alternative Examples (Due to Allergy):</p>
-                                <ul className="list-disc pl-5 space-y-1">
-                                  {medicationClass.alternative_examples_due_to_allergy.map((alt, altIndex) => (
-                                    <li key={altIndex}>{alt}</li>
-                                  ))}
-                                </ul>
+                          <div className="space-y-4">
+                            {condition.relevant_lab_tests_and_expected_findings.map((test, testIndex) => (
+                              <div key={testIndex} className="pl-4 border-l-2 border-primary/20">
+                                <p className="text-sm font-medium mb-1">{test.test_name}</p>
+                                <p className="text-sm text-muted-foreground">{test.potential_findings_explained}</p>
                               </div>
-                            )}
-
-                            {/* Types (if available) */}
-                            {medicationClass.types && medicationClass.types.length > 0 && (
-                              <div className="pl-4 border-l-2 border-primary/20">
-                                <p className="text-muted-foreground mb-1">Types:</p>
-                                <div className="space-y-2">
-                                  {medicationClass.types.map((type, typeIndex) => (
-                                    <div key={typeIndex} className="bg-card/50 p-2 rounded border border-border/30">
-                                      <p className="font-medium">{type.name}</p>
-                                      <p className="text-sm text-muted-foreground">{type.notes}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Administration Notes */}
-                            <div className="pl-4 border-l-2 border-primary/20">
-                              <p className="text-muted-foreground mb-1">Administration Notes:</p>
-                              <p>{medicationClass.general_administration_notes}</p>
-                            </div>
-
-                            {/* Side Effects */}
-                            <div className="pl-4 border-l-2 border-amber-500/20">
-                              <p className="text-muted-foreground mb-1">Common Side Effects:</p>
-                              <ul className="list-disc pl-5 space-y-1">
-                                {medicationClass.common_class_side_effects.map((effect, effectIndex) => (
-                                  <li key={effectIndex}>{effect}</li>
-                                ))}
-                              </ul>
-                            </div>
+                            ))}
                           </div>
                         </motion.div>
                       ))}
@@ -486,31 +433,31 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Analyzing medication classes...</p>
+                            <p className="font-medium text-primary">Analyzing pathological insights...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <Pill className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No medication classes available</p>
+                          <TestTube className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No pathological insights available</p>
                         </div>
                       )}
                     </div>
                   )}
                 </TabsContent>
 
-                {/* Key Considerations Tab */}
-                <TabsContent value="considerations" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
-                  {parsedResponse?.key_pharmacological_considerations && parsedResponse.key_pharmacological_considerations.length > 0 ? (
+                {/* Test Interpretation Notes Tab */}
+                <TabsContent value="notes" className="space-y-4 pt-4 animate-in fade-in-50 duration-300">
+                  {parsedResponse?.notes_on_test_interpretation && parsedResponse.notes_on_test_interpretation.length > 0 ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
-                        <ShieldAlert className="h-4 w-4 text-amber-500" />
-                        <h3 className="text-sm font-medium">Key Pharmacological Considerations</h3>
+                        <Microscope className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-medium">Notes on Test Interpretation</h3>
                       </div>
 
                       <ul className="space-y-3">
-                        {parsedResponse.key_pharmacological_considerations.map((consideration, index) => (
+                        {parsedResponse.notes_on_test_interpretation.map((note, index) => (
                           <motion.li
                             key={index}
                             className="flex items-start gap-2 text-sm"
@@ -518,10 +465,10 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.05 }}
                           >
-                            <div className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                               {index + 1}
                             </div>
-                            <span>{consideration}</span>
+                            <span>{note}</span>
                           </motion.li>
                         ))}
                       </ul>
@@ -535,14 +482,14 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Analyzing key considerations...</p>
+                            <p className="font-medium text-primary">Preparing test interpretation notes...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <ShieldAlert className="h-6 w-6 text-muted-foreground/70" />
-                          <p>No key considerations available</p>
+                          <AlertCircle className="h-6 w-6 text-muted-foreground/70" />
+                          <p>No test interpretation notes available</p>
                         </div>
                       )}
                     </div>
@@ -554,21 +501,25 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                   {parsedResponse?.reference_data_for_next_role ? (
                     <div className="bg-card/80 p-4 rounded-lg border border-border/50 shadow-sm">
                       <div className="flex items-center gap-2 mb-3">
-                        <ClipboardList className="h-4 w-4 text-primary" />
+                        <FlaskRound className="h-4 w-4 text-primary" />
                         <h3 className="text-sm font-medium">Reference Data for Next Role</h3>
                       </div>
 
                       <div className="space-y-4">
-                        {/* Pharmacist Summary */}
+                        {/* Pathology Summary */}
                         <div className="pl-4 border-l-2 border-primary/20">
-                          <p className="text-muted-foreground mb-1">Pharmacist Summary:</p>
-                          <p className="text-sm">{parsedResponse.reference_data_for_next_role.pharmacist_summary}</p>
+                          <p className="text-muted-foreground mb-1">Pathology Summary:</p>
+                          <p className="text-sm">{parsedResponse.reference_data_for_next_role.pathology_summary}</p>
                         </div>
 
-                        {/* Allergy Alert */}
-                        <div className="pl-4 border-l-2 border-amber-500/20">
-                          <p className="text-muted-foreground mb-1">Allergy Alert:</p>
-                          <p className="text-sm text-amber-600">{parsedResponse.reference_data_for_next_role.allergy_alert}</p>
+                        {/* Critical Markers */}
+                        <div className="pl-4 border-l-2 border-primary/20">
+                          <p className="text-muted-foreground mb-1">Critical Markers Highlighted:</p>
+                          <ul className="list-disc pl-5 space-y-1 text-sm">
+                            {parsedResponse.reference_data_for_next_role.critical_markers_highlighted.map((marker, index) => (
+                              <li key={index}>{marker}</li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     </div>
@@ -581,13 +532,13 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                             <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                           </div>
                           <div>
-                            <p className="font-medium text-primary">Generating reference data...</p>
+                            <p className="font-medium text-primary">Preparing reference data...</p>
                             <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <ClipboardList className="h-6 w-6 text-muted-foreground/70" />
+                          <FlaskRound className="h-6 w-6 text-muted-foreground/70" />
                           <p>No reference data available</p>
                         </div>
                       )}
@@ -596,7 +547,7 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                 </TabsContent>
               </Tabs>
 
-              {/* Disclaimer (for backward compatibility) */}
+              {/* Disclaimer */}
               {parsedResponse?.disclaimer && (
                 <div className="bg-card/80 p-4 rounded-lg border border-border/50 text-xs text-muted-foreground">
                   <p className="font-medium mb-1">Disclaimer:</p>
@@ -605,10 +556,10 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
               )}
             </CardContent>
           </motion.div>
-          {!currentSession?.follow_up_specialist_response && (
+          {!currentSession?.nutritionist_response && (
           <CardFooter>
-            {/* Only show the continue button if there's a Pharmacist response and no Follow-up Specialist response yet */}
-            {currentSession?.pharmacist_response && !currentSession?.follow_up_specialist_response ? (
+            {/* Only show the continue button if there's a Pathologist response and no Nutritionist response yet */}
+            {currentSession?.pathologist_response && !currentSession?.nutritionist_response ? (
               <Button
                 onClick={onContinue}
                 className="w-full bg-primary hover:bg-primary/90"
@@ -620,13 +571,13 @@ export function PharmacistView({ isActive, onContinue, isLastRole = false }: Pha
                     Processing...
                   </>
                 ) : (
-                  "Continue to Follow-up Specialist"
+                  "Continue to Nutritionist"
                 )}
               </Button>
             ) : (
               <div className="w-full p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center">
                 <p className="text-sm text-amber-500">
-                  {isLoading || isStreaming ? "Processing pharmacist assessment..." : "Waiting for Pharmacist response..."}
+                  {isLoading || isStreaming ? "Processing pathologist assessment..." : "Waiting for Pathologist response..."}
                 </p>
               </div>
             )}

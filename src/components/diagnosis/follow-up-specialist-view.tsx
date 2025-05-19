@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
-import { FollowUpSpecialistResponse } from '@/types/chain-diagnosis';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
+import { FollowUpSpecialistResponse } from '@/types/diagnosis';
 // Define the response type based on the system prompt JSON structure
 interface NewFollowUpSpecialistResponse {
   role_name: string;
