@@ -9,8 +9,8 @@ import { GradientHeading } from "@/components/ui/gradient-heading";
 import { History } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Chain Diagnosis History | Radiance AI",
-  description: "View your past chain diagnosis sessions",
+  title: "Diagnosis History | Radiance AI",
+  description: "View your past diagnosis sessions",
 };
 
 export default async function ChainDiagnosisHistoryPage() {
@@ -46,7 +46,7 @@ export default async function ChainDiagnosisHistoryPage() {
 
   return (
     <ChainDiagnosisProvider>
-      <SubNavbar title="Chain Diagnosis History" showProfileNav={true} />
+      <SubNavbar title="Diagnosis History" showProfileNav={true} />
       <div className="relative overflow-hidden py-10 px-4">
         {/* Background gradient effect */}
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-background to-accent/5 z-0"></div>
@@ -86,7 +86,7 @@ export default async function ChainDiagnosisHistoryPage() {
                       Your Diagnosis History
                     </GradientHeading>
                     <p className="text-muted-foreground mb-6 max-w-2xl">
-                      View and manage your past chain diagnosis sessions. Each session contains a comprehensive
+                      View and manage your past diagnosis sessions. Each session contains a comprehensive
                       health analysis from our 8 specialized AI roles.
                     </p>
                   </div>

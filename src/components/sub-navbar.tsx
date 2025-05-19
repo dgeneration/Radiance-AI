@@ -19,8 +19,9 @@ export function SubNavbar({ title, showProfileNav = false }: SubNavbarProps) {
     return pathname === path;
   };
 
-  // Check if we're on a chain diagnosis page
-  const isChainDiagnosisPage = pathname.includes('/dashboard/chain-diagnosis');
+  // Check if we're on a diagnosis page or profile page
+  const isDiagnosisPage = pathname.includes('/dashboard/diagnosis');
+  const isProfilePage = pathname.includes('/dashboard/profile');
 
   return (
     <div className="relative overflow-hidden border-b border-primary/10 py-8 bg-card/5 select-none">
@@ -60,7 +61,7 @@ export function SubNavbar({ title, showProfileNav = false }: SubNavbarProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            {showProfileNav && !isChainDiagnosisPage && (
+            {showProfileNav && !isDiagnosisPage && !isProfilePage && (
               <>
                 <Link
                   href="/dashboard/profile"

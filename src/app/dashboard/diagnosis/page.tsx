@@ -14,14 +14,14 @@ export const metadata: Metadata = {
   description: "Get a comprehensive health analysis from 8 specialized AI roles",
 };
 
-export default async function ChainDiagnosisPage() {
+export default async function DiagnosisPage() {
   // Check if user is logged in
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
 
   // Redirect non-logged in users to the login page
   if (!userData.user) {
-    redirect("/auth/login?redirectUrl=/dashboard/chain-diagnosis");
+    redirect("/auth/login?redirectUrl=/dashboard/diagnosis");
   }
 
   // We'll let the client component fetch the user profile
@@ -70,7 +70,7 @@ export default async function ChainDiagnosisPage() {
                       AI-Powered Health Diagnosis
                     </GradientHeading>
                     <p className="text-muted-foreground mb-6 max-w-2xl">
-                      Experience our advanced multi-agent chain diagnosis system that analyzes your symptoms through 8 specialized AI roles.
+                      Experience our advanced multi-agent diagnosis system that analyzes your symptoms through 8 specialized AI roles.
                       From initial assessment to specialized insights, our system provides a comprehensive health analysis with personalized recommendations.
                     </p>
                   </div>
@@ -95,7 +95,7 @@ export default async function ChainDiagnosisPage() {
                 Our Specialized AI Roles
               </GradientHeading>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Each role in our chain diagnosis system provides unique expertise for a comprehensive health analysis
+                Each role in our diagnosis system provides unique expertise for a comprehensive health analysis
               </p>
             </div>
 

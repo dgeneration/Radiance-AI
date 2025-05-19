@@ -23,29 +23,19 @@ export function MobileMenu() {
       icon: <FaHome className="h-5 w-5" />,
       activePattern: /^\/dashboard$/
     },
+
     {
       name: "Diagnosis",
-      path: "/diagnosis",
-      icon: <FaStethoscope className="h-5 w-5" />,
-      activePattern: /^\/diagnosis$/
-    },
-    {
-      name: "Chain Dx",
-      path: "/dashboard/chain-diagnosis",
+      path: "/dashboard/diagnosis",
       icon: <FaBrain className="h-5 w-5" />,
-      activePattern: /^\/dashboard\/chain-diagnosis$/
+      activePattern: /^\/dashboard\/diagnosis$/
     },
+
     {
       name: "History",
-      path: "/dashboard/history",
-      icon: <FaHistory className="h-5 w-5" />,
-      activePattern: /^\/dashboard\/history$/
-    },
-    {
-      name: "Chain Hx",
-      path: "/dashboard/chain-diagnosis/history",
+      path: "/dashboard/diagnosis/history",
       icon: <FaListAlt className="h-5 w-5" />,
-      activePattern: /^\/dashboard\/chain-diagnosis\/history$/
+      activePattern: /^\/dashboard\/diagnosis\/history$/
     },
     {
       name: "Profile",

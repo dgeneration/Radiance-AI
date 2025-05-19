@@ -38,12 +38,12 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
 
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
-    router.push(`/dashboard/chain-diagnosis/${sessionId}`);
+    router.push(`/dashboard/diagnosis/${sessionId}`);
   };
 
   // Handle starting a new session
   const handleNewSession = () => {
-    router.push('/dashboard/chain-diagnosis');
+    router.push('/dashboard/diagnosis');
   };
 
   if (isLoading && sessions.length === 0) {
@@ -96,7 +96,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                   No Diagnosis Sessions Found
                 </CardTitle>
                 <CardDescription>
-                  You haven&apos;t started any chain diagnosis sessions yet.
+                  You haven&apos;t started any diagnosis sessions yet.
                 </CardDescription>
               </div>
             </div>
@@ -105,7 +105,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
           <CardContent>
             <div className="bg-card/50 backdrop-blur-sm border border-primary/5 rounded-xl p-5 mb-6">
               <p className="text-muted-foreground">
-                Start a new chain diagnosis to get a comprehensive health analysis from our 8 specialized AI roles:
+                Start a new diagnosis to get a comprehensive health analysis from our 8 specialized AI roles:
               </p>
 
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -131,7 +131,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                 size="lg"
               >
                 <PlusCircle className="mr-2 h-5 w-5" />
-                Start New Chain Diagnosis
+                Start New Diagnosis
               </Button>
             </div>
           </CardContent>
@@ -240,7 +240,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                       </div>
                       <div>
                         <CardTitle className="text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                          Chain Diagnosis
+                          Diagnosis
                         </CardTitle>
                         <CardDescription className="flex items-center gap-1 mt-1">
                           <Calendar className="h-3 w-3" />
