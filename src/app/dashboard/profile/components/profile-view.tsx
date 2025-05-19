@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen, Trash2, Code, Settings } from "lucide-react";
+import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen, Trash2, Code } from "lucide-react";
 import { FaNotesMedical } from "react-icons/fa";
 import { ProfessionalButton } from "@/components/ui/professional-button";
 import { Switch } from "@/components/ui/switch";
@@ -435,8 +435,9 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
               <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogTrigger asChild>
                   <ProfessionalButton
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
+                    className="bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20 hover:border-destructive/30"
                   >
                     Delete Account
                   </ProfessionalButton>
@@ -456,8 +457,9 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
                       Cancel
                     </ProfessionalButton>
                     <ProfessionalButton
-                      variant="destructive"
+                      variant="primary"
                       onClick={handleDeleteAccount}
+                      className="bg-destructive hover:bg-destructive/90 text-white"
                     >
                       Yes, Delete My Account
                     </ProfessionalButton>

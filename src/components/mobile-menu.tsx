@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   FaHome,
-  FaStethoscope,
-  FaHistory,
+  // FaStethoscope, // Not used
+  // FaHistory, // Not used
   FaUser,
   FaBrain,
   FaListAlt

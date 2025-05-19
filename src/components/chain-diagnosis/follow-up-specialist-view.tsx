@@ -34,7 +34,7 @@ import {
   Loader2, AlertCircle, CheckCircle,
   Activity, FileText, ClipboardList, AlertTriangle,
   ChevronDown, ChevronUp, Calendar, HeartPulse,
-  ArrowUpRight, Camera, Pill, Utensils
+  ArrowUpRight
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -530,7 +530,7 @@ export function FollowUpSpecialistView({ isActive, onContinue, isLastRole = fals
                                   <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                                     1
                                   </div>
-                                  <span>Follow your healthcare provider's advice for your specific condition</span>
+                                  <span>Follow your healthcare provider&apos;s advice for your specific condition</span>
                                 </li>
                                 <li className="flex items-start gap-2 text-sm">
                                   <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ProfessionalButton } from '@/components/ui/professional-button';
 import { motion } from 'framer-motion';
 import { uploadFile, FileMetadata } from '@/utils/supabase/file-storage';
-import Image from 'next/image';
+// import Image from 'next/image'; // Not used
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;

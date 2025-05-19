@@ -83,20 +83,20 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
     // Convert old medical_conditions to key_considerations
     if (Array.isArray(oldResponse.medical_conditions) && oldResponse.medical_conditions.length > 0) {
       nutritionalAssessment.key_considerations_from_medical_context.push(
-        `Medical conditions: ${oldResponse.medical_conditions.join(', ')}`
+        `Medical conditions: ${oldResponse.medical_conditions.join(', ')}` as never
       );
     }
 
     // Convert old current_symptoms to key_considerations
     if (Array.isArray(oldResponse.current_symptoms) && oldResponse.current_symptoms.length > 0) {
       nutritionalAssessment.key_considerations_from_medical_context.push(
-        `Current symptoms: ${oldResponse.current_symptoms.join(', ')}`
+        `Current symptoms: ${oldResponse.current_symptoms.join(', ')}` as never
       );
     }
 
     // If no considerations were added, add a default one
     if (nutritionalAssessment.key_considerations_from_medical_context.length === 0) {
-      nutritionalAssessment.key_considerations_from_medical_context.push("No specific medical considerations noted");
+      nutritionalAssessment.key_considerations_from_medical_context.push("No specific medical considerations noted" as never);
     }
 
     // Convert old nutrition_recommendations to general_dietary_goals

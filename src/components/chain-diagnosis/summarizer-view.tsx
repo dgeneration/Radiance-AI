@@ -117,10 +117,10 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
       ? oldResponse.gender
       : "Not specified";
 
-    // Extract arrays safely
-    const primaryConcerns = Array.isArray(oldResponse.primary_concerns)
-      ? oldResponse.primary_concerns
-      : [];
+    // Extract arrays safely - not used but kept for future reference
+    // const primaryConcerns = Array.isArray(oldResponse.primary_concerns)
+    //   ? oldResponse.primary_concerns
+    //   : [];
 
     const medicalHistory = Array.isArray(oldResponse.medical_conditions)
       ? oldResponse.medical_conditions
