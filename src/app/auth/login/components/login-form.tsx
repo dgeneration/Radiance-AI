@@ -11,6 +11,7 @@ import { ProfessionalButton } from "@/components/ui/professional-button";
 import { GradientHeading } from "@/components/ui/gradient-heading";
 import { AnimatedSection } from "@/components/animations/animated-section";
 import { AnimatedIcon } from "@/components/animations/animated-icon";
+import { TurnstileCaptcha } from "@/components/ui/turnstile-captcha";
 import { LogIn, UserPlus, AlertCircle, CheckCircle } from "lucide-react";
 
 export function LoginForm({
@@ -25,11 +26,22 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState(initialError || "");
   const [formMessage, setFormMessage] = useState(message || "");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleLogin = async (formData: FormData) => {
     setIsLoading(true);
     setFormError("");
     setFormMessage("");
+
+    // Check if captcha token is available
+    if (!captchaToken) {
+      setFormError("Please complete the CAPTCHA verification");
+      setIsLoading(false);
+      return;
+    }
+
+    // Add captcha token to form data
+    formData.append("captchaToken", captchaToken);
 
     try {
       const result = await login(formData);
@@ -129,6 +141,16 @@ export function LoginForm({
                 required
                 disabled={isLoading}
                 className="bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="grid gap-3">
+              <Label className="text-foreground/80 font-medium">Verification</Label>
+              <TurnstileCaptcha
+                onVerify={setCaptchaToken}
+                onError={(error) => setFormError(`CAPTCHA error: ${error}`)}
+                onExpire={() => setCaptchaToken(null)}
+                className="mt-1"
               />
             </div>
 

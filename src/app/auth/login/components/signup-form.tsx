@@ -21,6 +21,7 @@ import { AnimatedIcon } from "@/components/animations/animated-icon";
 import { UserPlus, MapPin, Heart, ArrowRight, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 import { Country, State, City, ICity } from "country-state-city";
 import ReactCountryFlag from "react-country-flag";
+import { TurnstileCaptcha } from "@/components/ui/turnstile-captcha";
 
 // Generate years from 1920 to current year
 const generateYears = () => {
@@ -40,6 +41,7 @@ export function SignupForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   // Form fields
   const [email, setEmail] = useState("");
@@ -111,6 +113,13 @@ export function SignupForm({
     setError("");
     setMessage("");
 
+    // Check if captcha token is available
+    if (!captchaToken) {
+      setError("Please complete the CAPTCHA verification");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Get the country, state, and city names from their codes
       const selectedCountry = countries.find(c => c.isoCode === countryCode);
@@ -139,6 +148,7 @@ export function SignupForm({
       formData.append("weight", weight);
       formData.append("dietaryPreference", dietaryPreference);
       formData.append("redirectUrl", redirectUrl);
+      formData.append("captchaToken", captchaToken);
 
       const result = await signup(formData);
       if (result?.error) {
@@ -353,6 +363,16 @@ export function SignupForm({
                       Password must be at least 6 characters long
                     </p>
                   </div>
+
+                  <div className="grid gap-3">
+                    <Label className="text-foreground/80 font-medium">Verification</Label>
+                    <TurnstileCaptcha
+                      onVerify={setCaptchaToken}
+                      onError={(error) => setError(`CAPTCHA error: ${error}`)}
+                      onExpire={() => setCaptchaToken(null)}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
 
                 <ProfessionalButton
@@ -360,7 +380,7 @@ export function SignupForm({
                   variant="primary"
                   size="default"
                   fullWidth
-                  disabled={isLoading || !email || !password}
+                  disabled={isLoading || !email || !password || !captchaToken}
                   onClick={() => setFormStep(2)}
                   icon={<ArrowRight className="h-4 w-4" />}
                   iconPosition="right"
