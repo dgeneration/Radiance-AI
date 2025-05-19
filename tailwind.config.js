@@ -118,6 +118,9 @@ module.exports = {
           '-moz-user-select': 'text',
           '-ms-user-select': 'text',
         },
+        '.drop-shadow-glow': {
+          'filter': 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.7))',
+        },
       }
       addUtilities(newUtilities)
     },

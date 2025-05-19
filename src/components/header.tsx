@@ -58,10 +58,11 @@ export function Header({ user }: HeaderProps) {
               >
                 Dashboard
               </Link>
+
               <Link
-                href="/diagnosis"
+                href="/dashboard/diagnosis"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname === '/diagnosis'
+                  pathname.startsWith('/dashboard/diagnosis') && !pathname.includes('/history')
                     ? 'text-primary bg-primary/10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
                 }`}
@@ -69,25 +70,16 @@ export function Header({ user }: HeaderProps) {
                 Diagnosis
               </Link>
               <Link
-                href="/dashboard/chain-diagnosis"
+                href="/dashboard/diagnosis/history"
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname.startsWith('/dashboard/chain-diagnosis')
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
-                }`}
-              >
-                Chain Diagnosis
-              </Link>
-              <Link
-                href="/dashboard/history"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname === '/dashboard/history'
+                  pathname === '/dashboard/diagnosis/history'
                     ? 'text-primary bg-primary/10'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
                 }`}
               >
                 History
               </Link>
+
             </nav>
           ) : (
             // No navigation for auth pages
@@ -112,7 +104,7 @@ export function Header({ user }: HeaderProps) {
                 </HeaderButton>
               )}
 
-              {/* Only show Get Diagnosis button if on landing page */}
+              {/* Only show Diagnosis button if on landing page */}
               {isHomePage && (
                 <HeaderButton
                   asChild
@@ -121,7 +113,7 @@ export function Header({ user }: HeaderProps) {
                   iconPosition="right"
                   className="hidden md:flex"
                 >
-                  <Link href="/diagnosis">
+                  <Link href="/dashboard/diagnosis">
                     Get Diagnosis
                   </Link>
                 </HeaderButton>
@@ -163,7 +155,7 @@ export function Header({ user }: HeaderProps) {
                       iconPosition="right"
                       className="hidden md:flex"
                     >
-                      <Link href="/diagnosis">
+                      <Link href="/auth/signup">
                         Get Started
                       </Link>
                     </HeaderButton>

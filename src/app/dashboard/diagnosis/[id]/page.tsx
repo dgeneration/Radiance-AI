@@ -13,14 +13,14 @@ export const metadata: Metadata = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default async function ChainDiagnosisSessionPage({ params }: any) {
+export default async function DiagnosisSessionPage({ params }: any) {
   const { id: sessionId } = await params;
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
 
   if (!userData.user) {
-    redirect(`/auth/login?redirectUrl=/dashboard/chain-diagnosis/${sessionId}`);
+    redirect(`/auth/login?redirectUrl=/dashboard/diagnosis/${sessionId}`);
   }
 
   const { data: sessionData, error } = await supabase
@@ -31,7 +31,7 @@ export default async function ChainDiagnosisSessionPage({ params }: any) {
     .single();
 
   if (error || !sessionData) {
-    redirect("/dashboard/chain-diagnosis");
+    redirect("/dashboard/diagnosis");
   }
 
   return (

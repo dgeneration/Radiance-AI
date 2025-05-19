@@ -125,13 +125,13 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
 
   const getFilePreview = (file: File) => {
     if (file.type.startsWith('image/')) {
+      const blobUrl = URL.createObjectURL(file);
       return (
         <div className="relative h-16 w-16 rounded-md overflow-hidden">
-          <Image
-            src={URL.createObjectURL(file)}
+          <img
+            src={blobUrl}
             alt={file.name}
-            fill
-            className="object-cover"
+            className="h-full w-full object-cover"
           />
         </div>
       );

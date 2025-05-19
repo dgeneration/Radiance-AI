@@ -6,11 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get the API key from environment variables
-    const apiKey = process.env.PERPLEXITY_API_KEY;
+    // Get the API key from environment variables (with fallback)
+    const apiKey = process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY;
 
     if (!apiKey) {
-      console.error('Perplexity API key is not configured');
       return NextResponse.json({
         error: 'Perplexity API key is not configured'
       }, { status: 500 });
@@ -27,17 +26,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`Making Perplexity API request with model: ${model}`);
-    console.log(`API Key prefix: ${apiKey.substring(0, 5)}...`);
-    console.log(`Streaming mode: ${streaming ? 'enabled' : 'disabled'}`);
-    console.log(`Has image URL: ${hasImageUrl ? 'yes' : 'no'}`);
+
 
     // Prepare the request body
     let requestBody;
 
     if (hasImageUrl) {
-      console.log('Using image URL format for Perplexity API');
-
       // For image URLs, we need to use a different format
       // The content is already an array of objects with type "text" or "image_url"
       const parsedUserPrompt = typeof userPrompt === 'string' ? JSON.parse(userPrompt) : userPrompt;
@@ -58,8 +52,6 @@ export async function POST(request: NextRequest) {
         max_tokens: 4000,
         stream: streaming
       };
-
-      console.log('Request with image URL:', JSON.stringify(requestBody, null, 2));
     } else {
       // For text-only requests, use the standard format
       requestBody = {
@@ -80,8 +72,11 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    // Get the API URL from environment variables (with fallback)
+    const apiUrl = process.env.PERPLEXITY_API_URL || process.env.NEXT_PUBLIC_PERPLEXITY_API_URL || 'https://api.perplexity.ai/chat/completions';
+
     // Make the API request
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    const perplexityResponse = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,19 +87,11 @@ export async function POST(request: NextRequest) {
 
     // Handle streaming responses
     if (streaming && perplexityResponse.body) {
-      console.log('Server: Streaming response received from Perplexity API');
-
       // Return the stream directly
       const transformStream = new TransformStream({
-        start() {
-          console.log('Server: Transform stream started');
-        },
         transform(chunk, controller) {
           // Pass through the chunk as-is
           controller.enqueue(chunk);
-        },
-        flush() {
-          console.log('Server: Transform stream complete');
         }
       });
 
@@ -124,8 +111,6 @@ export async function POST(request: NextRequest) {
     // Check if the response is successful
     if (!perplexityResponse.ok) {
       const errorText = await perplexityResponse.text();
-      console.error(`Perplexity API error: ${perplexityResponse.status} - ${errorText}`);
-
       return NextResponse.json({
         error: `Perplexity API error: ${perplexityResponse.status}`,
         details: errorText
@@ -138,8 +123,6 @@ export async function POST(request: NextRequest) {
     // Return the response
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in Perplexity API route:', error);
-
     return NextResponse.json({
       error: error instanceof Error ? error.message : 'An unknown error occurred'
     }, { status: 500 });

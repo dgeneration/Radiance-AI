@@ -212,7 +212,7 @@ export interface RadianceAISummarizerResponse {
   introduction: string;
   patient_information_summary: {
     name: string;
-    age: number;
+    age: number | string;
     gender: string;
     location: string;
     key_symptoms_reported: string[];
@@ -220,9 +220,30 @@ export interface RadianceAISummarizerResponse {
     relevant_medical_history: string[];
     bmi_status: string;
   };
+  potential_diagnoses?: {
+    name: string;
+    description: string;
+    confidence_level: string;
+    symptoms_matched: string[];
+  }[];
+  recommended_tests?: string[];
+  medication_guidance?: {
+    current_medications: string[];
+    medications_to_avoid: string[];
+    potential_medications: string[];
+  };
+  dietary_lifestyle_recommendations?: {
+    dietary_recommendations: string[];
+    lifestyle_recommendations: string[];
+  };
   radiance_ai_team_journey_overview: {
     role: string;
-    summary_of_findings: string;
+    summary_of_findings?: string;
+    summary_of_assessment?: string;
+    summary_of_insights?: string;
+    summary_of_recommendations?: string;
+    summary_of_guidance?: string;
+    summary_of_advice?: string;
   }[];
   key_takeaways_and_recommendations_for_patient: string[];
   final_disclaimer_from_radiance_ai: string;
