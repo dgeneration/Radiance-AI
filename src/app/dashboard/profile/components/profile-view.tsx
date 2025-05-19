@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen } from "lucide-react";
+import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen, Trash2, Code, Settings } from "lucide-react";
 import { FaNotesMedical } from "react-icons/fa";
 import { ProfessionalButton } from "@/components/ui/professional-button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { createClient } from "@/utils/supabase/client";
+import { isDeveloperModeEnabled, setDeveloperMode as setGlobalDeveloperMode } from "@/lib/developer-mode";
 
 import { AnimatedDashboardSection, DashboardFloatingElement, AnimatedCard } from "@/components/dashboard";
 import ProfileEditForm from "./profile-edit-form";
@@ -60,9 +72,57 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
   const [isEditingHealthInfo, setIsEditingHealthInfo] = useState(false);
   const [error] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [developerMode, setDeveloperMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
+  // Load developer mode setting from localStorage on component mount
+  useEffect(() => {
+    // Initialize developer mode from the utility function
+    const initialValue = isDeveloperModeEnabled();
 
+    // Set the initial state
+    setDeveloperMode(initialValue);
+
+    console.log('Profile: Developer mode initialized to', initialValue);
+  }, []);
+
+  // Toggle developer mode
+  const handleDeveloperModeToggle = (enabled: boolean) => {
+    console.log('Profile: Developer mode toggled to', enabled);
+
+    // Update local state
+    setDeveloperMode(enabled);
+
+    // Use the utility function to update localStorage and dispatch events
+    setGlobalDeveloperMode(enabled);
+  };
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    try {
+      // Delete user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      // Sign out the user
+      await supabase.auth.signOut();
+
+      // Redirect to home page
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again later.');
+    }
+  };
 
   const handleEditComplete = () => {
     setIsEditing(false);
@@ -324,6 +384,88 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
             </div>
           </AnimatedDashboardSection>
         )}
+        </div>
+      </AnimatedDashboardSection>
+
+      <AnimatedDashboardSection delay={0.4}>
+        <div className="bg-card/30 backdrop-blur-sm border border-primary/10 p-6 rounded-xl shadow-lg">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-primary/10">
+            <div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-1">
+                Account Settings
+              </h2>
+              <p className="text-muted-foreground">Advanced options for your account</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Developer Mode Toggle */}
+            <div className="flex items-center justify-between p-4 bg-card/50 backdrop-blur-sm rounded-xl border border-primary/5">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-primary/10 text-primary mt-0.5">
+                  <Code className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Developer Mode</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enable developer features and debugging information
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={developerMode}
+                onCheckedChange={handleDeveloperModeToggle}
+                className="data-[state=checked]:bg-primary"
+              />
+            </div>
+
+            {/* Delete Account Button */}
+            <div className="flex items-center justify-between p-4 bg-card/50 backdrop-blur-sm rounded-xl border border-destructive/20">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-destructive/10 text-destructive mt-0.5">
+                  <Trash2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-destructive">Delete Account</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your account and all associated data
+                  </p>
+                </div>
+              </div>
+              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogTrigger asChild>
+                  <ProfessionalButton
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Delete Account
+                  </ProfessionalButton>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Delete Account</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4">
+                    <ProfessionalButton
+                      variant="outline"
+                      onClick={() => setDeleteDialogOpen(false)}
+                    >
+                      Cancel
+                    </ProfessionalButton>
+                    <ProfessionalButton
+                      variant="destructive"
+                      onClick={handleDeleteAccount}
+                    >
+                      Yes, Delete My Account
+                    </ProfessionalButton>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
         </div>
       </AnimatedDashboardSection>
     </div>

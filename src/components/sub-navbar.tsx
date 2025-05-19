@@ -19,7 +19,7 @@ export function SubNavbar({ title, showProfileNav = false }: SubNavbarProps) {
     return pathname === path;
   };
 
-  // Check if we're on a diagnosis page or profile page
+  // We don't want to show profile and files buttons on any diagnosis page or profile page
   const isDiagnosisPage = pathname.includes('/dashboard/diagnosis');
   const isProfilePage = pathname.includes('/dashboard/profile');
 

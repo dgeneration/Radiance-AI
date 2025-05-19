@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
+import { isDeveloperModeEnabled } from '@/lib/developer-mode';
 
 interface RoleContentProps {
   title: string;
@@ -296,71 +297,124 @@ export function ChainDiagnosisStreamingContent() {
   // Simple refresh key for component updates if needed
   const [refreshKey] = useState(0);
 
+  // Check if developer mode is enabled
+  const [developerMode, setDeveloperMode] = useState(false);
+  useEffect(() => {
+      // Function to check developer mode status using the utility function
+      const checkDeveloperMode = () => {
+        const newValue = isDeveloperModeEnabled();
+
+        // Only update state if it's different to avoid unnecessary re-renders
+        if (newValue !== developerMode) {
+          console.log('Diagnosis Session: Developer mode changed:', newValue);
+          setDeveloperMode(newValue);
+        }
+      };
+
+      // Check initially
+      checkDeveloperMode();
+
+      // Set up event listener for storage changes
+      const handleStorageChange = (e: StorageEvent) => {
+        if (!e || e.key === 'developer_mode') {
+          checkDeveloperMode();
+        }
+      };
+
+      // Set up event listener for custom developer mode change event
+      const handleCustomEvent = (e: CustomEvent) => {
+        console.log('Diagnosis Session: Received custom developer mode event:', e.detail);
+        const enabled = e.detail?.enabled;
+        if (typeof enabled === 'boolean') {
+          setDeveloperMode(enabled);
+        } else {
+          checkDeveloperMode();
+        }
+      };
+
+      // Add event listeners
+      window.addEventListener('storage', handleStorageChange);
+      window.addEventListener('developerModeChanged', handleCustomEvent as EventListener);
+
+      // Force an immediate check
+      checkDeveloperMode();
+
+      // Also check periodically (every second) in case the event doesn't fire
+      const interval = setInterval(checkDeveloperMode, 1000);
+
+      // Clean up
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('developerModeChanged', handleCustomEvent as EventListener);
+        clearInterval(interval);
+      };
+    }, [developerMode]);
+
   return (
-    <AnimatedSection className="space-y-6" key={refreshKey}>
-      <div className="flex items-center justify-between mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-full bg-primary/10 text-primary">
-            <Activity className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              AI Diagnosis Chain
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Multi-agent analysis of your health data
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {isStreaming && (
-            <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing step {currentStep + 1}...</span>
+    developerMode ? (
+      <AnimatedSection className="space-y-6" key={refreshKey}>
+        <div className="flex items-center justify-between mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <Activity className="h-5 w-5" />
             </div>
-          )}
+            <div>
+              <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                AI Diagnosis Chain
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Multi-agent analysis of your health data
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {isStreaming && (
+              <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Processing step {currentStep + 1}...</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-5">
-        {roleComponents.map((role) => {
-          // Calculate if this role is active based on the current step
-          // If no medical report, adjust the step comparison
-          let isActive = false;
+        <div className="space-y-5">
+          {roleComponents.map((role) => {
+            // Calculate if this role is active based on the current step
+            // If no medical report, adjust the step comparison
+            let isActive = false;
 
-          if (hasMedicalReport) {
-            // With medical report, use standard step comparison
-            isActive = currentStep === role.step;
-          } else {
-            // Without medical report, General Physician is active when currentStep is 0 or 1
-            if (role.key === 'generalPhysician') {
-              isActive = currentStep === 1 || currentStep === 0;
-            } else {
+            if (hasMedicalReport) {
+              // With medical report, use standard step comparison
               isActive = currentStep === role.step;
+            } else {
+              // Without medical report, General Physician is active when currentStep is 0 or 1
+              if (role.key === 'generalPhysician') {
+                isActive = currentStep === 1 || currentStep === 0;
+              } else {
+                isActive = currentStep === role.step;
+              }
             }
-          }
 
+            // Determine if this role should be streaming
+            const shouldStream = isStreaming && (
+              isActive ||
+              (role.key === 'generalPhysician' && (currentStep === 0 || currentStep === 1))
+            );
 
-
-          // Determine if this role should be streaming
-          const shouldStream = isStreaming && (
-            isActive ||
-            (role.key === 'generalPhysician' && (currentStep === 0 || currentStep === 1))
-          );
-
-          return (
-            <RoleContent
-              key={role.key}
-              title={role.title}
-              icon={role.icon}
-              content={role.content}
-              isStreaming={shouldStream}
-              isActive={isActive}
-              forceStreaming={role.forceStreaming}
-            />
-          );
-        })}
-      </div>
-    </AnimatedSection>
+            return (
+              <RoleContent
+                key={role.key}
+                title={role.title}
+                icon={role.icon}
+                content={role.content}
+                isStreaming={shouldStream}
+                isActive={isActive}
+                forceStreaming={role.forceStreaming}
+              />
+            );
+          })}
+        </div>
+      </AnimatedSection>
+    ) : null
   );
 }

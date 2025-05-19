@@ -36,7 +36,7 @@ export default async function DiagnosisSessionPage({ params }: any) {
 
   return (
     <ChainDiagnosisProvider>
-      <SubNavbar title="Diagnosis Session" showProfileNav={true} />
+      <SubNavbar title="Diagnosis Session" showProfileNav={false} />
       <div className="relative overflow-hidden py-10 px-4">
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-background to-accent/5 z-0" />
         <div className="container relative z-10 mx-auto max-w-5xl">

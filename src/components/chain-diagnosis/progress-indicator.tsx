@@ -839,7 +839,7 @@ function ThreeCircleLayout({
                   </>
                 ) : (
                   <>
-                    Continue to Next Step
+                    {currentStep === 0 ? "Start" : "Continue to Next Step"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -1131,7 +1131,7 @@ export function ChainDiagnosisProgressIndicator({
             Diagnosis Progress
           </h2>
           <p className="text-sm text-muted-foreground">
-            Step {adjustedCurrentStep + 1} of {steps.length}
+            Step {adjustedCurrentStep} of {steps.length}
           </p>
         </div>
       </div>

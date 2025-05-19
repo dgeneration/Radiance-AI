@@ -15,9 +15,10 @@ import { SummarizerView } from './summarizer-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Brain, Download, Share2, Activity, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, Brain, Download, Share2, Activity, FileText, Code } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { isDeveloperModeEnabled } from '@/lib/developer-mode';
 
 interface ChainDiagnosisSessionProps {
   sessionId: string;
@@ -41,6 +42,61 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
   // State for alert visibility
   const [alertVisible, setAlertVisible] = useState(true);
+
+  // Check if developer mode is enabled
+  const [developerMode, setDeveloperMode] = useState(false);
+
+  // Load developer mode setting from localStorage on component mount and whenever localStorage changes
+  useEffect(() => {
+    // Function to check developer mode status using the utility function
+    const checkDeveloperMode = () => {
+      const newValue = isDeveloperModeEnabled();
+
+      // Only update state if it's different to avoid unnecessary re-renders
+      if (newValue !== developerMode) {
+        console.log('Diagnosis Session: Developer mode changed:', newValue);
+        setDeveloperMode(newValue);
+      }
+    };
+
+    // Check initially
+    checkDeveloperMode();
+
+    // Set up event listener for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e || e.key === 'developer_mode') {
+        checkDeveloperMode();
+      }
+    };
+
+    // Set up event listener for custom developer mode change event
+    const handleCustomEvent = (e: CustomEvent) => {
+      console.log('Diagnosis Session: Received custom developer mode event:', e.detail);
+      const enabled = e.detail?.enabled;
+      if (typeof enabled === 'boolean') {
+        setDeveloperMode(enabled);
+      } else {
+        checkDeveloperMode();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('developerModeChanged', handleCustomEvent as EventListener);
+
+    // Force an immediate check
+    checkDeveloperMode();
+
+    // Also check periodically (every second) in case the event doesn't fire
+    const interval = setInterval(checkDeveloperMode, 1000);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('developerModeChanged', handleCustomEvent as EventListener);
+      clearInterval(interval);
+    };
+  }, [developerMode]);
 
   // Force progress view when streaming is active, and switch to detailed view when complete
   useEffect(() => {
@@ -438,6 +494,127 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
           <ChainDiagnosisStreamingContent />
 
           {/* Debug information removed */}
+        </AnimatedSection>
+      )}
+
+      {/* Developer Mode: AI Diagnosis Chain Section */}
+      {developerMode && (
+        <AnimatedSection delay={0.3}>
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/10 mt-8">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/20 rounded-full">
+                    <Code className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>AI Diagnosis Chain</CardTitle>
+                    <CardDescription>
+                      Developer view of the diagnosis chain process
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-primary animate-pulse">Developer Mode Active</span>
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-card/80 p-4 rounded-lg border border-border/50">
+                  <h3 className="text-sm font-medium mb-2">Session Information</h3>
+                  <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                    {JSON.stringify({
+                      sessionId,
+                      currentStep,
+                      isLoading,
+                      isStreaming,
+                      isReloading,
+                      status: currentSession?.status,
+                    }, null, 2)}
+                  </pre>
+                </div>
+
+                <div className="bg-card/80 p-4 rounded-lg border border-border/50">
+                  <h3 className="text-sm font-medium mb-2">User Input</h3>
+                  <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                    {JSON.stringify(currentSession?.user_input, null, 2)}
+                  </pre>
+                </div>
+
+                <div className="bg-card/80 p-4 rounded-lg border border-border/50">
+                  <h3 className="text-sm font-medium mb-2">AI Role Responses</h3>
+                  <div className="space-y-2">
+                    {currentSession?.medical_analyst_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Medical Analyst</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.medical_analyst_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.general_physician_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">General Physician</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.general_physician_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.specialist_doctor_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Specialist Doctor</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.specialist_doctor_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.pathologist_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Pathologist</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.pathologist_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.nutritionist_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Nutritionist</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.nutritionist_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.pharmacist_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Pharmacist</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.pharmacist_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.follow_up_specialist_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Follow-up Specialist</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.follow_up_specialist_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {currentSession?.summarizer_response && (
+                      <div>
+                        <h4 className="text-xs font-medium text-primary">Summarizer</h4>
+                        <pre className="text-xs overflow-auto p-2 bg-black/50 rounded-md max-h-40">
+                          {JSON.stringify(currentSession.summarizer_response, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </AnimatedSection>
       )}
     </div>
