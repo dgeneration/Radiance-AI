@@ -1,11 +1,11 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
+// import { redirect } from 'next/navigation'
 
 export async function updatePassword(formData: FormData) {
   const password = formData.get('password') as string
-  const redirectUrl = (formData.get('redirectUrl') as string) || '/dashboard'
+  // const redirectUrl = (formData.get('redirectUrl') as string) || '/dashboard'
 
   if (!password) {
     return {

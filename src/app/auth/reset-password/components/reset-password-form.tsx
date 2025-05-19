@@ -10,7 +10,7 @@ import { ProfessionalButton } from "@/components/ui/professional-button";
 import { GradientHeading } from "@/components/ui/gradient-heading";
 import { AnimatedSection } from "@/components/animations/animated-section";
 import { AnimatedIcon } from "@/components/animations/animated-icon";
-import { KeyRound, LogIn, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
+import { KeyRound, AlertCircle, CheckCircle, ArrowLeft } from "lucide-react";
 
 export function ResetPasswordForm({
   redirectUrl,
@@ -141,7 +141,7 @@ export function ResetPasswordForm({
 
         <CardFooter className="flex flex-col items-center gap-2 border-t border-primary/10 p-6">
           <div className="text-sm text-muted-foreground text-center">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href={`/auth/signup${redirectUrl ? `?redirectUrl=${encodeURIComponent(redirectUrl)}` : ""}`}
               className="text-primary hover:underline font-medium transition-colors"
