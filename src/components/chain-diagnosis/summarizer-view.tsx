@@ -20,6 +20,26 @@ interface NewRadianceAISummarizerResponse {
     bmi_status: string;
   };
 
+  potential_diagnoses?: {
+    name: string;
+    description: string;
+    confidence_level: string;
+    symptoms_matched: string[];
+  }[];
+
+  recommended_tests?: string[];
+
+  medication_guidance?: {
+    current_medications: string[];
+    medications_to_avoid: string[];
+    potential_medications: string[];
+  };
+
+  dietary_lifestyle_recommendations?: {
+    dietary_recommendations: string[];
+    lifestyle_recommendations: string[];
+  };
+
   radiance_ai_team_journey_overview: {
     role: string;
     summary_of_findings?: string;
@@ -248,6 +268,91 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
       }
     }
 
+    // Extract potential diagnoses if available
+    let potentialDiagnoses = undefined;
+    if (oldResponse.potential_diagnoses) {
+      if (Array.isArray(oldResponse.potential_diagnoses)) {
+        potentialDiagnoses = oldResponse.potential_diagnoses.map(diag => {
+          if (typeof diag === 'string') {
+            return {
+              name: diag,
+              description: '',
+              confidence_level: 'Medium',
+              symptoms_matched: []
+            };
+          } else if (typeof diag === 'object' && diag !== null) {
+            return {
+              name: diag.name || 'Unknown Diagnosis',
+              description: diag.description || '',
+              confidence_level: diag.confidence_level || 'Medium',
+              symptoms_matched: Array.isArray(diag.symptoms_matched) ? diag.symptoms_matched : []
+            };
+          }
+          return {
+            name: 'Unknown Diagnosis',
+            description: '',
+            confidence_level: 'Medium',
+            symptoms_matched: []
+          };
+        });
+      } else if (typeof oldResponse.potential_diagnoses === 'string') {
+        potentialDiagnoses = [{
+          name: oldResponse.potential_diagnoses,
+          description: '',
+          confidence_level: 'Medium',
+          symptoms_matched: []
+        }];
+      }
+    }
+
+    // Extract recommended tests if available
+    let recommendedTests = undefined;
+    if (oldResponse.recommended_tests) {
+      if (Array.isArray(oldResponse.recommended_tests)) {
+        recommendedTests = oldResponse.recommended_tests;
+      } else if (typeof oldResponse.recommended_tests === 'string') {
+        recommendedTests = [oldResponse.recommended_tests];
+      }
+    }
+
+    // Extract medication guidance if available
+    let medicationGuidance = undefined;
+    if (oldResponse.medication_guidance) {
+      medicationGuidance = {
+        current_medications: Array.isArray(oldResponse.medication_guidance.current_medications)
+          ? oldResponse.medication_guidance.current_medications
+          : [],
+        medications_to_avoid: Array.isArray(oldResponse.medication_guidance.medications_to_avoid)
+          ? oldResponse.medication_guidance.medications_to_avoid
+          : [],
+        potential_medications: Array.isArray(oldResponse.medication_guidance.potential_medications)
+          ? oldResponse.medication_guidance.potential_medications
+          : []
+      };
+    }
+
+    // Extract dietary and lifestyle recommendations if available
+    let dietaryLifestyleRecommendations = undefined;
+    if (oldResponse.dietary_lifestyle_recommendations) {
+      dietaryLifestyleRecommendations = {
+        dietary_recommendations: Array.isArray(oldResponse.dietary_lifestyle_recommendations.dietary_recommendations)
+          ? oldResponse.dietary_lifestyle_recommendations.dietary_recommendations
+          : [],
+        lifestyle_recommendations: Array.isArray(oldResponse.dietary_lifestyle_recommendations.lifestyle_recommendations)
+          ? oldResponse.dietary_lifestyle_recommendations.lifestyle_recommendations
+          : []
+      };
+    } else if (Array.isArray(oldResponse.dietary_recommendations) || Array.isArray(oldResponse.lifestyle_recommendations)) {
+      dietaryLifestyleRecommendations = {
+        dietary_recommendations: Array.isArray(oldResponse.dietary_recommendations)
+          ? oldResponse.dietary_recommendations
+          : [],
+        lifestyle_recommendations: Array.isArray(oldResponse.lifestyle_recommendations)
+          ? oldResponse.lifestyle_recommendations
+          : []
+      };
+    }
+
     // Return the adapted format
     return {
       report_title: "Radiance AI Health Insight Report",
@@ -271,6 +376,12 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
         relevant_medical_history: medicalHistory,
         bmi_status: "Not specified"
       },
+
+      // Add the new fields
+      potential_diagnoses: potentialDiagnoses,
+      recommended_tests: recommendedTests,
+      medication_guidance: medicationGuidance,
+      dietary_lifestyle_recommendations: dietaryLifestyleRecommendations,
 
       radiance_ai_team_journey_overview: teamJourney,
 
@@ -477,7 +588,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                   <CardDescription className="text-sm">
                     {isStreaming && isActive
                       ? "Compiling your comprehensive health report..."
-                      : `Report for ${parsedResponse?.patient_name || "Patient"} - ${parsedResponse?.date_of_report || new Date().toISOString().split('T')[0]}`}
+                      : `Report for ${parsedResponse?.patient_information_summary?.name || "Patient"} - ${parsedResponse?.report_date || new Date().toISOString().split('T')[0]}`}
                   </CardDescription>
 
                   {isStreaming && isActive && (
@@ -614,14 +725,14 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                   {parsedResponse ? (
                     <HealthInsightReport
                       report={{
-                        report_title: parsedResponse.report_title || "Radiance AI Health Insight Report",
-                        report_date: parsedResponse.report_date || new Date().toLocaleDateString(),
-                        report_generated_for: parsedResponse.report_generated_for || "Patient",
-
                         // Patient information
-                        age: parsedResponse.patient_information_summary?.age || "Not specified",
+                        age: Number(parsedResponse.patient_information_summary?.age) || 0,
                         gender: parsedResponse.patient_information_summary?.gender || "Not specified",
                         patient_name: parsedResponse.patient_information_summary?.name || "Patient",
+                        patient_id: parsedResponse.patient_information_summary?.name ?
+                          `${parsedResponse.patient_information_summary.name.substring(0, 2).toUpperCase()}${Date.now().toString().substring(9, 13)}` :
+                          "PATIENT-ID",
+                        date_of_report: parsedResponse.report_date || new Date().toLocaleDateString(),
 
                         // Introduction and disclaimer
                         introduction: parsedResponse.introduction,
@@ -630,27 +741,37 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                         // Primary concerns from key takeaways
                         primary_concerns: parsedResponse.key_takeaways_and_recommendations_for_patient || [],
 
-                        // Extract recommended tests from team journey
-                        recommended_tests: parsedResponse.radiance_ai_team_journey_overview
-                          ?.find(role => role.role.includes("Pathologist"))?.summary_of_insights?.split(': ')[1]?.split(', ') || [],
+                        // Use recommended tests directly from the response if available, otherwise extract from team journey
+                        recommended_tests: parsedResponse.recommended_tests ||
+                          parsedResponse.radiance_ai_team_journey_overview
+                            ?.find(role => role.role.includes("Pathologist"))?.summary_of_insights?.split(': ')[1]?.split(', ') || [],
 
-                        // Extract medication guidance from team journey
-                        medication_guidance: {
+                        // Use medication guidance directly from the response if available
+                        medication_guidance: parsedResponse.medication_guidance || {
                           current_medications: [],
                           medications_to_avoid: [],
                           potential_medications: []
                         },
 
-                        // Extract potential diagnoses from team journey
-                        potential_diagnoses: parsedResponse.radiance_ai_team_journey_overview
-                          ?.find(role => role.role.includes("Specialist"))?.summary_of_assessment?.split(': ')[1]?.split(', ')
-                          .map(diag => ({
-                            name: diag,
-                            description: '',
-                            confidence_level: '',
-                            symptoms_matched: [],
+                        // Use potential diagnoses directly from the response if available
+                        potential_diagnoses: parsedResponse.potential_diagnoses ?
+                          parsedResponse.potential_diagnoses.map(diag => ({
+                            name: diag.name,
+                            description: diag.description || '',
+                            confidence_level: diag.confidence_level || '',
+                            symptoms_matched: diag.symptoms_matched || [],
                             symptoms_not_matched: []
-                          })) || [],
+                          })) :
+                          // Fallback to extracting from team journey if not available
+                          parsedResponse.radiance_ai_team_journey_overview
+                            ?.find(role => role.role.includes("Specialist"))?.summary_of_assessment?.split(': ')[1]?.split(', ')
+                            .map(diag => ({
+                              name: diag,
+                              description: '',
+                              confidence_level: '',
+                              symptoms_matched: [],
+                              symptoms_not_matched: []
+                            })) || [],
 
                         // Summary from patient information
                         condition_summary: parsedResponse.patient_information_summary?.key_symptoms_reported?.join(', ') || '',
@@ -663,12 +784,9 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                             .map(item => item.split(': ')[1]) || []
                         },
 
-                        // Dietary and lifestyle recommendations
-                        dietary_recommendations: {
-                          foods_to_include: [],
-                          foods_to_avoid: []
-                        },
-                        lifestyle_recommendations: [],
+                        // Use dietary and lifestyle recommendations directly from the response if available
+                        dietary_recommendations: parsedResponse.dietary_lifestyle_recommendations?.dietary_recommendations || [],
+                        lifestyle_recommendations: parsedResponse.dietary_lifestyle_recommendations?.lifestyle_recommendations || [],
 
                         // Follow-up plan
                         follow_up_plan: {
@@ -912,38 +1030,23 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                           <h3 className="text-sm font-medium">Dietary Recommendations</h3>
                         </div>
 
-                        {parsedResponse.dietary_recommendations ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Foods to Include */}
-                          <div>
-                            <p className="text-sm font-medium text-green-500 mb-2">Foods to Include</p>
-                            {Array.isArray(parsedResponse.dietary_recommendations?.foods_to_include) &&
-                             parsedResponse.dietary_recommendations.foods_to_include.length > 0 ? (
-                              <ul className="list-disc pl-5 space-y-1">
-                                {parsedResponse.dietary_recommendations.foods_to_include.map((food, index) => (
-                                  <li key={index} className="text-sm">{food}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No specific foods to include recommended</p>
-                            )}
+                        {parsedResponse.dietary_lifestyle_recommendations?.dietary_recommendations ? (
+                          <div className="grid grid-cols-1 gap-4">
+                            {/* Dietary Recommendations */}
+                            <div>
+                              <p className="text-sm font-medium text-green-500 mb-2">Dietary Recommendations</p>
+                              {Array.isArray(parsedResponse.dietary_lifestyle_recommendations.dietary_recommendations) &&
+                               parsedResponse.dietary_lifestyle_recommendations.dietary_recommendations.length > 0 ? (
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {parsedResponse.dietary_lifestyle_recommendations.dietary_recommendations.map((food: string, index: number) => (
+                                    <li key={index} className="text-sm">{food}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No specific dietary recommendations</p>
+                              )}
+                            </div>
                           </div>
-
-                          {/* Foods to Avoid */}
-                          <div>
-                            <p className="text-sm font-medium text-amber-500 mb-2">Foods to Avoid</p>
-                            {Array.isArray(parsedResponse.dietary_recommendations?.foods_to_avoid) &&
-                             parsedResponse.dietary_recommendations.foods_to_avoid.length > 0 ? (
-                              <ul className="list-disc pl-5 space-y-1">
-                                {parsedResponse.dietary_recommendations.foods_to_avoid.map((food, index) => (
-                                  <li key={index} className="text-sm">{food}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">No specific foods to avoid recommended</p>
-                            )}
-                          </div>
-                        </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">No dietary recommendations available</p>
                         )}
@@ -957,9 +1060,9 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                         </div>
 
                         <div className="space-y-2">
-                          {Array.isArray(parsedResponse.lifestyle_recommendations) &&
-                           parsedResponse.lifestyle_recommendations.length > 0 ? (
-                            parsedResponse.lifestyle_recommendations.map((recommendation, index) => (
+                          {Array.isArray(parsedResponse.dietary_lifestyle_recommendations?.lifestyle_recommendations) &&
+                           parsedResponse.dietary_lifestyle_recommendations.lifestyle_recommendations.length > 0 ? (
+                            parsedResponse.dietary_lifestyle_recommendations.lifestyle_recommendations.map((recommendation: string, index: number) => (
                               <motion.div
                                 key={index}
                                 className="flex items-start gap-2"
@@ -1003,13 +1106,7 @@ export function SummarizerView({ isActive, onContinue, isLastRole = true }: Summ
                 </TabsContent>
               </Tabs>
 
-              {/* Disclaimer */}
-              {parsedResponse?.final_disclaimer_from_radiance_ai && (
-                <div className="bg-card/80 p-4 rounded-lg border border-border/50 text-xs text-muted-foreground">
-                  <p className="font-medium mb-1">Disclaimer:</p>
-                  <p>{parsedResponse.final_disclaimer_from_radiance_ai}</p>
-                </div>
-              )}
+              {/* Disclaimer is already shown in the HealthInsightReport component */}
 
               {/* Download and Share Buttons */}
               {parsedResponse && (

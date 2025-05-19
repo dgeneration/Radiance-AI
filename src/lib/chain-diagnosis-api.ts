@@ -1744,6 +1744,7 @@ Your Task:
 3. The report must be easy to read and understand for the patient.
 4. Highlight key findings, recommendations, and advice from each stage of the diagnostic journey.
 5. Maintain consistent Radiance AI branding and include the final disclaimer.
+6. IMPORTANT: You MUST include detailed information for ALL fields in the response format, especially potential_diagnoses, recommended_tests, medication_guidance, and dietary_lifestyle_recommendations.
 
 CRITICAL: You MUST respond STRICTLY in valid JSON format. Do not use Markdown formatting. Your response must be valid JSON that can be parsed by JSON.parse().
 
@@ -1771,9 +1772,31 @@ RESPONSE FORMAT (strict schema):
     "gender": "string",
     "location": "string",
     "key_symptoms_reported": ["string", "string", "string"],
-    "symptom_duration": "1 week",
+    "symptom_duration": "string",
     "relevant_medical_history": ["string", "string", "string"],
     "bmi_status": "string"
+  },
+
+  "potential_diagnoses": [
+    {
+      "name": "string",
+      "description": "string",
+      "confidence_level": "string",
+      "symptoms_matched": ["string", "string"]
+    }
+  ],
+
+  "recommended_tests": ["string", "string", "string"],
+
+  "medication_guidance": {
+    "current_medications": ["string", "string"],
+    "medications_to_avoid": ["string", "string"],
+    "potential_medications": ["string", "string"]
+  },
+
+  "dietary_lifestyle_recommendations": {
+    "dietary_recommendations": ["string", "string", "string"],
+    "lifestyle_recommendations": ["string", "string", "string"]
   },
 
   "radiance_ai_team_journey_overview": [
@@ -1829,7 +1852,7 @@ EXAMPLE RESPONSE:
 
   "patient_information_summary": {
     "name": "John Doe",
-    "age": 19,
+    "age": "19",
     "gender": "Male",
     "location": "New York, NY, USA",
     "key_symptoms_reported": ["Cough", "chest pain", "fatigue"],
@@ -1838,34 +1861,77 @@ EXAMPLE RESPONSE:
     "bmi_status": "16.2 (Underweight)"
   },
 
+  "potential_diagnoses": [
+    {
+      "name": "Mild Asthma Exacerbation",
+      "description": "A flare-up of your existing asthma condition, triggered by recent factors",
+      "confidence_level": "Medium",
+      "symptoms_matched": ["Cough", "Chest discomfort", "Wheezing"]
+    },
+    {
+      "name": "Atypical Respiratory Infection",
+      "description": "Possible infection affecting the respiratory tract, potentially viral or bacterial",
+      "confidence_level": "Medium",
+      "symptoms_matched": ["Persistent cough", "Fatigue", "Mild chest pain"]
+    }
+  ],
+
+  "recommended_tests": [
+    "Chest X-ray to rule out pneumonia",
+    "Complete Blood Count (CBC) to assess for infection markers",
+    "C-Reactive Protein (CRP) to evaluate inflammation levels",
+    "Sputum culture if productive cough present"
+  ],
+
+  "medication_guidance": {
+    "current_medications": ["Albuterol inhaler (as needed)"],
+    "medications_to_avoid": ["Penicillin-based antibiotics due to allergy", "Non-steroidal anti-inflammatory drugs if asthma is sensitive to them"],
+    "potential_medications": ["Non-penicillin antibiotics if bacterial infection confirmed", "Inhaled corticosteroids for asthma management"]
+  },
+
+  "dietary_lifestyle_recommendations": {
+    "dietary_recommendations": [
+      "Increase calorie intake with nutrient-dense foods to address underweight status",
+      "Consume foods rich in vitamin C and zinc to support immune function",
+      "Stay well-hydrated with water and clear broths",
+      "Include protein-rich foods at each meal to support recovery"
+    ],
+    "lifestyle_recommendations": [
+      "Ensure adequate rest while symptoms persist",
+      "Avoid environmental triggers like smoke, strong scents, or cold air",
+      "Use a humidifier to keep airways moist",
+      "Resume physical activity gradually as symptoms improve"
+    ]
+  },
+
   "radiance_ai_team_journey_overview": [
     {
       "role": "Medical Analyst AI (Radiance AI)",
-      "summary_of_findings": "e.g., Analysis of medical report indicated lower lobe opacity, suggesting possible inflammation or infection."
+      "summary_of_findings": "Analysis of medical report indicated lower lobe opacity, suggesting possible inflammation or infection."
     },
     {
       "role": "General Physician AI (Radiance AI)",
-      "summary_of_assessment": "e.g., Preliminary analysis suggested a respiratory issue, potentially an infection or asthma exacerbation. Recommended consultation with a Pulmonologist."
+      "summary_of_assessment": "Preliminary analysis suggested a respiratory issue, potentially an infection or asthma exacerbation. Recommended consultation with a Pulmonologist."
     },
     {
-      "role": "Specialist Doctor AI (e.g., Pulmonologist AI - Radiance AI)",
-      "summary_of_assessment": "e.g., Considered acute bronchitis, pneumonia, or asthma exacerbation. Recommended diagnostic tests like sputum culture and PFTs."
+      "role": "Specialist Doctor AI (Pulmonologist AI - Radiance AI)",
+      "summary_of_assessment": "Considered acute bronchitis, pneumonia, or asthma exacerbation. Recommended diagnostic tests like sputum culture and PFTs."
     },
     {
       "role": "Pathologist AI (Radiance AI)",
-      "summary_of_insights": "e.g., Suggested lab tests such as CBC, CRP, and sputum analysis to confirm inflammation/infection."
+      "summary_of_insights": "Suggested lab tests such as CBC, CRP, and sputum analysis to confirm inflammation/infection."
     },
     {
       "role": "Nutritionist AI (Radiance AI)",
-      "summary_of_recommendations": "e.g., Emphasized high-calorie, nutrient-dense diet to support recovery and weight gain."
+      "summary_of_recommendations": "Emphasized high-calorie, nutrient-dense diet to support recovery and weight gain."
     },
     {
       "role": "Pharmacist AI (Radiance AI)",
-      "summary_of_guidance": "e.g., Reviewed relevant medications for respiratory issues, cautioned due to penicillin allergy."
+      "summary_of_guidance": "Reviewed relevant medications for respiratory issues, cautioned due to penicillin allergy."
     },
     {
       "role": "Follow-up Specialist AI (Radiance AI)",
-      "summary_of_advice": "e.g., Monitor breathing, fatigue, chest pain; listed red flags; reinforced need for follow-up and allergy awareness."
+      "summary_of_advice": "Monitor breathing, fatigue, chest pain; listed red flags; reinforced need for follow-up and allergy awareness."
     }
   ],
 
@@ -1881,7 +1947,7 @@ EXAMPLE RESPONSE:
 
   "final_disclaimer_from_radiance_ai": "This comprehensive Health Insight Report by Radiance AI is for informational and educational purposes only. It DOES NOT constitute medical advice, diagnosis, or treatment. The information provided is based on the data you submitted and the automated analysis of our AI team. Always consult with a qualified human healthcare professional for any health concerns or before making any decisions related to your health or treatment. Share this report with your doctor to facilitate your discussion. Radiance AI is committed to empowering individuals with information but prioritizes patient safety and the irreplaceable role of human medical expertise."
 }
-REMEMBER: Respond with only a valid JSON object matching the structure above. No text, no markdown, and no partial/incomplete fields.`;
+REMEMBER: Respond with only a valid JSON object matching the structure above. No text, no markdown, and no partial/incomplete fields. ENSURE all fields are populated with meaningful content, especially potential_diagnoses, recommended_tests, medication_guidance, and dietary_lifestyle_recommendations.`;
 
     default:
       throw new Error(`Unknown AI role: ${role}`);
