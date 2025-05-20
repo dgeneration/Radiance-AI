@@ -232,10 +232,6 @@ This document tracks the progress of tasks outlined in the Radiance AI enhanced 
 - ⬜ Add usage instructions, install steps, credits
 - ⬜ Document the chain diagnosis system architecture
 
-### 🔹 7.3 Deployment
-- ⬜ Deploy to Vercel
-- ⬜ Add environment variables for API and Supabase keys
-- ⬜ Configure production settings
 
 ---
 
