@@ -30,7 +30,7 @@ export function TurnstileCaptcha({
       if (!isLoaded) {
         setErrorMessage("CAPTCHA failed to load. Please check your internet connection or try refreshing the page.");
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, [isLoaded]);
