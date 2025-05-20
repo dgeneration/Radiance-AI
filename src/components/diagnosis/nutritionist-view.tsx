@@ -56,7 +56,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
   } = useChainDiagnosis();
 
   const [parsedResponse, setParsedResponse] = useState<NewNutritionistResponse | null>(null);
-  const [activeTab, setActiveTab] = useState('recommendations');
+  const [activeTab, setActiveTab] = useState('foods');
   const [isExpanded, setIsExpanded] = useState(isLastRole);
 
   // Helper function to adapt old response format to new format
@@ -296,54 +296,67 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
             className={cn("pb-4 cursor-pointer", !isExpanded && "pb-2")}
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <AnimatedIcon
-                  icon={<Apple className="h-5 w-5" />}
-                  className={cn(
-                    "p-3 rounded-full",
-                    isActive ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground"
-                  )}
-                  containerClassName="flex-shrink-0"
-                  pulseEffect={isActive && isStreaming}
-                  hoverScale={1.05}
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">
-                      Nutritionist AI
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full ml-2">
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <AnimatedIcon
+                    icon={<Apple className="h-5 w-5" />}
+                    className={cn(
+                      "p-3 rounded-full",
+                      isActive ? "bg-primary/20 text-primary" : "bg-muted/30 text-muted-foreground"
+                    )}
+                    containerClassName="flex-shrink-0"
+                    pulseEffect={isActive && isStreaming}
+                    hoverScale={1.05}
+                  />
+                  <div>
+                    {/* Show Analysis Complete badge on top in mobile view */}
+                    {parsedResponse && !isStreaming && (
+                      <Badge
+                        variant="outline"
+                        className="mb-1 bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0.5 text-xs font-normal md:hidden"
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Analysis Complete
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">
+                        Nutritionist AI
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full ml-2">
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <CardDescription className="text-sm">
+                      {isStreaming && isActive
+                        ? "Analyzing dietary and nutritional needs..."
+                        : "Dietary recommendations for your condition"}
+                    </CardDescription>
+
+                    {isStreaming && isActive && (
+                      <Badge
+                        variant="outline"
+                        className="mt-1 bg-primary/10 text-primary border-primary/20 px-2 py-0 text-xs font-normal"
+                      >
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Thinking...
+                      </Badge>
+                    )}
                   </div>
-                  <CardDescription className="text-sm">
-                    {isStreaming && isActive
-                      ? "Analyzing dietary and nutritional needs..."
-                      : "Dietary recommendations for your condition"}
-                  </CardDescription>
-
-                  {isStreaming && isActive && (
-                    <Badge
-                      variant="outline"
-                      className="mt-1 bg-primary/10 text-primary border-primary/20 px-2 py-0 text-xs font-normal"
-                    >
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Thinking...
-                    </Badge>
-                  )}
                 </div>
-              </div>
 
-              {parsedResponse && !isStreaming && (
-                <Badge
-                  variant="outline"
-                  className="bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0.5 text-xs font-normal"
-                >
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Analysis Complete
-                </Badge>
-              )}
+                {/* Show Analysis Complete badge on the right in desktop view */}
+                {parsedResponse && !isStreaming && (
+                  <Badge
+                    variant="outline"
+                    className="bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0.5 text-xs font-normal hidden md:flex"
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Analysis Complete
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
 
@@ -423,7 +436,7 @@ export function NutritionistView({ isActive, onContinue, isLastRole = false }: N
 
               {/* Tabs for different sections */}
               <Tabs defaultValue="foods" value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
+                <TabsList className="grid grid-cols-1 sm:grid-cols-3 p-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50">
                   <TabsTrigger value="foods" className="rounded-md data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                     <Utensils className="h-3.5 w-3.5 mr-1.5" />
                     Foods

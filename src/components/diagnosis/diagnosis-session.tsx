@@ -307,7 +307,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
         </div>
       )}
 
-      <AnimatedSection>
+      <AnimatedSection once={true}>
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -521,7 +521,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
       {/* Move streaming content inside the tabs structure */}
       {viewMode === 'progress' && (
-        <AnimatedSection delay={0.2}>
+        <AnimatedSection delay={0.2} once={true}>
           <ChainDiagnosisStreamingContent />
 
           {/* Debug information removed */}
@@ -530,7 +530,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
       {/* Developer Mode: AI Diagnosis Chain Section */}
       {developerMode && (
-        <AnimatedSection delay={0.3}>
+        <AnimatedSection delay={0.3} once={true}>
           <Card className="bg-card/50 backdrop-blur-sm border-primary/10 mt-8">
             <CardHeader>
               <div className="flex items-center justify-between">
