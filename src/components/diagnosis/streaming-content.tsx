@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import {
   Loader2, ChevronDown, ChevronUp, Brain, Stethoscope, TestTube,
   Apple, Pill, Calendar, Microscope, HeartPulse, Activity,

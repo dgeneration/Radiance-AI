@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import {
   Check, Loader2, AlertCircle, Activity, Sparkles, Brain, Stethoscope,
   TestTube, Apple, Pill, Calendar, Microscope, HeartPulse, ArrowRight
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChainDiagnosisSession } from '@/types/chain-diagnosis';
+import { ChainDiagnosisSession } from '@/types/diagnosis';
 
 
 

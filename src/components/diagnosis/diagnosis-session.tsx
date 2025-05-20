@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { ChainDiagnosisProgressIndicator } from './progress-indicator';
 import { ChainDiagnosisStreamingContent } from './streaming-content';
 import { MedicalAnalystView } from './medical-analyst-view';
@@ -42,6 +42,23 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
   // State for alert visibility
   const [alertVisible, setAlertVisible] = useState(true);
+
+  // Track if user has manually selected progress view
+  const [userSelectedProgressView, setUserSelectedProgressView] = useState(false);
+
+  // Custom function to set view mode and scroll to top when switching to progress view
+  const handleViewModeChange = (newMode: 'progress' | 'detailed') => {
+    // If switching from detailed to progress, scroll to top
+    if (viewMode === 'detailed' && newMode === 'progress') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // User has explicitly chosen progress view
+      setUserSelectedProgressView(true);
+    } else if (newMode === 'detailed') {
+      // Reset the user preference when switching to detailed view
+      setUserSelectedProgressView(false);
+    }
+    setViewMode(newMode);
+  };
 
   // Check if developer mode is enabled
   const [developerMode, setDeveloperMode] = useState(false);
@@ -101,31 +118,37 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Force progress view when streaming is active, and switch to detailed view when complete
   useEffect(() => {
     if (isStreaming) {
-      setViewMode('progress');
-    } else if (currentSession?.medical_analyst_response ||
+      handleViewModeChange('progress');
+    } else if (!userSelectedProgressView &&
+              (currentSession?.medical_analyst_response ||
                currentSession?.general_physician_response ||
-               currentSession?.specialist_doctor_response) {
+               currentSession?.specialist_doctor_response)) {
       // When streaming is complete and we have a response, switch to detailed view
+      // ONLY if user hasn't explicitly chosen progress view
       // Use a small timeout to ensure the UI has time to update with the latest data
       setTimeout(() => {
-        setViewMode('detailed');
+        handleViewModeChange('detailed');
       }, 500);
     }
   }, [isStreaming, currentSession?.medical_analyst_response,
       currentSession?.general_physician_response,
-      currentSession?.specialist_doctor_response]);
+      currentSession?.specialist_doctor_response,
+      handleViewModeChange, userSelectedProgressView]);
 
   // Additional effect to check for response changes
   useEffect(() => {
-    if ((currentSession?.medical_analyst_response ||
+    if (!userSelectedProgressView &&
+        (currentSession?.medical_analyst_response ||
          currentSession?.general_physician_response ||
          currentSession?.specialist_doctor_response) && !isStreaming) {
-      setViewMode('detailed');
+      handleViewModeChange('detailed');
     }
   }, [currentSession?.medical_analyst_response,
       currentSession?.general_physician_response,
       currentSession?.specialist_doctor_response,
-      isStreaming]);
+      isStreaming,
+      handleViewModeChange,
+      userSelectedProgressView]);
 
   // Create a ref outside the useEffect to track if we've already switched to detailed view
   const hasViewSwitchedRef = React.useRef(false);
@@ -161,12 +184,16 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Additional effect to switch to detailed view when currentStep is 1 (General Physician) or 2 (Specialist Doctor)
   // but only do this once to avoid triggering multiple API calls
   useEffect(() => {
-    if ((currentStep === 1 || currentStep === 2) && !isStreaming && !hasViewSwitchedRef.current) {
+    if (!userSelectedProgressView &&
+        (currentStep === 1 || currentStep === 2) &&
+        !isStreaming &&
+        !hasViewSwitchedRef.current) {
       // If we're on the General Physician or Specialist Doctor step and not streaming, switch to detailed view
-      setViewMode('detailed');
+      // ONLY if user hasn't explicitly chosen progress view
+      handleViewModeChange('detailed');
       hasViewSwitchedRef.current = true;
     }
-  }, [currentStep, isStreaming]);
+  }, [currentStep, isStreaming, handleViewModeChange, userSelectedProgressView]);
 
   // Auto-scroll to the detailed view when switching to it
   useEffect(() => {
@@ -201,6 +228,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
   // Handle continuing to the next step
   const handleContinue = async () => {
+    // Scroll to top before processing next step
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Reset user preference when continuing to next step
+    setUserSelectedProgressView(false);
     await processNextStep();
   };
 
@@ -276,7 +307,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
         </div>
       )}
 
-      <AnimatedSection>
+      <AnimatedSection once={true}>
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -295,7 +326,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
           </CardHeader>
 
           <CardContent>
-            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'progress' | 'detailed')} className="w-full">
+            <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as 'progress' | 'detailed')} className="w-full">
               <div className="flex justify-center mb-6">
                 <TabsList className="w-full max-w-md grid grid-cols-2 p-1 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
                   <TabsTrigger value="progress" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
@@ -490,7 +521,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
       {/* Move streaming content inside the tabs structure */}
       {viewMode === 'progress' && (
-        <AnimatedSection delay={0.2}>
+        <AnimatedSection delay={0.2} once={true}>
           <ChainDiagnosisStreamingContent />
 
           {/* Debug information removed */}
@@ -499,7 +530,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
       {/* Developer Mode: AI Diagnosis Chain Section */}
       {developerMode && (
-        <AnimatedSection delay={0.3}>
+        <AnimatedSection delay={0.3} once={true}>
           <Card className="bg-card/50 backdrop-blur-sm border-primary/10 mt-8">
             <CardHeader>
               <div className="flex items-center justify-between">

@@ -9,6 +9,7 @@ interface AnimatedSectionProps {
   delay?: number;
   direction?: "up" | "down" | "left" | "right";
   threshold?: number;
+  once?: boolean; // Add once parameter to keep elements visible after they've been shown
 }
 
 export function AnimatedSection({
@@ -17,9 +18,11 @@ export function AnimatedSection({
   delay = 0,
   direction = "up",
   threshold = 0.1,
+  once = false, // Default to false to maintain backward compatibility
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
+  const [hasBeenViewed, setHasBeenViewed] = useState(false); // Track if element has been viewed
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("down");
   const { scrollY } = useScroll();
   const [prevScrollY, setPrevScrollY] = useState(0);
@@ -39,6 +42,10 @@ export function AnimatedSection({
     const observer = new IntersectionObserver(
       ([entry]) => {
         setInView(entry.isIntersecting);
+        // If the element is in view and once is true, mark it as viewed
+        if (entry.isIntersecting) {
+          setHasBeenViewed(true);
+        }
       },
       { threshold }
     );
@@ -53,7 +60,7 @@ export function AnimatedSection({
         observer.unobserve(currentRef);
       }
     };
-  }, [threshold]);
+  }, [threshold, once]);
 
   const getDirectionVariants = (): Variants => {
     const distance = 50;
@@ -133,9 +140,9 @@ export function AnimatedSection({
       ref={ref}
       className={className}
       initial="hidden"
-      animate={inView ? "visible" : "hidden"}
+      animate={(inView || (once && hasBeenViewed)) ? "visible" : "hidden"}
       variants={variants}
-      transition={{ delay: inView ? delay : 0 }}
+      transition={{ delay: (inView || (once && hasBeenViewed)) ? delay : 0 }}
     >
       {children}
     </motion.div>

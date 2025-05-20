@@ -6,11 +6,18 @@ import { redirect } from 'next/navigation'
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const captchaToken = formData.get('captchaToken') as string
   const redirectUrl = (formData.get('redirectUrl') as string) || '/dashboard'
 
   if (!email || !password) {
     return {
       error: 'Email and password are required',
+    }
+  }
+
+  if (!captchaToken) {
+    return {
+      error: 'CAPTCHA verification is required',
     }
   }
 
@@ -20,6 +27,9 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: {
+        captchaToken
+      }
     })
 
     if (error) {
@@ -54,11 +64,18 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const captchaToken = formData.get('captchaToken') as string
   const redirectUrl = (formData.get('redirectUrl') as string) || '/dashboard'
 
   if (!email || !password) {
     return {
       error: 'Email and password are required',
+    }
+  }
+
+  if (!captchaToken) {
+    return {
+      error: 'CAPTCHA verification is required',
     }
   }
 
@@ -69,6 +86,7 @@ export async function signup(formData: FormData) {
     password,
     options: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+      captchaToken
     },
   })
 

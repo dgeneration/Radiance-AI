@@ -16,6 +16,7 @@ export async function signup(formData: FormData) {
   const height = formData.get('height') as string
   const weight = formData.get('weight') as string
   const dietaryPreference = formData.get('dietaryPreference') as string
+  const captchaToken = formData.get('captchaToken') as string
 
   if (!email || !password) {
     return {
@@ -48,6 +49,12 @@ export async function signup(formData: FormData) {
     }
   }
 
+  if (!captchaToken) {
+    return {
+      error: 'CAPTCHA verification is required',
+    }
+  }
+
   try {
     const supabase = await createClient()
 
@@ -57,6 +64,7 @@ export async function signup(formData: FormData) {
       password,
       options: {
         emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+        captchaToken,
       },
     })
 

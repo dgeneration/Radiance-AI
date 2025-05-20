@@ -4,8 +4,8 @@ import { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { SubNavbar } from "@/components/sub-navbar";
-import { ChainDiagnosisSession } from "@/components/chain-diagnosis/diagnosis-session";
-import { ChainDiagnosisProvider } from "@/contexts/chain-diagnosis-context";
+import { ChainDiagnosisSession } from "@/components/diagnosis/diagnosis-session";
+import { ChainDiagnosisProvider } from "@/contexts/diagnosis-context";
 
 export const metadata: Metadata = {
   title: "Diagnosis Session | Radiance AI",

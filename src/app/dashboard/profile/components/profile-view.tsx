@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen, Trash2, Code } from "lucide-react";
+import { Edit, User, MapPin, AlertCircle, CheckCircle2, FolderOpen, Trash2, Code, KeyRound } from "lucide-react";
 import { FaNotesMedical } from "react-icons/fa";
 import { ProfessionalButton } from "@/components/ui/professional-button";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { isDeveloperModeEnabled, setDeveloperMode as setGlobalDeveloperMode } from "@/lib/developer-mode";
+import { deleteUserAccount } from "../actions";
 
 import { AnimatedDashboardSection, DashboardFloatingElement, AnimatedCard } from "@/components/dashboard";
 import ProfileEditForm from "./profile-edit-form";
@@ -70,10 +73,12 @@ interface ProfileViewProps {
 export default function ProfileView({ profile, userId }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingHealthInfo, setIsEditingHealthInfo] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [developerMode, setDeveloperMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -102,25 +107,54 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
   // Handle account deletion
   const handleDeleteAccount = async () => {
     try {
-      // Delete user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .delete()
-        .eq('id', userId);
+      setIsDeleting(true);
+      setError(null);
 
-      if (profileError) {
-        throw new Error(profileError.message);
+      if (!password) {
+        setError("Password is required to delete your account");
+        setIsDeleting(false);
+        return;
       }
 
-      // Sign out the user
-      await supabase.auth.signOut();
+      // Get the current user to get the email
+      const { data: userData } = await supabase.auth.getUser();
 
-      // Redirect to home page
+      if (!userData?.user?.email) {
+        setError("Could not retrieve user email. Please try again later.");
+        setIsDeleting(false);
+        return;
+      }
+
+      // Create form data for the server action
+      const formData = new FormData();
+      formData.append('userId', userId);
+      formData.append('email', userData.user.email);
+      formData.append('password', password);
+
+      // Call the server action to delete the user account
+      const result = await deleteUserAccount(formData);
+
+      if (!result?.success) {
+        if (result?.partialSuccess) {
+          console.warn('User profile was deleted but authentication data could not be removed');
+        }
+
+        if (result?.error) {
+          setError(result.error);
+          setIsDeleting(false);
+          return;
+        } else {
+          throw new Error('Failed to delete account');
+        }
+      }
+
+      // If we get here without a redirect, manually redirect
       router.push('/');
       router.refresh();
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert('Failed to delete account. Please try again later.');
+      setError('Failed to delete account. Please try again later.');
+      setIsDeleting(false);
     }
   };
 
@@ -432,7 +466,15 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
                   </p>
                 </div>
               </div>
-              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <Dialog
+                open={deleteDialogOpen}
+                onOpenChange={(open) => {
+                  setDeleteDialogOpen(open);
+                  if (!open) {
+                    setPassword("");
+                    setError(null);
+                  }
+                }}>
                 <DialogTrigger asChild>
                   <ProfessionalButton
                     variant="outline"
@@ -449,10 +491,41 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
                       Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4">
+
+                  {error && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-password" className="text-foreground/80 font-medium">
+                        Enter your password to confirm
+                      </Label>
+                      <PasswordInput
+                        id="delete-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        disabled={isDeleting}
+                        className="bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+
+                  <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-6">
                     <ProfessionalButton
                       variant="outline"
-                      onClick={() => setDeleteDialogOpen(false)}
+                      onClick={() => {
+                        setDeleteDialogOpen(false);
+                        setPassword("");
+                        setError(null);
+                      }}
+                      disabled={isDeleting}
                     >
                       Cancel
                     </ProfessionalButton>
@@ -460,8 +533,11 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
                       variant="primary"
                       onClick={handleDeleteAccount}
                       className="bg-destructive hover:bg-destructive/90 text-white"
+                      disabled={!password || isDeleting}
+                      icon={isDeleting ? undefined : <KeyRound className="h-4 w-4" />}
+                      iconPosition="left"
                     >
-                      Yes, Delete My Account
+                      {isDeleting ? "Deleting..." : "Delete My Account"}
                     </ProfessionalButton>
                   </DialogFooter>
                 </DialogContent>

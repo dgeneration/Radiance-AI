@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useChainDiagnosis } from '@/contexts/chain-diagnosis-context';
+import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -211,7 +211,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
       );
 
       if (sessionId) {
-        router.push(`/dashboard/chain-diagnosis/${sessionId}`);
+        router.push(`/dashboard/diagnosis/${sessionId}`);
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');

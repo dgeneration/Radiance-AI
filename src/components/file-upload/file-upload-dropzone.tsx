@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ProfessionalButton } from '@/components/ui/professional-button';
 import { motion } from 'framer-motion';
 import { uploadFile, FileMetadata } from '@/utils/supabase/file-storage';
-// import Image from 'next/image'; // Not used
+import Image from 'next/image';
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -128,7 +128,7 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
       const blobUrl = URL.createObjectURL(file);
       return (
         <div className="relative h-16 w-16 rounded-md overflow-hidden">
-          <img
+          <Image
             src={blobUrl}
             alt={file.name}
             className="h-full w-full object-cover"

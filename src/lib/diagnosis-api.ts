@@ -12,7 +12,7 @@ import {
   FollowUpSpecialistResponse,
   RadianceAISummarizerResponse,
   ChainDiagnosisSession
-} from '@/types/chain-diagnosis';
+} from '@/types/diagnosis';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@/utils/supabase/client';
 import { initChainDiagnosisDb } from '@/lib/db-init';

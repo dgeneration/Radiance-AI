@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
 import { FileMetadata } from '@/utils/supabase/file-storage';
-import { ChainDiagnosisUserInput } from '@/types/chain-diagnosis';
+import { ChainDiagnosisUserInput } from '@/types/diagnosis';
 
 /**
  * Extract text content from a PDF file
