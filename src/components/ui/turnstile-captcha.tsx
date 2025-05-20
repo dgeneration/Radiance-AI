@@ -69,24 +69,26 @@ export function TurnstileCaptcha({
           {errorMessage}
         </div>
       )}
-      <Turnstile
-        ref={captchaRef}
-        siteKey={siteKey}
-        onSuccess={handleSuccess}
-        onError={handleError}
-        onExpire={handleExpire}
-        onLoad={handleLoad}
-        options={{
-          theme: "dark",
-          size: "normal",
-          appearance: "always"
-        }}
-        className="flex justify-center"
-        scriptOptions={{
-          appendTo: "head",
-          defer: true,
-        }}
-      />
+      <div className="justify-center">
+        <Turnstile
+          ref={captchaRef}
+          siteKey={siteKey}
+          onSuccess={handleSuccess}
+          onError={handleError}
+          onExpire={handleExpire}
+          onLoad={handleLoad}
+          options={{
+            theme: "dark",
+            size: "normal",
+            appearance: "always"
+          }}
+          className="flex justify-center"
+          scriptOptions={{
+            appendTo: "head",
+            defer: true,
+          }}
+        />
+      </div>
     </div>
   );
 }
