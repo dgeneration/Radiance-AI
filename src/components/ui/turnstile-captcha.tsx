@@ -28,7 +28,7 @@ export function TurnstileCaptcha({
     // Set a timeout to check if the CAPTCHA has loaded
     const timer = setTimeout(() => {
       if (!isLoaded) {
-        setErrorMessage("CAPTCHA failed to load. Please check your internet connection or try refreshing the page.");
+        console.error();
       }
     }, 10000);
 
