@@ -69,7 +69,7 @@ export function TurnstileCaptcha({
           {errorMessage}
         </div>
       )}
-      <div className="justify-center">
+      <div className="flex justify-center">
         <Turnstile
           ref={captchaRef}
           siteKey={siteKey}
