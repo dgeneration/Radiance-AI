@@ -81,9 +81,6 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
     if (sessionId) {
       loadChatMessages();
     }
-
-    // Scroll to top when the component mounts
-    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [sessionId, loadChatMessages]);
 
   // Scroll to bottom when messages change
@@ -93,8 +90,12 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
 
   // Scroll to the bottom of the chat
   const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    const container = chatContainerRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 

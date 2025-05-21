@@ -47,26 +47,41 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Track if user has manually selected progress view
   const [userSelectedProgressView, setUserSelectedProgressView] = useState(false);
 
+  // Create a ref for the ask radiance container
+  const askRadianceRef = React.useRef<HTMLDivElement>(null);
+
   // Custom function to set view mode and scroll to top when switching tabs
   const handleViewModeChange = useCallback((newMode: 'progress' | 'detailed' | 'ask-radiance') => {
-    // Always scroll to top when switching tabs
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Update the view mode first to ensure the component is rendered
+    setViewMode(newMode);
 
     // Set user preferences based on the selected tab
     if (newMode === 'progress') {
       // User has explicitly chosen progress view
       setUserSelectedProgressView(true);
+      // Scroll to top immediately
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (newMode === 'detailed') {
       // Reset the user preference when switching to detailed view
       setUserSelectedProgressView(false);
+      // Scroll to top immediately
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (newMode === 'ask-radiance') {
       // Reset the user preference when switching to ask-radiance view
       setUserSelectedProgressView(false);
-    }
 
-    // Update the view mode
-    setViewMode(newMode);
-  }, [setUserSelectedProgressView]);
+      // Use a small timeout to ensure the Ask Radiance component is rendered before scrolling
+      setTimeout(() => {
+        // Scroll to the top of the page first
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
+        // Then try to scroll to the ask-radiance container using the ref
+        if (askRadianceRef.current) {
+          askRadianceRef.current.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
+      }, 10);
+    }
+  }, [setUserSelectedProgressView, askRadianceRef]);
 
   // Check if developer mode is enabled
   const [developerMode, setDeveloperMode] = useState(false);
@@ -244,7 +259,21 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
     }
   }, [viewMode, lastCompletedRole]);
 
-  // We're using a simpler approach with handleViewModeChange to scroll to top for all tabs
+  // Auto-scroll to the top when switching to Ask Radiance view
+  useEffect(() => {
+    if (viewMode === 'ask-radiance') {
+      // Scroll to top immediately
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      // Then try to scroll to the ask-radiance container
+      setTimeout(() => {
+        if (askRadianceRef.current) {
+          askRadianceRef.current.scrollIntoView({ behavior: 'instant', block: 'start' });
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 10);
+    }
+  }, [viewMode]);
 
   // Handle continuing to the next step
   const handleContinue = async () => {
@@ -364,10 +393,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 </TabsList>
               </div>
 
-              <TabsContent
-                value="progress"
-                className="mt-0 animate-in fade-in-50 duration-300"
-                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}>
+              <TabsContent value="progress" className="mt-0 animate-in fade-in-50 duration-300">
                 {/* Notification when analysis is complete - moved to the top */}
                 {(currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming && alertVisible && (
                   <div className="mb-6 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3 relative">
@@ -428,10 +454,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 )}
               </TabsContent>
 
-              <TabsContent
-                value="detailed"
-                className="mt-0 animate-in fade-in-50 duration-300"
-                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}>
+              <TabsContent value="detailed" className="mt-0 animate-in fade-in-50 duration-300">
                 <div ref={detailedViewRef} className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-primary/10 text-primary">
@@ -539,12 +562,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 </div>
               </TabsContent>
 
-              <TabsContent
-                value="ask-radiance"
-                className="mt-0 animate-in fade-in-50 duration-300"
-                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}
-              >
-                <AskRadianceView sessionId={sessionId} />
+              <TabsContent value="ask-radiance" className="mt-0 animate-in fade-in-50 duration-300">
+                <div id="ask-radiance-container" ref={askRadianceRef}>
+                  <AskRadianceView sessionId={sessionId} />
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
