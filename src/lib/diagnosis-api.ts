@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Initialize a variable to track database initialization
 let isDbInitialized = false;
 
@@ -11,7 +12,8 @@ import {
   PharmacistResponse,
   FollowUpSpecialistResponse,
   RadianceAISummarizerResponse,
-  ChainDiagnosisSession
+  ChainDiagnosisSession,
+  RadianceChatMessage
 } from '@/types/diagnosis';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@/utils/supabase/client';
@@ -160,6 +162,8 @@ export async function initializeChainDiagnosisSession(
  * @param userPrompt The user prompt
  * @param streaming Whether to use streaming API
  * @param onStreamingResponse Callback for streaming responses
+ * @param hasImageUrl Whether the request includes an image URL
+ * @param chatHistory Optional chat history for chat-based requests
  * @returns The API response
  */
 async function makePerplexityRequest(
@@ -168,7 +172,8 @@ async function makePerplexityRequest(
   userPrompt: string | Array<{type: string, text?: string, image_url?: {url: string}}>,
   streaming: boolean = false,
   onStreamingResponse?: StreamingResponseHandler,
-  hasImageUrl: boolean = false
+  hasImageUrl: boolean = false,
+  chatHistory?: Array<{role: string, content: string}>
 ): Promise<PerplexityResponse> {
   try {
     // Use the correct environment variable name based on client/server context
@@ -194,7 +199,8 @@ async function makePerplexityRequest(
             systemPrompt,
             userPrompt,
             streaming: true,
-            hasImageUrl
+            hasImageUrl,
+            chatHistory
           }),
         });
 
@@ -214,10 +220,13 @@ async function makePerplexityRequest(
         let fullResponse = '';
 
         try {
+          console.log('Starting to read streaming response');
+
           while (true) {
             const { done, value } = await reader.read();
 
             if (done) {
+              console.log('Stream reading complete');
               // Final call with complete response
               onStreamingResponse(fullResponse, true);
               break;
@@ -234,24 +243,30 @@ async function makePerplexityRequest(
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim();
-                if (data === '[DONE]') continue;
+                if (data === '[DONE]') {
+                  console.log('Received [DONE] marker');
+                  continue;
+                }
 
                 try {
                   const parsed = JSON.parse(data);
                   const content = parsed.choices?.[0]?.delta?.content || '';
                   if (content) {
                     fullResponse += content;
-                    onStreamingResponse(content, false);
+                    console.log(`Received content chunk: ${content.length} chars, total: ${fullResponse.length}`);
+                    onStreamingResponse(fullResponse, false);
                   }
-                } catch {
-                  // Silently handle parsing errors
+                } catch (e) {
+                  console.error('Error parsing streaming response:', e);
                 }
               }
             }
           }
-        } catch {
+        } catch (error) {
+          console.error('Error in streaming response:', error);
           // If streaming fails, still try to return what we have
           if (fullResponse) {
+            console.log(`Streaming failed but returning partial response: ${fullResponse.length} chars`);
             onStreamingResponse(fullResponse, true);
           }
         }
@@ -290,7 +305,8 @@ async function makePerplexityRequest(
             systemPrompt,
             userPrompt,
             streaming: false,
-            hasImageUrl
+            hasImageUrl,
+            chatHistory
           }),
         });
 
@@ -2852,10 +2868,245 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
       return true;
     });
 
-
-
     return validSessions;
   } catch {
     return [];
+  }
+}
+
+/**
+ * Get chat messages for a specific diagnosis session
+ * @param sessionId The session ID
+ * @returns The chat messages
+ */
+export async function getRadianceChatMessages(sessionId: string): Promise<RadianceChatMessage[]> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('radiance_chat_messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching chat messages:', error);
+      return [];
+    }
+
+    return data as RadianceChatMessage[];
+  } catch (error) {
+    console.error('Exception fetching chat messages:', error);
+    return [];
+  }
+}
+
+/**
+ * Save a new chat message
+ * @param message The chat message to save
+ * @returns The saved message
+ */
+export async function saveRadianceChatMessage(message: Omit<RadianceChatMessage, 'id' | 'created_at'>): Promise<RadianceChatMessage | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('radiance_chat_messages')
+      .insert({
+        id: uuidv4(),
+        session_id: message.session_id,
+        user_id: message.user_id,
+        role: message.role,
+        content: message.content,
+        raw_api_response: message.raw_api_response
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving chat message:', error);
+      console.error('Message data:', {
+        session_id: message.session_id,
+        user_id: message.user_id,
+        role: message.role,
+        content_length: message.content.length
+      });
+      return null;
+    }
+
+    return data as RadianceChatMessage;
+  } catch (error) {
+    console.error('Exception saving chat message:', error);
+    return null;
+  }
+}
+
+/**
+ * Get the system prompt for the Radiance AI chat
+ * @param session The current diagnosis session
+ * @returns The system prompt
+ */
+function getRadianceAIChatSystemPrompt(session: ChainDiagnosisSession): string {
+  // Extract key information from the session
+  const userDetails = session.user_input.user_details;
+  const symptoms = session.user_input.symptoms_info.symptoms_list.join(', ');
+  const medicalInfo = session.user_input.medical_info || {};
+
+  // Extract information from previous AI roles
+  let previousRolesInfo = '';
+
+  if (session.medical_analyst_response) {
+    previousRolesInfo += `Medical Analyst Findings: ${session.medical_analyst_response.reference_data_for_next_role.analyst_summary}\n\n`;
+  }
+
+  if (session.general_physician_response) {
+    previousRolesInfo += `General Physician Assessment: ${session.general_physician_response.reference_data_for_next_role.gp_summary_of_case}\n\n`;
+  }
+
+  if (session.specialist_doctor_response) {
+    previousRolesInfo += `Specialist Doctor (${session.specialist_doctor_response.role_name}) Assessment: ${session.specialist_doctor_response.reference_data_for_next_role.specialist_assessment_summary}\n\n`;
+    previousRolesInfo += `Potential Conditions: ${session.specialist_doctor_response.reference_data_for_next_role.potential_conditions_considered.join(', ')}\n\n`;
+  }
+
+  if (session.pathologist_response) {
+    previousRolesInfo += `Pathologist Insights: ${session.pathologist_response.reference_data_for_next_role.pathology_summary}\n\n`;
+  }
+
+  if (session.nutritionist_response) {
+    previousRolesInfo += `Nutritionist Recommendations: ${session.nutritionist_response.reference_data_for_next_role.nutrition_summary}\n\n`;
+  }
+
+  if (session.pharmacist_response) {
+    previousRolesInfo += `Pharmacist Guidance: ${session.pharmacist_response.reference_data_for_next_role.pharmacist_summary}\n\n`;
+  }
+
+  if (session.follow_up_specialist_response) {
+    previousRolesInfo += `Follow-up Specialist Advice: ${session.follow_up_specialist_response.reference_data_for_next_role.follow_up_summary}\n\n`;
+  }
+
+  if (session.summarizer_response) {
+    previousRolesInfo += `Radiance AI Summary: ${session.summarizer_response.introduction}\n\n`;
+
+    if (session.summarizer_response.potential_diagnoses) {
+      previousRolesInfo += `Potential Diagnoses: ${session.summarizer_response.potential_diagnoses.map(d => `${d.name} (${d.confidence_level})`).join(', ')}\n\n`;
+    }
+
+    if (session.summarizer_response.key_takeaways_and_recommendations_for_patient) {
+      previousRolesInfo += `Key Takeaways: ${session.summarizer_response.key_takeaways_and_recommendations_for_patient.join(', ')}\n\n`;
+    }
+  }
+
+  // Create the system prompt
+  return `You are Radiance AI, a medical assistant that helps users understand their health concerns and provides guidance based on previous AI analyses.
+
+USER INFORMATION:
+Name: ${userDetails.first_name} ${userDetails.last_name}
+Age: ${userDetails.age}
+Gender: ${userDetails.gender}
+Location: ${userDetails.city}, ${userDetails.state}, ${userDetails.country}
+
+HEALTH INFORMATION:
+Symptoms: ${symptoms}
+Medical Conditions: ${medicalInfo.medical_conditions || 'None reported'}
+Allergies: ${medicalInfo.allergies || 'None reported'}
+Medications: ${medicalInfo.medications || 'None reported'}
+Health History: ${medicalInfo.health_history || 'None reported'}
+
+PREVIOUS AI ANALYSES:
+${previousRolesInfo}
+
+INSTRUCTIONS:
+1. Answer the user's questions based on the information provided above.
+2. If the user asks about something not covered in the previous analyses, acknowledge the limitation and suggest they consult a healthcare professional.
+3. Always provide references to which AI role provided the information you're sharing.
+4. Be empathetic, clear, and concise in your responses.
+5. Include relevant medical information but avoid overwhelming the user with technical details.
+6. Always include a disclaimer that your responses are for informational purposes only and not a substitute for professional medical advice.
+
+Remember that you are having a conversation with the user, so maintain a conversational tone while being professional and accurate.`;
+}
+
+/**
+ * Process a chat message with Radiance AI
+ * @param sessionId The session ID
+ * @param userMessage The user's message
+ * @param currentSession The current diagnosis session
+ * @param previousMessages Previous chat messages
+ * @param streaming Whether to use streaming API
+ * @param onStreamingResponse Callback for streaming responses
+ * @returns The AI response
+ */
+export async function processRadianceAIChat(
+  _sessionId: string, // Unused but kept for API consistency
+  userMessage: string,
+  currentSession: ChainDiagnosisSession,
+  previousMessages: RadianceChatMessage[],
+  streaming: boolean = false,
+  onStreamingResponse?: StreamingResponseHandler
+): Promise<string> {
+  try {
+    // Create a system prompt that includes information from all previous AI roles
+    const systemPrompt = getRadianceAIChatSystemPrompt(currentSession);
+
+    // Format previous messages for the API
+    const chatHistory = previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Limit chat history to last 10 messages to avoid token limits
+    const limitedChatHistory = chatHistory.slice(-10);
+
+    // Add the new user message
+    limitedChatHistory.push({
+      role: 'user',
+      content: userMessage
+    });
+
+    // Try first with streaming disabled to ensure we get a response
+    let response;
+
+    try {
+      // First try with streaming disabled to get a complete response
+      response = await makePerplexityRequest(
+        'sonar-pro',
+        systemPrompt,
+        userMessage,
+        false, // Disable streaming for the first attempt
+        undefined,
+        false,
+        limitedChatHistory
+      );
+
+      // If we got a response and streaming was requested, send it through the streaming handler
+      if (streaming && onStreamingResponse && response.choices && response.choices[0]) {
+        const content = response.choices[0].message.content;
+        onStreamingResponse(content, true);
+      }
+    } catch (_) {
+      // If the first attempt failed, try again with the original streaming setting
+      response = await makePerplexityRequest(
+        'sonar-pro',
+        systemPrompt,
+        userMessage,
+        streaming,
+        onStreamingResponse,
+        false,
+        limitedChatHistory
+      );
+    }
+
+    const content = response.choices[0].message.content;
+
+    return content;
+  } catch (_) {
+    // If there's a streaming handler, notify it about the error
+    if (streaming && onStreamingResponse) {
+      try {
+        onStreamingResponse("I'm sorry, I encountered an error processing your message. Please try again.", true);
+      } catch (_) {
+        // Silently handle callback errors
+      }
+    }
+
+    return "I'm sorry, I encountered an error processing your message. Please try again.";
   }
 }

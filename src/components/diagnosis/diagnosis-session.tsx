@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { ChainDiagnosisProgressIndicator } from './progress-indicator';
 import { ChainDiagnosisStreamingContent } from './streaming-content';
@@ -12,10 +12,11 @@ import { NutritionistView } from './nutritionist-view';
 import { PharmacistView } from './pharmacist-view';
 import { FollowUpSpecialistView } from './follow-up-specialist-view';
 import { SummarizerView } from './summarizer-view';
+import { AskRadianceView } from './ask-radiance-view';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Brain, Download, Share2, Activity, FileText, Code } from 'lucide-react';
+import { Loader2, AlertCircle, Brain, Download, Share2, Activity, FileText, Code, MessageSquare } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { isDeveloperModeEnabled } from '@/lib/developer-mode';
@@ -38,7 +39,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
 
   // Track the active view mode - MOVED HERE FROM BELOW
   // Always start with 'progress' view to show streaming content
-  const [viewMode, setViewMode] = useState<'progress' | 'detailed'>('progress');
+  const [viewMode, setViewMode] = useState<'progress' | 'detailed' | 'ask-radiance'>('progress');
 
   // State for alert visibility
   const [alertVisible, setAlertVisible] = useState(true);
@@ -47,7 +48,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   const [userSelectedProgressView, setUserSelectedProgressView] = useState(false);
 
   // Custom function to set view mode and scroll to top when switching to progress view
-  const handleViewModeChange = (newMode: 'progress' | 'detailed') => {
+  const handleViewModeChange = useCallback((newMode: 'progress' | 'detailed' | 'ask-radiance') => {
     // If switching from detailed to progress, scroll to top
     if (viewMode === 'detailed' && newMode === 'progress') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -56,9 +57,14 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
     } else if (newMode === 'detailed') {
       // Reset the user preference when switching to detailed view
       setUserSelectedProgressView(false);
+    } else if (newMode === 'ask-radiance') {
+      // Reset the user preference when switching to ask-radiance view
+      setUserSelectedProgressView(false);
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     setViewMode(newMode);
-  };
+  }, [viewMode, setUserSelectedProgressView]);
 
   // Check if developer mode is enabled
   const [developerMode, setDeveloperMode] = useState(false);
@@ -118,13 +124,17 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Force progress view when streaming is active, and switch to detailed view when complete
   useEffect(() => {
     if (isStreaming) {
-      handleViewModeChange('progress');
+      // Only switch to progress view if we're not in ask-radiance view
+      if (viewMode !== 'ask-radiance') {
+        handleViewModeChange('progress');
+      }
     } else if (!userSelectedProgressView &&
+              viewMode !== 'ask-radiance' &&
               (currentSession?.medical_analyst_response ||
                currentSession?.general_physician_response ||
                currentSession?.specialist_doctor_response)) {
       // When streaming is complete and we have a response, switch to detailed view
-      // ONLY if user hasn't explicitly chosen progress view
+      // ONLY if user hasn't explicitly chosen progress view and isn't in ask-radiance view
       // Use a small timeout to ensure the UI has time to update with the latest data
       setTimeout(() => {
         handleViewModeChange('detailed');
@@ -133,11 +143,12 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   }, [isStreaming, currentSession?.medical_analyst_response,
       currentSession?.general_physician_response,
       currentSession?.specialist_doctor_response,
-      handleViewModeChange, userSelectedProgressView]);
+      handleViewModeChange, userSelectedProgressView, viewMode]);
 
   // Additional effect to check for response changes
   useEffect(() => {
     if (!userSelectedProgressView &&
+        viewMode !== 'ask-radiance' &&
         (currentSession?.medical_analyst_response ||
          currentSession?.general_physician_response ||
          currentSession?.specialist_doctor_response) && !isStreaming) {
@@ -148,7 +159,8 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
       currentSession?.specialist_doctor_response,
       isStreaming,
       handleViewModeChange,
-      userSelectedProgressView]);
+      userSelectedProgressView,
+      viewMode]);
 
   // Create a ref outside the useEffect to track if we've already switched to detailed view
   const hasViewSwitchedRef = React.useRef(false);
@@ -185,15 +197,16 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // but only do this once to avoid triggering multiple API calls
   useEffect(() => {
     if (!userSelectedProgressView &&
+        viewMode !== 'ask-radiance' &&
         (currentStep === 1 || currentStep === 2) &&
         !isStreaming &&
         !hasViewSwitchedRef.current) {
       // If we're on the General Physician or Specialist Doctor step and not streaming, switch to detailed view
-      // ONLY if user hasn't explicitly chosen progress view
+      // ONLY if user hasn't explicitly chosen progress view and isn't in ask-radiance view
       handleViewModeChange('detailed');
       hasViewSwitchedRef.current = true;
     }
-  }, [currentStep, isStreaming, handleViewModeChange, userSelectedProgressView]);
+  }, [currentStep, isStreaming, handleViewModeChange, userSelectedProgressView, viewMode]);
 
   // Auto-scroll to the detailed view when switching to it
   useEffect(() => {
@@ -326,9 +339,9 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
           </CardHeader>
 
           <CardContent>
-            <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as 'progress' | 'detailed')} className="w-full">
+            <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as 'progress' | 'detailed' | 'ask-radiance')} className="w-full">
               <div className="flex justify-center mb-6">
-                <TabsList className="w-full max-w-md grid grid-cols-2 p-1 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
+                <TabsList className="w-full max-w-md grid grid-cols-3 p-1 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
                   <TabsTrigger value="progress" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
                     <Activity className="h-4 w-4 mr-2" />
                     Progress View
@@ -336,6 +349,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                   <TabsTrigger value="detailed" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
                     <FileText className="h-4 w-4 mr-2" />
                     Detailed Analysis
+                  </TabsTrigger>
+                  <TabsTrigger value="ask-radiance" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Ask Radiance
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -507,6 +524,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                     </div>
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="ask-radiance" className="mt-0 animate-in fade-in-50 duration-300">
+                <AskRadianceView sessionId={sessionId} />
               </TabsContent>
             </Tabs>
           </CardContent>

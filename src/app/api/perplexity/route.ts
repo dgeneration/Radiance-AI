@@ -17,14 +17,23 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const body = await request.json();
-    const { model, systemPrompt, userPrompt, streaming, hasImageUrl } = body;
+    const { model, systemPrompt, userPrompt, streaming, hasImageUrl, chatHistory } = body;
 
     // Validate the request
-    if (!model || !systemPrompt || !userPrompt) {
+    if (!model || !systemPrompt || (!userPrompt && !chatHistory)) {
       return NextResponse.json({
         error: 'Missing required parameters'
       }, { status: 400 });
     }
+
+    // Log request details for debugging
+    console.log('API Request:', {
+      model,
+      streaming,
+      hasImageUrl,
+      chatHistoryLength: chatHistory ? chatHistory.length : 0,
+      userPromptLength: typeof userPrompt === 'string' ? userPrompt.length : 'not a string'
+    });
 
 
 
@@ -48,6 +57,30 @@ export async function POST(request: NextRequest) {
             content: parsedUserPrompt
           }
         ],
+        temperature: 0.1,
+        max_tokens: 4000,
+        stream: streaming
+      };
+    } else if (chatHistory && chatHistory.length > 0) {
+      // For chat-based requests with history
+      console.log('Using chat history with', chatHistory.length, 'messages');
+
+      // Create messages array with system prompt and chat history
+      const messages = [
+        {
+          role: 'system',
+          content: systemPrompt
+        }
+      ];
+
+      // Add chat history messages
+      chatHistory.forEach((msg: { role: string; content: string }) => {
+        messages.push(msg);
+      });
+
+      requestBody = {
+        model,
+        messages,
         temperature: 0.1,
         max_tokens: 4000,
         stream: streaming
@@ -76,14 +109,25 @@ export async function POST(request: NextRequest) {
     const apiUrl = process.env.PERPLEXITY_API_URL || process.env.NEXT_PUBLIC_PERPLEXITY_API_URL || 'https://api.perplexity.ai/chat/completions';
 
     // Make the API request
-    const perplexityResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify(requestBody)
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('API request timed out after 25 seconds'));
+      }, 25000); // 25 second timeout
     });
+
+    // Race the API request against the timeout
+    const perplexityResponse = await Promise.race([
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(requestBody)
+      }),
+      timeoutPromise
+    ]) as Response;
 
     // Handle streaming responses
     if (streaming && perplexityResponse.body) {

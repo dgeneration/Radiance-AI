@@ -85,6 +85,7 @@ module.exports = {
   },
   plugins: [
     require("tw-animate-css"),
+    require('@tailwindcss/typography'),
     function ({ matchUtilities, theme }) {
       matchUtilities(
         {

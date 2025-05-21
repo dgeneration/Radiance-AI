@@ -56,6 +56,35 @@ export interface Database {
           api_response?: Json | null
         }
       },
+      radiance_chat_messages: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          created_at: string
+          role: string
+          content: string
+          raw_api_response: Json | null
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          created_at?: string
+          role: string
+          content: string
+          raw_api_response?: Json | null
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          created_at?: string
+          role?: string
+          content?: string
+          raw_api_response?: Json | null
+        }
+      },
       user_profiles: {
         Row: {
           id: string

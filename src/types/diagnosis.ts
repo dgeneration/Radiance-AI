@@ -260,6 +260,17 @@ export type ChainAIResponse =
   | FollowUpSpecialistResponse
   | RadianceAISummarizerResponse;
 
+// Chat message types for the Ask Radiance feature
+export interface RadianceChatMessage {
+  id: string;
+  session_id: string;
+  user_id: string;
+  created_at: string;
+  role: 'user' | 'assistant';
+  content: string;
+  raw_api_response?: Record<string, unknown>;
+}
+
 // Chain Diagnosis Session to store in the database
 export interface ChainDiagnosisSession {
   id: string;

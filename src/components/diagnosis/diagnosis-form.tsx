@@ -584,7 +584,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                     disabled={isLoading}
                     className="h-16 px-10 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 mx-auto"
                   >
-                    {isLoading ? "Starting Diagnosis..." : "Start Chain Diagnosis"}
+                    {isLoading ? "Starting Diagnosis..." : "Start Diagnosis"}
                   </ProfessionalButton>
                 </div>
               </form>
