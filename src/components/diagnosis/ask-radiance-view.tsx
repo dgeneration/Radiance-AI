@@ -16,12 +16,14 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Loader2,
   Send,
   Brain,
   User,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { cn } from '@/lib/utils';
@@ -444,9 +446,14 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
                         {streamingContent}
                       </ReactMarkdown>
                     ) : (
-                      <div className="text-sm">Thinking...</div>
+                      <Badge
+                        variant="outline"
+                        className="bg-purple-600/10 text-purple-500 border-purple-500/20 px-3 py-1 text-sm font-normal"
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Thinking...
+                      </Badge>
                     )}
-                    <span className="inline-block ml-1 animate-pulse">▌</span>
                   </div>
                 </div>
               </div>
