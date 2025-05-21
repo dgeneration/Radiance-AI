@@ -47,11 +47,13 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   // Track if user has manually selected progress view
   const [userSelectedProgressView, setUserSelectedProgressView] = useState(false);
 
-  // Custom function to set view mode and scroll to top when switching to progress view
+  // Custom function to set view mode and scroll to top when switching tabs
   const handleViewModeChange = useCallback((newMode: 'progress' | 'detailed' | 'ask-radiance') => {
-    // If switching from detailed to progress, scroll to top
-    if (viewMode === 'detailed' && newMode === 'progress') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Always scroll to top when switching tabs
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Set user preferences based on the selected tab
+    if (newMode === 'progress') {
       // User has explicitly chosen progress view
       setUserSelectedProgressView(true);
     } else if (newMode === 'detailed') {
@@ -60,11 +62,11 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
     } else if (newMode === 'ask-radiance') {
       // Reset the user preference when switching to ask-radiance view
       setUserSelectedProgressView(false);
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // Update the view mode
     setViewMode(newMode);
-  }, [viewMode, setUserSelectedProgressView]);
+  }, [setUserSelectedProgressView]);
 
   // Check if developer mode is enabled
   const [developerMode, setDeveloperMode] = useState(false);
@@ -130,6 +132,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
       }
     } else if (!userSelectedProgressView &&
               viewMode !== 'ask-radiance' &&
+              viewMode !== 'progress' && // Don't switch if user just selected progress view
               (currentSession?.medical_analyst_response ||
                currentSession?.general_physician_response ||
                currentSession?.specialist_doctor_response)) {
@@ -149,6 +152,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   useEffect(() => {
     if (!userSelectedProgressView &&
         viewMode !== 'ask-radiance' &&
+        viewMode !== 'progress' && // Don't switch if user just selected progress view
         (currentSession?.medical_analyst_response ||
          currentSession?.general_physician_response ||
          currentSession?.specialist_doctor_response) && !isStreaming) {
@@ -198,6 +202,7 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
   useEffect(() => {
     if (!userSelectedProgressView &&
         viewMode !== 'ask-radiance' &&
+        viewMode !== 'progress' && // Don't switch if user just selected progress view
         (currentStep === 1 || currentStep === 2) &&
         !isStreaming &&
         !hasViewSwitchedRef.current) {
@@ -238,6 +243,8 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
       }, 100);
     }
   }, [viewMode, lastCompletedRole]);
+
+  // We're using a simpler approach with handleViewModeChange to scroll to top for all tabs
 
   // Handle continuing to the next step
   const handleContinue = async () => {
@@ -357,7 +364,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 </TabsList>
               </div>
 
-              <TabsContent value="progress" className="mt-0 animate-in fade-in-50 duration-300">
+              <TabsContent
+                value="progress"
+                className="mt-0 animate-in fade-in-50 duration-300"
+                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}>
                 {/* Notification when analysis is complete - moved to the top */}
                 {(currentSession?.medical_analyst_response || currentSession?.general_physician_response) && !isStreaming && alertVisible && (
                   <div className="mb-6 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-3 relative">
@@ -418,7 +428,10 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 )}
               </TabsContent>
 
-              <TabsContent value="detailed" className="mt-0 animate-in fade-in-50 duration-300">
+              <TabsContent
+                value="detailed"
+                className="mt-0 animate-in fade-in-50 duration-300"
+                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}>
                 <div ref={detailedViewRef} className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-primary/10 text-primary">
@@ -526,7 +539,11 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
                 </div>
               </TabsContent>
 
-              <TabsContent value="ask-radiance" className="mt-0 animate-in fade-in-50 duration-300">
+              <TabsContent
+                value="ask-radiance"
+                className="mt-0 animate-in fade-in-50 duration-300"
+                onSelect={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+              >
                 <AskRadianceView sessionId={sessionId} />
               </TabsContent>
             </Tabs>
