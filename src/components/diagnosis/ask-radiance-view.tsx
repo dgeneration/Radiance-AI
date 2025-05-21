@@ -9,10 +9,13 @@ import {
   saveRadianceChatMessage,
   processRadianceAIChat
 } from '@/lib/diagnosis-api';
+import { FileMetadata } from '@/utils/supabase/file-storage';
+import { prepareMedicalReportData } from '@/utils/diagnosis-file-utils';
+import { FileSelector } from '@/components/file-upload/file-selector';
+import Image from 'next/image';
 import {
   Card,
-  CardContent,
-  CardFooter
+  CardContent
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +26,8 @@ import {
   Brain,
   User,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Paperclip
 } from 'lucide-react';
 import { AnimatedSection } from '@/components/animations';
 import { cn } from '@/lib/utils';
@@ -58,6 +62,29 @@ const markdownComponents: Components = {
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Utility function to extract file information from message content
+const extractFileInfo = (content: string): { text: string, fileName: string | null, isImage: boolean } => {
+  // Default values
+  let text = content;
+  let fileName = null;
+  let isImage = false;
+
+  // Check if the message contains an attached file
+  const attachedMatch = content.match(/\[Attached: (.*?)\]/);
+  if (attachedMatch && attachedMatch[1]) {
+    // Extract the file name
+    fileName = attachedMatch[1];
+
+    // Check if it's an image file
+    isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(fileName);
+
+    // Remove the attachment text from the content
+    text = content.replace(/\n\n\[Attached: .*?\]/, '');
+  }
+
+  return { text, fileName, isImage };
+};
+
 export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
   const { currentSession, isLoading } = useChainDiagnosis();
   const [messages, setMessages] = useState<RadianceChatMessage[]>([]);
@@ -65,6 +92,8 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileMetadata[]>([]);
+  const [showFileSelector, setShowFileSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +132,7 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
 
   // Handle sending a message
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentSession || isProcessing) return;
+    if ((!inputMessage.trim() && selectedFiles.length === 0) || !currentSession || isProcessing) return;
 
     try {
       setIsProcessing(true);
@@ -117,21 +146,48 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
         return;
       }
 
+      // Process any attached files
+      let fileContent = '';
+      let medicalReport = undefined;
+      let fileMetadata = null;
+
+      if (selectedFiles.length > 0) {
+        // Prepare the medical report data
+        medicalReport = await prepareMedicalReportData(selectedFiles);
+
+        // Store the file metadata for rendering
+        fileMetadata = {
+          fileName: selectedFiles[0].name,
+          fileType: selectedFiles[0].type,
+          fileUrl: selectedFiles[0].public_url || '',
+          isImage: selectedFiles[0].type.startsWith('image/')
+        };
+
+        // Add file information to the message content
+        const fileNames = selectedFiles.map(file => file.name).join(', ');
+        fileContent = `\n\n[Attached: ${fileNames}]`;
+      }
+
       // First, add the user message to the local state immediately for better UX
+      const messageContent = inputMessage.trim() + (fileContent ? fileContent : '');
       const tempUserMessage: RadianceChatMessage = {
         id: 'temp-' + Date.now(),
         session_id: sessionId,
         user_id: user.id,
         role: 'user',
-        content: inputMessage,
-        created_at: new Date().toISOString()
+        content: messageContent,
+        created_at: new Date().toISOString(),
+        // Add file metadata to the message
+        raw_api_response: fileMetadata ? { fileMetadata } : undefined
       };
 
       // Update the local messages state with the temporary message
       setMessages(prev => [...prev, tempUserMessage]);
 
-      // Clear the input
+      // Clear the input and selected files
       setInputMessage('');
+      setSelectedFiles([]);
+      setShowFileSelector(false);
 
       // Start streaming
       setIsStreaming(true);
@@ -142,7 +198,8 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
         session_id: sessionId,
         user_id: user.id,
         role: 'user',
-        content: inputMessage
+        content: messageContent,
+        raw_api_response: fileMetadata ? { fileMetadata } : undefined
       };
 
       const savedUserMessage = await saveRadianceChatMessage(userMessage);
@@ -180,11 +237,12 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
         const aiResponse = await Promise.race([
           processRadianceAIChat(
             sessionId,
-            inputMessage,
+            inputMessage.trim(),
             currentSession,
             messages,
             true, // Use streaming
-            streamingWrapper
+            streamingWrapper,
+            medicalReport // Pass the medical report data if available
           ),
           timeoutPromise
         ]);
@@ -420,8 +478,31 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
                         {message.content}
                       </ReactMarkdown>
                     ) : (
-                      <div className="whitespace-pre-wrap text-sm">
-                        {message.content}
+                      <div className="space-y-3">
+                        {/* Display the message text */}
+                        <div className="whitespace-pre-wrap text-sm">
+                          {extractFileInfo(message.content).text}
+                        </div>
+
+                        {/* Display attached image if present */}
+                        {/* eslint-disable @typescript-eslint/no-explicit-any */}
+                        {message.raw_api_response?.fileMetadata &&
+                         (message.raw_api_response.fileMetadata as any).isImage && (
+                          <div className="mt-2">
+                            <div className="relative w-full max-w-[300px] h-[200px] rounded-md overflow-hidden border border-primary/10">
+                              <Image
+                                src={(message.raw_api_response.fileMetadata as any).fileUrl}
+                                alt={(message.raw_api_response.fileMetadata as any).fileName || "Attached image"}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {(message.raw_api_response.fileMetadata as any).fileName}
+                            </p>
+                          </div>
+                        )}
+                        {/* eslint-enable @typescript-eslint/no-explicit-any */}
                       </div>
                     )}
                   </div>
@@ -462,31 +543,59 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Input
-              value={inputMessage}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyPress}
-              placeholder="Ask a question about your diagnosis..."
-              className="flex-1"
-              disabled={isProcessing || isLoading || !currentSession}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isProcessing || isLoading || !currentSession}
-              className="bg-primary hover:bg-primary/90"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+          {/* File selector */}
+          {showFileSelector && (
+            <div className="mb-4">
+              <FileSelector
+                userId={currentSession?.user_id || ''}
+                onFilesSelected={setSelectedFiles}
+                selectedFiles={selectedFiles}
+                multiple={false}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center space-x-2">
+              <Input
+                value={inputMessage}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyPress}
+                placeholder="Ask a question about your diagnosis..."
+                className="flex-1"
+                disabled={isProcessing || isLoading || !currentSession}
+              />
+              <Button
+                onClick={() => setShowFileSelector(!showFileSelector)}
+                variant="outline"
+                className="bg-card hover:bg-card/90"
+                disabled={isProcessing || isLoading || !currentSession}
+                title="Attach files"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={handleSendMessage}
+                disabled={((!inputMessage.trim() && selectedFiles.length === 0) || isProcessing || isLoading || !currentSession)}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {selectedFiles.length > 0 && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <Paperclip className="h-3 w-3 mr-1" />
+                {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} attached
+              </div>
+            )}
           </div>
         </CardContent>
-        <CardFooter className="text-xs text-muted-foreground border-t border-border/50 pt-4">
-          Responses are for informational purposes only and not a substitute for professional medical advice.
-        </CardFooter>
+        {/* CardFooter removed as requested */}
       </Card>
     </AnimatedSection>
   );

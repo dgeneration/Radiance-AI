@@ -3019,7 +3019,6 @@ INSTRUCTIONS:
 3. Always provide references to which AI role provided the information you're sharing.
 4. Be empathetic, clear, and concise in your responses.
 5. Include relevant medical information but avoid overwhelming the user with technical details.
-6. Always include a disclaimer that your responses are for informational purposes only and not a substitute for professional medical advice.
 
 Remember that you are having a conversation with the user, so maintain a conversational tone while being professional and accurate.`;
 }
@@ -3032,6 +3031,7 @@ Remember that you are having a conversation with the user, so maintain a convers
  * @param previousMessages Previous chat messages
  * @param streaming Whether to use streaming API
  * @param onStreamingResponse Callback for streaming responses
+ * @param medicalReport Optional medical report data from file uploads
  * @returns The AI response
  */
 export async function processRadianceAIChat(
@@ -3040,7 +3040,8 @@ export async function processRadianceAIChat(
   currentSession: ChainDiagnosisSession,
   previousMessages: RadianceChatMessage[],
   streaming: boolean = false,
-  onStreamingResponse?: StreamingResponseHandler
+  onStreamingResponse?: StreamingResponseHandler,
+  medicalReport?: ChainDiagnosisUserInput['medical_report']
 ): Promise<string> {
   try {
     // Create a system prompt that includes information from all previous AI roles
@@ -3055,11 +3056,43 @@ export async function processRadianceAIChat(
     // Limit chat history to last 10 messages to avoid token limits
     const limitedChatHistory = chatHistory.slice(-10);
 
-    // Add the new user message
-    limitedChatHistory.push({
-      role: 'user',
-      content: userMessage
-    });
+    // Check if we have a medical report with an image URL
+    const hasImageUrl = !!medicalReport?.image_url;
+
+    // Prepare the user prompt based on whether we have a medical report
+    let userPromptContent: string | Array<{type: string, text?: string, image_url?: {url: string}}>;
+
+    if (medicalReport) {
+      if (hasImageUrl) {
+        // For image files, create a multimodal prompt
+        userPromptContent = [
+          {
+            type: "text",
+            text: `${userMessage}\n\nI've attached a medical image for you to analyze.`
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: medicalReport.image_url || ""
+            }
+          }
+        ];
+      } else {
+        // For text-based medical reports
+        userPromptContent = `${userMessage}\n\nI've attached a medical report for you to analyze:\n\n${medicalReport.text || ""}`;
+      }
+    } else {
+      // Regular text message
+      userPromptContent = userMessage;
+    }
+
+    // Add the new user message to chat history if not using image
+    if (!hasImageUrl) {
+      limitedChatHistory.push({
+        role: 'user',
+        content: userPromptContent as string
+      });
+    }
 
     // Try first with streaming disabled to ensure we get a response
     let response;
@@ -3069,11 +3102,11 @@ export async function processRadianceAIChat(
       response = await makePerplexityRequest(
         'sonar-pro',
         systemPrompt,
-        userMessage,
+        userPromptContent,
         false, // Disable streaming for the first attempt
         undefined,
-        false,
-        limitedChatHistory
+        hasImageUrl,
+        hasImageUrl ? undefined : limitedChatHistory
       );
 
       // If we got a response and streaming was requested, send it through the streaming handler
@@ -3086,11 +3119,11 @@ export async function processRadianceAIChat(
       response = await makePerplexityRequest(
         'sonar-pro',
         systemPrompt,
-        userMessage,
+        userPromptContent,
         streaming,
         onStreamingResponse,
-        false,
-        limitedChatHistory
+        hasImageUrl,
+        hasImageUrl ? undefined : limitedChatHistory
       );
     }
 
