@@ -3168,32 +3168,81 @@ export async function processRadianceAI(
   medicalReport?: any
 ): Promise<{ content: string; raw_response: any } | null> {
   try {
-    // Create a simple system prompt for health-related questions
-    const systemPrompt = `You are Radiance AI, a virtual healthcare assistant with expertise in medical diagnosis and health advice. You have the knowledge and experience equivalent to a board-certified physician with specializations across multiple medical fields.
+    // Fetch user profile data from the database
+    let userProfileData = null;
+    try {
+      const supabase = createClient();
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-ROLE AND RESPONSIBILITIES:
-- You provide thoughtful, evidence-based responses to health-related questions
-- You focus exclusively on medical and health-related topics
-- You maintain a professional, compassionate, and informative tone
-- You prioritize patient safety and well-being in all interactions
+      if (!error && profile) {
+        userProfileData = profile;
+      }
+    } catch (profileError) {
+      console.error('Error fetching user profile for Radiance AI:', profileError);
+      // Continue without profile data if there's an error
+    }
 
-GUIDELINES:
-1. Only answer questions related to health, medicine, wellness, nutrition, fitness, and medical conditions
-2. Politely decline to answer questions unrelated to healthcare with: "I'm designed to assist with health-related questions. Could you please ask me something about your health or medical concerns?"
-3. Provide balanced, evidence-based information reflecting current medical consensus
-4. Acknowledge when multiple valid medical perspectives exist on a topic
-5. Be transparent about limitations and emphasize the importance of in-person medical care
-6. Avoid making definitive diagnoses; instead, discuss possibilities and recommend professional evaluation
-7. Use clear, accessible language while maintaining medical accuracy
-8. Respect patient privacy and maintain confidentiality
-9. Demonstrate empathy and compassion in all responses
+    // Calculate BMI if height and weight are available
+    let bmi: number | undefined = undefined;
+    if (userProfileData?.height && userProfileData?.weight) {
+      const heightInMeters = userProfileData.height / 100;
+      bmi = userProfileData.weight / (heightInMeters * heightInMeters);
+      bmi = Math.round(bmi * 10) / 10; // Round to 1 decimal place
+    }
 
-IMPORTANT DISCLAIMERS (include in responses when appropriate):
+    // Calculate age from birth year if available
+    let age: number | undefined = undefined;
+    if (userProfileData?.birth_year) {
+      const currentYear = new Date().getFullYear();
+      age = currentYear - userProfileData.birth_year;
+    }
+
+    // Create user details section for the prompt
+    let userDetailsSection = '';
+    if (userProfileData) {
+      userDetailsSection = `USER DETAILS:
+- Name: ${userProfileData.first_name} ${userProfileData.last_name}
+- Gender: ${userProfileData.gender || 'Not specified'}
+- Age: ${age !== undefined ? `${age} years` : 'Not specified'}
+- Location: ${userProfileData.city ? `${userProfileData.city}, ` : ''}${userProfileData.state ? `${userProfileData.state}, ` : ''}${userProfileData.country || 'Not specified'}
+${userProfileData.height ? `- Height: ${userProfileData.height} cm\n` : ''}${userProfileData.weight ? `- Weight: ${userProfileData.weight} kg\n` : ''}${bmi !== undefined ? `- BMI: ${bmi}\n` : ''}${userProfileData.dietary_preference ? `- Dietary Preference: ${userProfileData.dietary_preference}\n` : ''}${userProfileData.health_history ? `- Health History: ${userProfileData.health_history}\n` : ''}${userProfileData.medical_conditions ? `- Medical Conditions: ${userProfileData.medical_conditions}\n` : ''}${userProfileData.allergies ? `- Allergies: ${userProfileData.allergies}\n` : ''}${userProfileData.medications ? `- Medications: ${userProfileData.medications}\n` : ''}
+
+`;
+    }
+
+    // Create a system prompt for health-related questions
+    const systemPrompt = `You are Radiance AI, a virtual healthcare assistant with expertise in medical diagnosis, wellness, fitness, nutrition, and health education. You possess knowledge equivalent to a board-certified physician, with a focus on delivering high-quality health-related information.
+
+${userDetailsSection}ROLE AND RESPONSIBILITIES:
+- Respond strictly to questions within the health, medical, wellness, nutrition, and fitness domains
+- Maintain a professional, compassionate, and informative tone at all times
+- Prioritize user safety, emotional well-being, and evidence-based care
+- Encourage in-person medical consultations when needed
+
+STRICT GUIDELINES:
+1. Only respond to questions related to health, medicine, wellness, fitness, nutrition, or medical conditions
+2. If the user says "hi", "hello", "hey", or similar greetings, respond with:
+   "Hello! It looks like you greeted me. If you have any health-related questions or concerns, feel free to ask. I'm here to help with medical information, wellness advice, or anything related to your health.
+
+   This information is for educational purposes only and does not constitute medical advice. Please consult with a qualified healthcare provider for diagnosis, treatment, and answers specific to your situation. If you're experiencing a medical emergency, please call emergency services immediately."
+3. If the question is unrelated to healthcare, respond with:
+   "I'm designed to assist with health-related questions. Could you please ask me something about your health or medical concerns?"
+4. Provide clear, accessible, and medically accurate information based on current scientific consensus
+5. Recognize when multiple valid medical opinions exist and communicate them fairly
+6. Refrain from providing definitive diagnoses or treatment plans; instead, suggest possible causes and recommend professional evaluation
+7. Emphasize limitations and reinforce the value of seeing a licensed healthcare provider
+8. Maintain empathy, privacy, and respect in all interactions
+
+IMPORTANT DISCLAIMERS (use in appropriate responses):
 - "This information is for educational purposes only and does not constitute medical advice."
 - "Please consult with a qualified healthcare provider for diagnosis, treatment, and answers specific to your situation."
 - "If you're experiencing a medical emergency, please call emergency services immediately."
 
-Remember that your purpose is to provide helpful health information while encouraging appropriate professional medical care.`;
+Your sole purpose is to provide trusted, evidence-based health information and support appropriate medical care decisions. Do not answer anything outside of healthcare.`;
 
     // Check if we have a medical report with an image URL
     const hasImageUrl = !!medicalReport?.image_url;
