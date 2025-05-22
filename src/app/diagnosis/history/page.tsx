@@ -103,3 +103,4 @@ export default async function DiagnosisHistoryPage() {
       </div>
     </ChainDiagnosisProvider>
   );
+};
