@@ -24,7 +24,6 @@ export async function checkTablesExist(): Promise<boolean> {
       .select('*', { count: 'exact', head: true });
 
     if (error) {
-      console.error('Error checking for standalone_radiance_chat_sessions table:', error);
       tablesChecked = true;
       tablesExist = false;
       return false;
@@ -35,7 +34,6 @@ export async function checkTablesExist(): Promise<boolean> {
     tablesExist = true;
     return true;
   } catch (error) {
-    console.error('Exception checking for tables:', error);
     tablesChecked = true;
     tablesExist = false;
     return false;
@@ -92,13 +90,11 @@ export async function createStandaloneRadianceChatSession(userId: string): Promi
       });
 
     if (error) {
-      console.error('Error creating standalone chat session:', error);
       return null;
     }
 
     return sessionId;
   } catch (error) {
-    console.error('Exception in createStandaloneRadianceChatSession:', error);
     return null;
   }
 }
@@ -112,7 +108,6 @@ export async function createStandaloneRadianceChatSession(userId: string): Promi
 export async function getActiveStandaloneRadianceChatSession(userId: string): Promise<StandaloneRadianceChatSession | null> {
   try {
     if (!userId) {
-      console.error('getActiveStandaloneRadianceChatSession: userId is empty');
       return null;
     }
 
@@ -134,7 +129,6 @@ export async function getActiveStandaloneRadianceChatSession(userId: string): Pr
       .limit(1);
 
     if (error) {
-      console.error('Error getting active standalone chat session:', error);
       return createFallbackSession(userId);
     }
 
@@ -157,13 +151,11 @@ export async function getActiveStandaloneRadianceChatSession(userId: string): Pr
       .single();
 
     if (newSessionError) {
-      console.error('Error getting new standalone chat session:', newSessionError);
       return createFallbackSession(userId);
     }
 
     return newSession as StandaloneRadianceChatSession;
   } catch (error) {
-    console.error('Exception in getActiveStandaloneRadianceChatSession:', error);
     return createFallbackSession(userId);
   }
 }
@@ -218,13 +210,11 @@ export async function getStandaloneRadianceChatMessages(
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error getting standalone chat messages:', error);
       return [];
     }
 
     return data as StandaloneRadianceChatMessage[];
   } catch (error) {
-    console.error('Exception in getStandaloneRadianceChatMessages:', error);
     return [];
   }
 }
@@ -269,13 +259,11 @@ export async function addStandaloneRadianceUserMessage(
       });
 
     if (error) {
-      console.error('Error adding standalone user message:', error);
       return messageId; // Return the ID anyway so the UI can continue
     }
 
     return messageId;
   } catch (error) {
-    console.error('Exception in addStandaloneRadianceUserMessage:', error);
     return uuidv4(); // Return a new ID so the UI can continue
   }
 }
@@ -335,14 +323,12 @@ export async function processStandaloneRadianceAIMessage(
         });
 
       if (error) {
-        console.error('Error adding standalone AI message:', error);
         // Continue anyway to return the response to the user
       }
     }
 
     return aiResponse.content;
   } catch (error) {
-    console.error('Exception in processStandaloneRadianceAIMessage:', error);
     return "I'm sorry, I encountered an error processing your request. Please try again.";
   }
 }
@@ -377,13 +363,11 @@ export async function clearStandaloneRadianceChatMessages(
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error clearing standalone chat messages:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Exception in clearStandaloneRadianceChatMessages:', error);
     return false;
   }
 }

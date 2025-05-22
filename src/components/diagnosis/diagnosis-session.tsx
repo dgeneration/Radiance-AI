@@ -377,18 +377,19 @@ export function ChainDiagnosisSession({ sessionId }: ChainDiagnosisSessionProps)
           <CardContent>
             <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as 'progress' | 'detailed' | 'ask-radiance')} className="w-full">
               <div className="flex justify-center mb-6">
-                <TabsList className="w-full max-w-md grid grid-cols-3 p-1 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
-                  <TabsTrigger value="progress" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Progress View
+                {/* Mobile view: vertical tabs */}
+                <TabsList className="w-full max-w-xl grid grid-cols-1 sm:grid-cols-3 gap-1 p-1.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
+                  <TabsTrigger value="progress" className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <Activity className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Progress View</span>
                   </TabsTrigger>
-                  <TabsTrigger value="detailed" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Detailed Analysis
+                  <TabsTrigger value="detailed" className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Detailed Analysis</span>
                   </TabsTrigger>
-                  <TabsTrigger value="ask-radiance" className="rounded-lg py-3 h-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Ask Radiance
+                  <TabsTrigger value="ask-radiance" className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm">
+                    <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="whitespace-nowrap">Ask Radiance</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
