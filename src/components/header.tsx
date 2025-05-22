@@ -73,7 +73,7 @@ export function Header({ user }: HeaderProps) {
                     }`}
                   >
                     <Sparkles className="h-4 w-4 mr-1.5 text-primary" />
-                    <span className="font-semibold">RAI</span>
+                    <span className="font-semibold">R-AI</span>
                     <Brain className="h-4 w-4 ml-1.5 text-accent" />
                   </Link>
                 </div>

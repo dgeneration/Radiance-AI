@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Radiance AI (RAI) | Health Diagnosis",
+  title: "Ai Health Diagnosis",
   description: "Choose between General Diagnosis for quick health inquiries or Deep Diagnosis for comprehensive multi-specialist analysis",
 };
 

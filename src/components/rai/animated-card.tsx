@@ -79,7 +79,7 @@ export function AnimatedCard({
       </div>
 
       <Link href={buttonLink} className="mt-auto">
-        <Button className={`w-full bg-gradient-to-r from-${primaryColor} to-${primaryColor}/90 hover:from-${primaryColor}/90 hover:to-${primaryColor}/80 text-${primaryColor}-foreground shadow-md hover:shadow-lg transition-all duration-300 group`}>
+        <Button className={`w-full bg-gradient-to-r from-${primaryColor} to-${primaryColor}/90 hover:from-${primaryColor}/90 hover:to-${primaryColor}/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300 group`}>
           {buttonText}
           <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Button>
