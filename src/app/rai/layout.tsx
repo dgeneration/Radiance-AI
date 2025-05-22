@@ -1,21 +1,10 @@
-"use client";
-
 import { MobileMenu } from "@/components/mobile-menu";
-import { useEffect, useState } from "react";
 
-export default function DashboardLayout({
+export default function RAILayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Use state to handle client-side rendering
-  const [mounted, setMounted] = useState(false);
-
-  // Only render mobile menu on the client to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <>
       <div className="relative overflow-hidden">
@@ -31,8 +20,8 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* Mobile Navigation - Only render on client */}
-      {mounted && <MobileMenu />}
+      {/* Mobile Navigation */}
+      <MobileMenu />
     </>
   );
 }

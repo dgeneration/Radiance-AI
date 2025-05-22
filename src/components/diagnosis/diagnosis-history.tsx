@@ -17,8 +17,7 @@ import {
   PlusCircle,
   FileText,
   Calendar,
-  Trash2,
-  X
+  Trash2
 } from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
@@ -47,27 +46,53 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load user sessions when the component mounts
-  useEffect(() => {
-    loadUserSessions(userId).catch(() => {
-      // Error is handled by the context
-    });
-  }, [userId, loadUserSessions]);
-
   // Use the sessions from context if available, otherwise use the initial sessions
   // Make sure we have valid arrays
   const validUserSessions = Array.isArray(userSessions) ? userSessions : [];
   const validInitialSessions = Array.isArray(initialSessions) ? initialSessions : [];
   const sessions = validUserSessions.length > 0 ? validUserSessions : validInitialSessions;
 
+  // Track if we're currently loading sessions
+  const [isLoadingLocal, setIsLoadingLocal] = useState(false);
+
+  // Force a reload of the page if needed
+  const forceReload = () => {
+    window.location.href = "/diagnosis/history";
+  };
+
+  // Load user sessions when the component mounts
+  useEffect(() => {
+    // Only load if we're not already loading
+    if (!isLoadingLocal && !isLoading) {
+      setIsLoadingLocal(true);
+
+      // Try to load sessions
+      loadUserSessions(userId)
+        .then(success => {
+          if (!success && sessions.length === 0) {
+            // If loading failed and we have no sessions, force a reload after a delay
+            setTimeout(forceReload, 1000);
+          }
+          setIsLoadingLocal(false);
+        })
+        .catch(() => {
+          // If there was an error and we have no sessions, force a reload after a delay
+          if (sessions.length === 0) {
+            setTimeout(forceReload, 1000);
+          }
+          setIsLoadingLocal(false);
+        });
+    }
+  }, [userId, loadUserSessions, isLoading, sessions.length]);
+
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
-    router.push(`/dashboard/diagnosis/${sessionId}`);
+    router.push(`/diagnosis/${sessionId}`);
   };
 
   // Handle starting a new session
   const handleNewSession = () => {
-    router.push('/dashboard/diagnosis');
+    router.push('/diagnosis');
   };
 
   // Handle opening the delete confirmation dialog

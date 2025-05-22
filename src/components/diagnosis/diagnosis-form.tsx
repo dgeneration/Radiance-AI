@@ -211,7 +211,7 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
       );
 
       if (sessionId) {
-        router.push(`/dashboard/diagnosis/${sessionId}`);
+        router.push(`/diagnosis/${sessionId}`);
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');

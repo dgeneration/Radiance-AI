@@ -17,7 +17,7 @@ export default async function AskRadiancePage() {
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data?.user) {
-    redirect("/auth/login?redirectUrl=/dashboard/ask-radiance");
+    redirect("/auth/login?redirectUrl=/ask-radiance");
   }
 
   return (

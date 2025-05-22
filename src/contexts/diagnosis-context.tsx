@@ -326,36 +326,69 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
     }
   }, [handleStreamingResponse]);
 
+  // Track if we're currently loading sessions to prevent duplicate calls
+  const isLoadingSessionsRef = useRef(false);
+
   // Load all sessions for a user
   const loadUserSessions = useCallback(async (userId: string): Promise<boolean> => {
     try {
+      // Prevent multiple simultaneous calls
+      if (isLoadingSessionsRef.current) {
+        console.log("Already loading sessions, skipping duplicate call");
+        return true;
+      }
+
       if (!userId) {
         setError('Invalid user ID. Please try again.');
         return false;
       }
 
+      // If we already have sessions, don't reload
+      if (Array.isArray(userSessions) && userSessions.length > 0) {
+        console.log("Sessions already loaded, skipping fetch");
+        return true;
+      }
+
+      isLoadingSessionsRef.current = true;
       setIsLoading(true);
       setError(null);
 
-      const sessions = await getUserChainDiagnosisSessions(userId);
+      // Use a try-catch block to handle potential network errors
+      try {
+        console.log("Fetching sessions for user:", userId);
+        const sessions = await getUserChainDiagnosisSessions(userId);
 
-      // Ensure sessions is an array
-      if (!Array.isArray(sessions)) {
-        setUserSessions([]);
+        // Ensure sessions is an array
+        if (!Array.isArray(sessions)) {
+          setUserSessions([]);
+          setError('Failed to load your diagnosis history. Please try again.');
+          return false;
+        }
+
+        console.log(`Loaded ${sessions.length} sessions`);
+        // Update the state with the fetched sessions
+        setUserSessions(sessions);
+        return true;
+      } catch (fetchError) {
+        console.error("Error fetching sessions:", fetchError);
+
+        // If we have initial sessions from server-side rendering, don't show an error
+        if (Array.isArray(userSessions) && userSessions.length > 0) {
+          return true;
+        }
+
         setError('Failed to load your diagnosis history. Please try again.');
         return false;
       }
-
-      setUserSessions(sessions);
-
-      return true;
-    } catch {
+    } catch (error) {
+      console.error("Unexpected error in loadUserSessions:", error);
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {
+      isLoadingSessionsRef.current = false;
       setIsLoading(false);
     }
-  }, []);
+  }, [userSessions]);
 
   // Process the next step in the Chain Diagnosis flow
   const processNextStep = useCallback(async (): Promise<boolean> => {

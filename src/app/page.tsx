@@ -106,7 +106,7 @@ export default function Home() {
                 iconPosition="right"
                 className="w-full sm:w-auto"
               >
-                <Link href="/dashboard/diagnosis">
+                <Link href="/rai">
                   <TranslatedText text="Try Diagnosis" />
                 </Link>
               </ProfessionalButton>
@@ -481,7 +481,7 @@ export default function Home() {
                 iconPosition="right"
                 className="w-full sm:w-auto max-w-xs sm:max-w-none mx-auto"
               >
-                <Link href="/dashboard/diagnosis">
+                <Link href="/rai">
                   Experience the difference
                 </Link>
               </ProfessionalButton>
@@ -628,7 +628,7 @@ export default function Home() {
                 iconPosition="right"
                 className="w-full sm:w-auto max-w-xs sm:max-w-none mx-auto"
               >
-                <Link href="/dashboard/diagnosis">
+                <Link href="/rai">
                   Start Your Diagnosis
                 </Link>
               </ProfessionalButton>
@@ -862,7 +862,7 @@ export default function Home() {
                   size="lg"
                   className="w-full"
                 >
-                  <Link href="/dashboard/diagnosis">
+                  <Link href="/rai">
                     Try Diagnosis
                   </Link>
                 </ProfessionalButton>

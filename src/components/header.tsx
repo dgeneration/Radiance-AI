@@ -7,10 +7,11 @@ import { HeaderButton } from "@/components/ui/header-button";
 import { usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { FaArrowRight } from "react-icons/fa";
-import { MessageSquare } from "lucide-react";
+import { Sparkles, Brain, Zap } from "lucide-react";
 import { LandingNav } from "@/components/landing-nav";
 import { LandingMobileMenu } from "@/components/landing-mobile-menu";
 import { ProfileDropdown } from "@/components/profile-dropdown";
+import { HistoryLink } from "@/components/history-link";
 
 interface HeaderProps {
   user: User | null;
@@ -48,50 +49,37 @@ export function Header({ user }: HeaderProps) {
             <LandingNav />
           ) : !isAuthPage ? (
             // Navigation links for dashboard pages (not auth pages)
-            <nav className="hidden md:flex items-center space-x-1">
-              <Link
-                href="/dashboard"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname === '/dashboard'
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
-                }`}
-              >
-                Dashboard
-              </Link>
+            <nav className="hidden md:flex items-center justify-center w-full">
+              <div className="flex items-center space-x-4">
+                <Link
+                  href="/dashboard"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center ${
+                    pathname === '/dashboard'
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
+                  }`}
+                >
+                  <Zap className="h-3.5 w-3.5 mr-1.5" />
+                  Dashboard
+                </Link>
 
-              <Link
-                href="/dashboard/diagnosis"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname.startsWith('/dashboard/diagnosis') && !pathname.includes('/history')
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
-                }`}
-              >
-                Diagnosis
-              </Link>
-              <Link
-                href="/dashboard/diagnosis/history"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer ${
-                  pathname === '/dashboard/diagnosis/history'
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
-                }`}
-              >
-                History
-              </Link>
+                <div className="mx-2">
+                  <Link
+                    href="/rai"
+                    className={`px-5 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center ${
+                      pathname === '/rai' || pathname.startsWith('/diagnosis') || pathname === '/ask-radiance'
+                        ? 'text-primary bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/20 shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:border hover:border-primary/10'
+                    }`}
+                  >
+                    <Sparkles className="h-4 w-4 mr-1.5 text-primary" />
+                    <span className="font-semibold">RAI</span>
+                    <Brain className="h-4 w-4 ml-1.5 text-accent" />
+                  </Link>
+                </div>
 
-              <Link
-                href="/dashboard/ask-radiance"
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center ${
-                  pathname === '/dashboard/ask-radiance'
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
-                }`}
-              >
-                <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                Ask Radiance
-              </Link>
+                <HistoryLink isActive={pathname === '/diagnosis/history'} />
+              </div>
 
             </nav>
           ) : (
@@ -117,17 +105,21 @@ export function Header({ user }: HeaderProps) {
                 </HeaderButton>
               )}
 
-              {/* Only show Diagnosis button if on landing page */}
+              {/* Only show RAI button if on landing page */}
               {isHomePage && (
                 <HeaderButton
                   asChild
                   variant="primary"
-                  icon={<FaArrowRight />}
-                  iconPosition="right"
+                  icon={<Sparkles className="h-4 w-4" />}
+                  iconPosition="left"
                   className="hidden md:flex"
                 >
-                  <Link href="/dashboard/diagnosis">
-                    Get Diagnosis
+                  <Link href="/rai">
+                    <span className="flex items-center">
+                      <Sparkles className="h-4 w-4 mr-2 text-primary-foreground" />
+                      RAI
+                      <Brain className="h-4 w-4 ml-2 text-primary-foreground" />
+                    </span>
                   </Link>
                 </HeaderButton>
               )}

@@ -21,7 +21,7 @@ export default async function DiagnosisPage() {
 
   // Redirect non-logged in users to the login page
   if (!userData.user) {
-    redirect("/auth/login?redirectUrl=/dashboard/diagnosis");
+    redirect("/auth/login?redirectUrl=/diagnosis");
   }
 
   // We'll let the client component fetch the user profile
@@ -186,4 +186,3 @@ export default async function DiagnosisPage() {
       </div>
     </ChainDiagnosisProvider>
   );
-}

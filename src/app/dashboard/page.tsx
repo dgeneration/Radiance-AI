@@ -8,6 +8,7 @@ import { AnimatedSection, AnimatedIcon, FloatingElement } from "@/components/ani
 import { GradientHeading } from "@/components/ui/gradient-heading";
 import { FaArrowRight, FaUser, FaHistory, FaEnvelope, FaIdCard, FaSignInAlt, FaBrain } from "react-icons/fa";
 import { MdHealthAndSafety, MdOutlineVerified } from "react-icons/md";
+import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Dashboard | Radiance AI",
@@ -95,10 +96,19 @@ export default async function DashboardPage() {
                       <ProfessionalButton
                         asChild
                         variant="primary"
-                        icon={<FaArrowRight />}
-                        iconPosition="right"
+                        icon={<Sparkles />}
+                        iconPosition="left"
                       >
-                        <Link href="/dashboard/diagnosis">Diagnosis</Link>
+                        <Link href="/rai">Radiance AI</Link>
+                      </ProfessionalButton>
+
+                      <ProfessionalButton
+                        asChild
+                        variant="outline"
+                        icon={<FaBrain />}
+                        iconPosition="left"
+                      >
+                        <Link href="/diagnosis">Diagnosis</Link>
                       </ProfessionalButton>
 
                       <ProfessionalButton
@@ -185,7 +195,7 @@ export default async function DashboardPage() {
                       </p>
 
                       <Link
-                        href="/dashboard/diagnosis/history"
+                        href="/diagnosis/history"
                         className="text-accent hover:text-accent/80 font-medium flex items-center gap-2 group transition-all duration-300"
                       >
                         View diagnosis history
@@ -203,7 +213,7 @@ export default async function DashboardPage() {
                       </p>
 
                       <Link
-                        href="/dashboard/diagnosis"
+                        href="/diagnosis"
                         className="text-accent hover:text-accent/80 font-medium flex items-center gap-2 group transition-all duration-300"
                       >
                         Try Diagnosis
@@ -225,13 +235,31 @@ export default async function DashboardPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
 
-                <Link href="/dashboard/diagnosis" className="group">
+                <Link href="/rai" className="group">
+                  <div className="bg-card/50 p-5 rounded-xl border border-primary/5 hover:border-primary/20 hover:bg-primary/5 transition-all duration-300 h-full flex flex-col">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                      </div>
+                      <h4 className="font-semibold">Radiance AI</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-auto">
+                      Choose between General or Deep Diagnosis for your health needs
+                    </p>
+                    <div className="mt-4 text-primary font-medium text-sm flex items-center gap-2">
+                      Explore options
+                      <FaArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+
+                <Link href="/diagnosis" className="group">
                   <div className="bg-card/50 p-5 rounded-xl border border-accent/5 hover:border-accent/20 hover:bg-accent/5 transition-all duration-300 h-full flex flex-col">
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <FaBrain className="w-5 h-5 text-accent" />
                       </div>
-                      <h4 className="font-semibold">Diagnosis</h4>
+                      <h4 className="font-semibold">Deep Diagnosis</h4>
                     </div>
                     <p className="text-sm text-muted-foreground mb-auto">
                       Get a comprehensive analysis from 8 specialized AI roles

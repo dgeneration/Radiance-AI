@@ -20,7 +20,7 @@ export default async function DiagnosisSessionPage({ params }: any) {
   const { data: userData } = await supabase.auth.getUser();
 
   if (!userData.user) {
-    redirect(`/auth/login?redirectUrl=/dashboard/diagnosis/${sessionId}`);
+    redirect(`/auth/login?redirectUrl=/diagnosis/${sessionId}`);
   }
 
   const { data: sessionData, error } = await supabase
@@ -31,7 +31,7 @@ export default async function DiagnosisSessionPage({ params }: any) {
     .single();
 
   if (error || !sessionData) {
-    redirect("/dashboard/diagnosis");
+    redirect("/diagnosis");
   }
 
   return (

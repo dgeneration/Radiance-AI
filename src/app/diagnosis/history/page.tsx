@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description: "View your past diagnosis sessions",
 };
 
+// Add dynamic export to ensure the page is always fresh
+export const dynamic = "force-dynamic";
+
 export default async function DiagnosisHistoryPage() {
   // Check if user is logged in
   const supabase = await createClient();
@@ -20,7 +23,7 @@ export default async function DiagnosisHistoryPage() {
 
   // Redirect non-logged in users to the login page
   if (!userData.user) {
-    redirect("/auth/login?redirectUrl=/dashboard/diagnosis/history");
+    redirect("/auth/login?redirectUrl=/diagnosis/history");
   }
 
   // Get user's diagnosis sessions
@@ -100,4 +103,3 @@ export default async function DiagnosisHistoryPage() {
       </div>
     </ChainDiagnosisProvider>
   );
-}

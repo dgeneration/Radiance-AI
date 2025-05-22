@@ -5,6 +5,10 @@ import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 import { createClient } from "@/utils/supabase/server";
 
+// Add dynamic export to ensure the layout is always fresh
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
