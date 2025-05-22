@@ -5,15 +5,19 @@
 export interface ChainDiagnosisUserInput {
   user_details: {
     id: string;
-    first_name: string;
-    last_name: string;
+    first_name?: string;
+    last_name?: string;
     country?: string;
     state?: string;
     city?: string;
     zip_code?: string;
-    gender: string;
-    birth_year: number;
-    age: number;
+    gender?: string;
+    birth_year?: number;
+    age?: number;
+    // Simplified fields for chat sessions
+    height?: string;
+    weight?: string;
+    medical_history?: string[];
   };
   health_metrics?: {
     height?: number; // in cm
@@ -21,9 +25,9 @@ export interface ChainDiagnosisUserInput {
     bmi?: number;
     dietary_preference?: string;
   };
-  symptoms_info: {
-    symptoms_list: string[];
-    duration: string;
+  symptoms_info?: {
+    symptoms_list?: string[];
+    duration?: string;
   };
   medical_info?: {
     allergies?: string;
@@ -38,6 +42,20 @@ export interface ChainDiagnosisUserInput {
     text?: string;
     image_url?: string; // URL for medical images to be analyzed
   };
+  // Simplified fields for chat sessions
+  symptoms?: string;
+  symptom_duration?: string;
+  symptom_severity?: string;
+  current_medications?: string[];
+  allergies?: string[];
+  lifestyle_factors?: Record<string, unknown>;
+  family_history?: string[];
+  previous_treatments?: string[];
+  chat_type?: string;
+
+  // Metadata fields stored in user_input
+  title?: string;
+  description?: string;
 }
 
 // Base response interface that all AI role responses will extend

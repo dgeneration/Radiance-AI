@@ -2811,6 +2811,82 @@ export async function processRadianceAISummarizer(
 }
 
 /**
+ * Create a simplified Chain Diagnosis session for chat
+ * @param sessionData Basic session data including title, description, and user ID
+ * @returns The created session
+ */
+export async function createChainDiagnosisSession(
+  sessionData: {
+    title: string;
+    description: string;
+    symptoms: string;
+    user_id: string;
+    type: string;
+  }
+): Promise<ChainDiagnosisSession> {
+  try {
+    // Create a session ID
+    const sessionId = uuidv4();
+
+    // Create a minimal user input object with only required fields
+    const userInput = {
+      user_details: {
+        id: sessionData.user_id
+      },
+      symptoms_info: {
+        symptoms_list: [sessionData.symptoms || "Chat session"],
+        duration: ""
+      }
+    };
+
+    // Create the session object with minimal required fields
+    const session = {
+      id: sessionId,
+      user_id: sessionData.user_id,
+      created_at: new Date().toISOString(),
+      user_input: userInput,
+      status: 'completed',
+      current_step: 0
+    };
+
+    // Try to insert the session into the database
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('chain_diagnosis_sessions')
+      .insert(session)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating chat session:", error);
+      // Return a minimal session object even if database insertion fails
+      return session as ChainDiagnosisSession;
+    }
+
+    return data as ChainDiagnosisSession;
+  } catch (error) {
+    console.error("Error in createChainDiagnosisSession:", error);
+    // Return a minimal session object in case of error
+    return {
+      id: uuidv4(),
+      user_id: sessionData.user_id,
+      created_at: new Date().toISOString(),
+      user_input: {
+        user_details: {
+          id: sessionData.user_id
+        },
+        symptoms_info: {
+          symptoms_list: [sessionData.symptoms || "Chat session"],
+          duration: ""
+        }
+      },
+      status: 'completed',
+      current_step: 0
+    };
+  }
+}
+
+/**
  * Get a chain diagnosis session by ID
  * @param sessionId The session ID
  * @returns The session data
@@ -2871,6 +2947,52 @@ export async function getUserChainDiagnosisSessions(userId: string): Promise<Cha
     return validSessions;
   } catch {
     return [];
+  }
+}
+
+/**
+ * Delete a chain diagnosis session and all associated chat messages
+ * @param sessionId The session ID to delete
+ * @param userId The user ID (for security verification)
+ * @returns Whether the deletion was successful
+ */
+export async function deleteChainDiagnosisSession(sessionId: string, userId: string): Promise<boolean> {
+  try {
+    if (!sessionId || !userId) {
+      return false;
+    }
+
+    const supabase = createClient();
+
+    // First, delete all associated chat messages
+    // This is not strictly necessary due to ON DELETE CASCADE, but we do it explicitly for clarity
+    try {
+      await supabase
+        .from('radiance_chat_messages')
+        .delete()
+        .eq('session_id', sessionId)
+        .eq('user_id', userId);
+    } catch (error) {
+      console.error('Error deleting chat messages:', error);
+      // Continue with session deletion even if chat message deletion fails
+    }
+
+    // Then delete the session itself
+    const { error } = await supabase
+      .from('chain_diagnosis_sessions')
+      .delete()
+      .eq('id', sessionId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting session:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Exception in deleteChainDiagnosisSession:', error);
+    return false;
   }
 }
 
@@ -3034,6 +3156,68 @@ Remember that you are having a conversation with the user, so maintain a convers
  * @param medicalReport Optional medical report data from file uploads
  * @returns The AI response
  */
+/**
+ * Process a standalone message with Radiance AI
+ * @param userMessage The user's message
+ * @param userId The user ID
+ * @returns The AI response with content and raw response
+ */
+export async function processRadianceAI(
+  userMessage: string,
+  userId: string
+): Promise<{ content: string; raw_response: any } | null> {
+  try {
+    // Create a simple system prompt for health-related questions
+    const systemPrompt = `You are Radiance AI, a virtual healthcare assistant with expertise in medical diagnosis and health advice. You have the knowledge and experience equivalent to a board-certified physician with specializations across multiple medical fields.
+
+ROLE AND RESPONSIBILITIES:
+- You provide thoughtful, evidence-based responses to health-related questions
+- You focus exclusively on medical and health-related topics
+- You maintain a professional, compassionate, and informative tone
+- You prioritize patient safety and well-being in all interactions
+
+GUIDELINES:
+1. Only answer questions related to health, medicine, wellness, nutrition, fitness, and medical conditions
+2. Politely decline to answer questions unrelated to healthcare with: "I'm designed to assist with health-related questions. Could you please ask me something about your health or medical concerns?"
+3. Provide balanced, evidence-based information reflecting current medical consensus
+4. Acknowledge when multiple valid medical perspectives exist on a topic
+5. Be transparent about limitations and emphasize the importance of in-person medical care
+6. Avoid making definitive diagnoses; instead, discuss possibilities and recommend professional evaluation
+7. Use clear, accessible language while maintaining medical accuracy
+8. Respect patient privacy and maintain confidentiality
+9. Demonstrate empathy and compassion in all responses
+
+IMPORTANT DISCLAIMERS (include in responses when appropriate):
+- "This information is for educational purposes only and does not constitute medical advice."
+- "Please consult with a qualified healthcare provider for diagnosis, treatment, and answers specific to your situation."
+- "If you're experiencing a medical emergency, please call emergency services immediately."
+
+Remember that your purpose is to provide helpful health information while encouraging appropriate professional medical care.`;
+
+    // Make the API request
+    const response = await makePerplexityRequest(
+      'sonar-pro',
+      systemPrompt,
+      userMessage,
+      false // No streaming for standalone API
+    );
+
+    if (!response.choices || !response.choices[0]) {
+      throw new Error('Invalid response structure from Perplexity API');
+    }
+
+    const content = response.choices[0].message.content;
+
+    return {
+      content,
+      raw_response: response
+    };
+  } catch (error) {
+    console.error('Error in processRadianceAI:', error);
+    return null;
+  }
+}
+
 export async function processRadianceAIChat(
   _sessionId: string, // Unused but kept for API consistency
   userMessage: string,

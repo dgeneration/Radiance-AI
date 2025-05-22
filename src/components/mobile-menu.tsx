@@ -11,6 +11,7 @@ import {
   FaBrain,
   FaListAlt
 } from "react-icons/fa";
+import { MessageSquare } from "lucide-react";
 
 export function MobileMenu() {
   const pathname = usePathname();
@@ -36,6 +37,12 @@ export function MobileMenu() {
       path: "/dashboard/diagnosis/history",
       icon: <FaListAlt className="h-5 w-5" />,
       activePattern: /^\/dashboard\/diagnosis\/history$/
+    },
+    {
+      name: "Ask AI",
+      path: "/dashboard/ask-radiance",
+      icon: <MessageSquare className="h-5 w-5" />,
+      activePattern: /^\/dashboard\/ask-radiance/
     },
     {
       name: "Profile",

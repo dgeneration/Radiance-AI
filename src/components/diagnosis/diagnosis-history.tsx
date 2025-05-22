@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { ChainDiagnosisSession } from '@/types/diagnosis';
 import { useRouter } from 'next/navigation';
@@ -8,9 +8,30 @@ import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowRight, AlertCircle, CheckCircle, Brain, PlusCircle, FileText, Calendar } from 'lucide-react';
+import {
+  Loader2,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle,
+  Brain,
+  PlusCircle,
+  FileText,
+  Calendar,
+  Trash2,
+  X
+} from 'lucide-react';
 import { AnimatedSection, AnimatedIcon } from '@/components/animations';
 import { motion } from 'framer-motion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChainDiagnosisHistoryProps {
   initialSessions: ChainDiagnosisSession[];
@@ -18,8 +39,13 @@ interface ChainDiagnosisHistoryProps {
 }
 
 export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosisHistoryProps) {
-  const { loadUserSessions, userSessions, isLoading, error } = useChainDiagnosis();
+  const { loadUserSessions, userSessions, isLoading, error, deleteSession } = useChainDiagnosis();
   const router = useRouter();
+
+  // State for delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load user sessions when the component mounts
   useEffect(() => {
@@ -34,8 +60,6 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
   const validInitialSessions = Array.isArray(initialSessions) ? initialSessions : [];
   const sessions = validUserSessions.length > 0 ? validUserSessions : validInitialSessions;
 
-
-
   // Handle viewing a session
   const handleViewSession = (sessionId: string) => {
     router.push(`/dashboard/diagnosis/${sessionId}`);
@@ -44,6 +68,37 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
   // Handle starting a new session
   const handleNewSession = () => {
     router.push('/dashboard/diagnosis');
+  };
+
+  // Handle opening the delete confirmation dialog
+  const handleOpenDeleteDialog = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    setSessionToDelete(sessionId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Handle closing the delete confirmation dialog
+  const handleCloseDeleteDialog = () => {
+    setIsDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  };
+
+  // Handle deleting a session
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+
+    setIsDeleting(true);
+
+    try {
+      const success = await deleteSession(sessionToDelete, userId);
+      if (success) {
+        // Session was deleted successfully
+        setIsDeleteDialogOpen(false);
+        setSessionToDelete(null);
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading && sessions.length === 0) {
@@ -171,6 +226,44 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
           New Diagnosis
         </Button>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-card border border-destructive/20">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this session? This will permanently remove the session and all associated chat history with Ask Radiance AI. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={handleCloseDeleteDialog}
+              disabled={isDeleting}
+              className="border-border"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSession}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {Array.isArray(sessions) && sessions.map(session => {
@@ -326,7 +419,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-3 border-t border-border/20">
+                <CardFooter className="pt-3 border-t border-border/20 flex flex-col gap-2">
                   <Button
                     onClick={() => handleViewSession(session.id)}
                     className={`w-full shadow-sm hover:shadow-md ${
@@ -353,6 +446,16 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                         View Details
                       </>
                     )}
+                  </Button>
+
+                  <Button
+                    onClick={(e) => handleOpenDeleteDialog(session.id, e)}
+                    className="w-full bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Session
                   </Button>
                 </CardFooter>
               </Card>

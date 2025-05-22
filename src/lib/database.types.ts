@@ -85,6 +85,61 @@ export interface Database {
           raw_api_response?: Json | null
         }
       },
+      standalone_radiance_chat_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+          updated_at: string
+          title: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+          updated_at?: string
+          title?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+          title?: string
+          is_active?: boolean
+        }
+      },
+      standalone_radiance_chat_messages: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          created_at: string
+          role: string
+          content: string
+          raw_api_response: Json | null
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          created_at?: string
+          role: string
+          content: string
+          raw_api_response?: Json | null
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          created_at?: string
+          role?: string
+          content?: string
+          raw_api_response?: Json | null
+        }
+      },
       user_profiles: {
         Row: {
           id: string

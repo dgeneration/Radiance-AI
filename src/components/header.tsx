@@ -7,6 +7,7 @@ import { HeaderButton } from "@/components/ui/header-button";
 import { usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { FaArrowRight } from "react-icons/fa";
+import { MessageSquare } from "lucide-react";
 import { LandingNav } from "@/components/landing-nav";
 import { LandingMobileMenu } from "@/components/landing-mobile-menu";
 import { ProfileDropdown } from "@/components/profile-dropdown";
@@ -78,6 +79,18 @@ export function Header({ user }: HeaderProps) {
                 }`}
               >
                 History
+              </Link>
+
+              <Link
+                href="/dashboard/ask-radiance"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center ${
+                  pathname === '/dashboard/ask-radiance'
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/10'
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                Ask Radiance
               </Link>
 
             </nav>

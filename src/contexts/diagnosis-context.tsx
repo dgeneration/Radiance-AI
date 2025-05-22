@@ -15,7 +15,8 @@ import {
   processFollowUpSpecialist,
   processRadianceAISummarizer,
   getChainDiagnosisSession,
-  getUserChainDiagnosisSessions
+  getUserChainDiagnosisSessions,
+  deleteChainDiagnosisSession
 } from '@/lib/diagnosis-api';
 import { FileMetadata } from '@/utils/supabase/file-storage';
 import { convertToChainDiagnosisInput } from '@/utils/diagnosis-file-utils';
@@ -53,6 +54,7 @@ interface ChainDiagnosisContextType {
 
   loadSession: (sessionId: string) => Promise<boolean>;
   loadUserSessions: (userId: string) => Promise<boolean>;
+  deleteSession: (sessionId: string, userId: string) => Promise<boolean>;
 
   processNextStep: () => Promise<boolean>;
   resetSession: () => void;
@@ -733,6 +735,31 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
   // Store a reference to processNextStep for use in startNewSession
   processNextStepRef.current = processNextStep;
 
+  // Delete a session and its associated chat messages
+  const deleteSession = useCallback(async (sessionId: string, userId: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const success = await deleteChainDiagnosisSession(sessionId, userId);
+
+      if (!success) {
+        setError('Failed to delete the session. Please try again.');
+        return false;
+      }
+
+      // Update the sessions list by removing the deleted session
+      setUserSessions(prev => prev.filter(session => session.id !== sessionId));
+
+      return true;
+    } catch {
+      setError('Failed to delete the session. Please try again.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Reset the current session
   const resetSession = useCallback(() => {
     setCurrentSession(null);
@@ -757,6 +784,7 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
     startNewSession,
     loadSession,
     loadUserSessions,
+    deleteSession,
     processNextStep,
     resetSession
   };
