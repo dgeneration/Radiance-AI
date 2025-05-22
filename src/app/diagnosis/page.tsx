@@ -29,7 +29,7 @@ export default async function DiagnosisPage() {
 
   return (
     <ChainDiagnosisProvider>
-      <SubNavbar title="Diagnosis" showProfileNav={true} />
+      <SubNavbar title="Deep Diagnosis" showProfileNav={true} />
       <div className="relative overflow-hidden py-10 px-4">
         {/* Background gradient effect */}
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-background to-accent/5 z-0"></div>
@@ -185,4 +185,4 @@ export default async function DiagnosisPage() {
         </div>
       </div>
     </ChainDiagnosisProvider>
-  );
+)};

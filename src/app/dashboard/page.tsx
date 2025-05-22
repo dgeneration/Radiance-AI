@@ -23,9 +23,10 @@ export default async function DashboardPage() {
     redirect("/auth/login?redirectUrl=/dashboard");
   }
 
-  // Get the count of diagnoses
+  // Get the count of diagnoses from both tables
   let count = 0;
   try {
+    // Check the diagnoses table first
     const { count: diagnosesCount, error } = await supabase
       .from('diagnoses')
       .select('*', { count: 'exact', head: true })
@@ -33,6 +34,17 @@ export default async function DashboardPage() {
 
     if (!error && diagnosesCount !== null) {
       count = diagnosesCount;
+    }
+
+    // Also check the chain_diagnosis_sessions table
+    const { count: chainDiagnosesCount, error: chainError } = await supabase
+      .from('chain_diagnosis_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', data.user.id);
+
+    if (!chainError && chainDiagnosesCount !== null) {
+      // Add the count from chain_diagnosis_sessions
+      count += chainDiagnosesCount;
     }
   } catch (error) {
     console.error("Error fetching diagnoses count:", error);
@@ -99,16 +111,7 @@ export default async function DashboardPage() {
                         icon={<Sparkles />}
                         iconPosition="left"
                       >
-                        <Link href="/rai">Radiance AI</Link>
-                      </ProfessionalButton>
-
-                      <ProfessionalButton
-                        asChild
-                        variant="outline"
-                        icon={<FaBrain />}
-                        iconPosition="left"
-                      >
-                        <Link href="/diagnosis">Diagnosis</Link>
+                        <Link href="/rai">Diagnosis</Link>
                       </ProfessionalButton>
 
                       <ProfessionalButton
@@ -213,7 +216,7 @@ export default async function DashboardPage() {
                       </p>
 
                       <Link
-                        href="/diagnosis"
+                        href="/rai"
                         className="text-accent hover:text-accent/80 font-medium flex items-center gap-2 group transition-all duration-300"
                       >
                         Try Diagnosis
