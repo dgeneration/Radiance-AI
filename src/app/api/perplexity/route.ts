@@ -43,7 +43,18 @@ export async function POST(request: NextRequest) {
     if (hasImageUrl) {
       // For image URLs, we need to use a different format
       // The content is already an array of objects with type "text" or "image_url"
-      const parsedUserPrompt = typeof userPrompt === 'string' ? JSON.parse(userPrompt) : userPrompt;
+      let parsedUserPrompt;
+
+      try {
+        // Try to parse if it's a string
+        parsedUserPrompt = typeof userPrompt === 'string' ? JSON.parse(userPrompt) : userPrompt;
+      } catch (error) {
+        console.error("Error parsing userPrompt:", error);
+        // If parsing fails, use the original value
+        parsedUserPrompt = userPrompt;
+      }
+
+      console.log("Image URL prompt format:", JSON.stringify(parsedUserPrompt, null, 2));
 
       requestBody = {
         model,

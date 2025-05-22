@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { GradientHeading } from '@/components/ui/gradient-heading';
 import {
   Tooltip,
   TooltipContent,
@@ -38,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Image from 'next/image';
 import {
   getActiveStandaloneRadianceChatSession,
   getStandaloneRadianceChatMessages,
@@ -46,6 +48,29 @@ import {
   StandaloneRadianceChatMessage,
   StandaloneRadianceChatSession
 } from '@/lib/standalone-radiance-api';
+
+// Utility function to extract file information from message content
+const extractFileInfo = (content: string): { text: string, fileName: string | null, isImage: boolean } => {
+  // Default values
+  let text = content;
+  let fileName = null;
+  let isImage = false;
+
+  // Check if the message contains an attached file
+  const attachedMatch = content.match(/\[Attached: (.*?)\]/);
+  if (attachedMatch && attachedMatch[1]) {
+    // Extract the file name
+    fileName = attachedMatch[1];
+
+    // Check if it's an image file
+    isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(fileName);
+
+    // Remove the attachment text from the content
+    text = content.replace(/\n\n\[Attached: .*?\]/, '');
+  }
+
+  return { text, fileName, isImage };
+};
 
 // Define the Perplexity API response type
 interface PerplexityResponse {
@@ -658,14 +683,30 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       }
 
       // Prepare medical report data if files are selected
-      // Note: medicalReport is currently not used but kept for future implementation
+      let medicalReport = undefined;
+      let fileMetadata = null;
+      let fileContent = '';
+
       if (selectedFiles.length > 0) {
-        await prepareMedicalReportData(selectedFiles);
+        medicalReport = await prepareMedicalReportData(selectedFiles);
+        console.log("Medical report prepared:", medicalReport);
+
+        // Store the file metadata for rendering
+        fileMetadata = {
+          fileName: selectedFiles[0].name,
+          fileType: selectedFiles[0].type,
+          fileUrl: selectedFiles[0].public_url || '',
+          isImage: selectedFiles[0].type.startsWith('image/')
+        };
+
+        // Add file information to the message content
+        const fileNames = selectedFiles.map(file => file.name).join(', ');
+        fileContent = `\n\n[Attached: ${fileNames}]`;
       }
 
       // Create a temporary user message for immediate display
-      const userMessageContent = inputMessage.trim() ||
-        (selectedFiles.length > 0 ? "I&apos;ve uploaded some medical files for analysis." : "");
+      const userMessageContent = (inputMessage.trim() ||
+        (selectedFiles.length > 0 ? "I've uploaded some medical files for analysis." : "")) + fileContent;
 
       const tempUserMessage: StandaloneRadianceChatMessage = {
         id: 'temp-user-' + Date.now(),
@@ -673,7 +714,8 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
         user_id: user.id,
         role: 'user',
         content: userMessageContent,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        raw_api_response: fileMetadata ? { fileMetadata } : undefined
       };
 
       // Update the local messages state for immediate feedback
@@ -703,7 +745,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
         // Process the message and save to database
         const aiResponse = await Promise.race([
-          processStandaloneRadianceAIMessage(sessionId, userId, userMessageContent),
+          processStandaloneRadianceAIMessage(sessionId, userId, userMessageContent, medicalReport),
           timeoutPromise
         ]);
 
@@ -765,6 +807,47 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
   return (
     <AnimatedSection className="space-y-6">
+      {/* AI-Powered Health Diagnosis Header Section */}
+      <AnimatedSection direction="up" delay={0.1} className="mb-6">
+        <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm p-8 rounded-2xl border border-primary/10 shadow-lg">
+          <FloatingElement
+            className="absolute top-0 right-0 w-60 h-60 bg-primary/10 rounded-full blur-3xl opacity-30"
+            duration={10}
+            xOffset={15}
+            yOffset={20}
+          />
+          <FloatingElement
+            className="absolute bottom-0 left-0 w-60 h-60 bg-accent/10 rounded-full blur-3xl opacity-30"
+            duration={12}
+            xOffset={-15}
+            yOffset={-20}
+            delay={0.5}
+          />
+
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-lg">
+                <AnimatedIcon
+                  icon={<MessageSquare className="w-10 h-10 text-primary" />}
+                  delay={0.2}
+                  pulseEffect={true}
+                />
+              </div>
+
+              <div className="flex-1 text-center md:text-left">
+                <GradientHeading level={2} size="md" className="mb-2">
+                  Health Assistant
+                </GradientHeading>
+                <p className="text-muted-foreground mb-6 max-w-2xl">
+                  Consult with Radiance AI's medical expert about your health questions and receive evidence-based guidance.
+                  Upload medical images for analysis and get personalized health insights.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
       <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden relative group transition-all duration-500 hover:shadow-xl">
         {/* Subtle background animation */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
@@ -820,14 +903,14 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                   hoverScale={1.2}
                 />
                 <AnimatedText
-                  text="Your Virtual Health Assistant"
+                  text="Your Health Assistant"
                   className="text-xl font-medium text-foreground mb-2"
                   delay={0.2}
                 />
                 <AnimatedText
                   text="I&apos;m a medical AI assistant trained to provide evidence-based health information."
                   className="text-sm max-w-md mb-6"
-                  delay={0.4}
+                  delay={0.1}
                 />
 
                 <div className="grid grid-cols-2 gap-3 mt-2 text-sm w-full max-w-lg">
@@ -941,7 +1024,33 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                     )}
                   </div>
                   {message.role === 'user' ? (
-                    <p className="whitespace-pre-wrap text-foreground/90">{message.content}</p>
+                    <div className="space-y-3">
+                      {/* Display the message text */}
+                      <div className="whitespace-pre-wrap text-foreground/90">
+                        {extractFileInfo(message.content).text}
+                      </div>
+
+                      {/* Display attached image if present */}
+                      {/* eslint-disable @typescript-eslint/no-explicit-any */}
+                      {message.raw_api_response?.fileMetadata &&
+                       (message.raw_api_response.fileMetadata as any).isImage && (
+                        <div className="mt-2">
+                          <div className="relative w-full max-w-[300px] h-[200px] rounded-md overflow-hidden border border-primary/10">
+                            <Image
+                              src={(message.raw_api_response.fileMetadata as any).fileUrl}
+                              alt={(message.raw_api_response.fileMetadata as any).fileName || "Attached image"}
+                              fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              className="object-contain"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {(message.raw_api_response.fileMetadata as any).fileName}
+                          </p>
+                        </div>
+                      )}
+                      {/* eslint-enable @typescript-eslint/no-explicit-any */}
+                    </div>
                   ) : (
                     <div className="prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown
@@ -1023,13 +1132,15 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                   <span className="text-sm font-medium">Upload Medical Files</span>
                 </div>
                 <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 text-xs">
-                  Max 3 files
+                  Max 1 file
                 </Badge>
               </div>
               <FileSelector
+                userId={userId}
                 onFilesSelected={handleFileSelect}
                 selectedFiles={selectedFiles}
-                maxFiles={3}
+                multiple={false}
+                maxFiles={1}
                 acceptedFileTypes={[
                   'image/jpeg',
                   'image/png',
@@ -1047,7 +1158,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
           <div className="flex flex-col space-y-3 p-4 bg-card/30 backdrop-blur-sm rounded-lg border border-primary/10 mt-2">
             <div className="flex items-center space-x-2">
               <div className="relative flex-1 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-focus-within:opacity-100 rounded-md -m-0.5 transition-opacity duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-focus-within:opacity-100 rounded-md -m-0.5 transition-opacity duration-300 pointer-events-none"></div>
                 <Input
                   value={inputMessage}
                   onChange={handleInputChange}
@@ -1056,7 +1167,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                   className="flex-1 bg-card border-primary/20 focus:border-primary/40 transition-all duration-300 pl-10"
                   disabled={isProcessing || !sessionId}
                 />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <MessageSquare className="h-4 w-4 text-primary/60" />
                 </div>
               </div>

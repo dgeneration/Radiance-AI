@@ -107,15 +107,25 @@ export async function prepareMedicalReportData(files: FileMetadata[]): Promise<C
 
     // Prepare file metadata for the Chain Diagnosis System
 
+    // Create file metadata for UI display
+    const fileMetadata = {
+      fileName: file.name,
+      fileType: file.type,
+      fileUrl: publicUrl,
+      isImage: isImage
+    };
+
     // For image files, only include the image_url field to avoid confusion
     // This ensures the AI focuses on analyzing the image directly
     const result = isImage ? {
-      image_url: publicUrl
+      image_url: publicUrl,
+      fileMetadata // Add file metadata for UI display
     } : {
       url: publicUrl,
       name: file.name,
       type: file.type,
-      text: extractedText
+      text: extractedText,
+      fileMetadata // Add file metadata for UI display
     };
 
     return result;

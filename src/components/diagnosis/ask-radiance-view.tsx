@@ -29,11 +29,23 @@ import {
   Sparkles,
   Paperclip
 } from 'lucide-react';
-import { AnimatedSection } from '@/components/animations';
+import {
+  AnimatedSection,
+  AnimatedText,
+  AnimatedIcon,
+  FloatingElement
+} from '@/components/animations';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { GradientHeading } from '@/components/ui/gradient-heading';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AskRadianceViewProps {
   sessionId: string;
@@ -410,113 +422,181 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
 
   return (
     <AnimatedSection className="space-y-6">
-      <div className="mb-6 bg-card/50 p-5 rounded-xl border border-border/50 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-full bg-primary/10 text-primary">
-            <MessageSquare className="h-5 w-5" />
+
+      <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-lg overflow-hidden relative group transition-all duration-500 hover:shadow-xl">
+        {/* Subtle background animation */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+        {/* Enhanced Header with Gradient */}
+        <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-accent/10 border-b border-primary/20 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <AnimatedIcon
+              icon={<Brain className="h-5 w-5 text-primary" />}
+              pulseEffect={true}
+              containerClassName="mr-2"
+            />
+            <AnimatedText
+              text={isLoading ? "Initializing Radiance AI..." : "Ask Radiance AI"}
+              className="font-medium text-sm text-primary"
+              staggerChildren={0.01}
+            />
           </div>
-          <div>
-            <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Ask Radiance
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Chat with Radiance AI about your health concerns
-            </p>
+          <div className="flex items-center">
+            <Badge
+              variant="outline"
+              className="bg-accent/10 text-accent border-accent/20 px-2 py-0.5 text-xs animate-pulse"
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              Diagnosis Assistant
+            </Badge>
           </div>
         </div>
-      </div>
 
-      <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
-        <CardContent className="p-6">
+        <CardContent className="p-0">
+          {/* Floating elements for visual interest */}
+          <div className="absolute top-20 right-12 opacity-30 pointer-events-none">
+            <FloatingElement yOffset={10} xOffset={5} duration={7}>
+              <div className="w-24 h-24 rounded-full bg-primary/5 blur-xl"></div>
+            </FloatingElement>
+          </div>
+          <div className="absolute bottom-20 left-12 opacity-30 pointer-events-none">
+            <FloatingElement yOffset={8} xOffset={-5} duration={6} delay={0.5}>
+              <div className="w-32 h-32 rounded-full bg-accent/5 blur-xl"></div>
+            </FloatingElement>
+          </div>
+
           <div
             ref={chatContainerRef}
-            className="flex flex-col space-y-4 h-[500px] overflow-y-auto mb-4 pr-2"
+            className="flex flex-col space-y-4 h-[500px] overflow-y-auto p-6 pr-4 relative"
           >
             {messages.length === 0 && !isStreaming && (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                <Brain className="h-12 w-12 mb-4 text-primary/40" />
-                <p className="text-lg font-medium">Ask Radiance AI about your diagnosis</p>
-                <p className="text-sm max-w-md">
-                  Radiance AI can answer questions about your symptoms, potential conditions,
-                  and provide guidance based on your diagnosis session.
-                </p>
+                <AnimatedIcon
+                  icon={<Brain className="h-16 w-16 text-primary/60" />}
+                  pulseEffect={true}
+                  containerClassName="mb-6"
+                  hoverScale={1.2}
+                />
+                <AnimatedText
+                  text="Your Diagnosis Assistant"
+                  className="text-xl font-medium text-foreground mb-2"
+                  delay={0.2}
+                />
+                <AnimatedText
+                  text="Ask me questions about your diagnosis results, symptoms, and treatment options."
+                  className="text-sm max-w-md mb-6"
+                  delay={0.4}
+                />
               </div>
             )}
 
-            {messages.map((message) => (
-              <div
+            {messages.map((message, index) => (
+              <AnimatedSection
                 key={message.id}
                 className={cn(
                   "flex",
-                  message.role === "user" ? "justify-end" : "justify-start"
+                  message.role === 'user' ? "justify-end" : "justify-start"
                 )}
+                delay={index * 0.1}
+                direction={message.role === 'user' ? "left" : "right"}
+                once={true}
               >
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-xl p-4",
-                    message.role === "user"
-                      ? "bg-primary/10 text-foreground"
-                      : "bg-card border border-border/50 text-foreground"
+                    "max-w-[80%] rounded-xl p-4 shadow-sm transition-all duration-300",
+                    message.role === 'user'
+                      ? "bg-gradient-to-br from-primary/15 to-primary/5 text-foreground border border-primary/10 hover:border-primary/20"
+                      : "bg-gradient-to-br from-card to-card/90 border border-border/50 text-foreground hover:border-border/80"
                   )}
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    {message.role === "assistant" ? (
-                      <Brain className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-2 mb-2">
+                    {message.role === 'user' ? (
+                      <>
+                        <div className="bg-primary/10 p-1 rounded-full">
+                          <User className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <span className="font-medium text-sm">You</span>
+                      </>
                     ) : (
-                      <User className="h-4 w-4" />
+                      <>
+                        <div className="bg-accent/10 p-1 rounded-full">
+                          <Brain className="h-3.5 w-3.5 text-accent" />
+                        </div>
+                        <span className="font-medium text-sm">Radiance AI</span>
+                        <Badge
+                          variant="outline"
+                          className="bg-primary/5 text-primary/80 border-primary/10 px-1.5 py-0 text-[10px]"
+                        >
+                          Diagnosis Expert
+                        </Badge>
+                      </>
                     )}
-                    <span className="font-medium text-sm">
-                      {message.role === "assistant" ? "Radiance AI" : "You"}
-                    </span>
                   </div>
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    {message.role === "assistant" ? (
+                  {message.role === 'user' ? (
+                    <div className="space-y-3">
+                      {/* Display the message text */}
+                      <div className="whitespace-pre-wrap text-foreground/90">
+                        {extractFileInfo(message.content).text}
+                      </div>
+
+                      {/* Display attached image if present */}
+                      {/* eslint-disable @typescript-eslint/no-explicit-any */}
+                      {message.raw_api_response?.fileMetadata &&
+                       (message.raw_api_response.fileMetadata as any).isImage && (
+                        <div className="mt-2">
+                          <div className="relative w-full max-w-[300px] h-[200px] rounded-md overflow-hidden border border-primary/10">
+                            <Image
+                              src={(message.raw_api_response.fileMetadata as any).fileUrl}
+                              alt={(message.raw_api_response.fileMetadata as any).fileName || "Attached image"}
+                              fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              className="object-contain"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {(message.raw_api_response.fileMetadata as any).fileName}
+                          </p>
+                        </div>
+                      )}
+                      {/* eslint-enable @typescript-eslint/no-explicit-any */}
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert prose-sm max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={markdownComponents}
                       >
                         {message.content}
                       </ReactMarkdown>
-                    ) : (
-                      <div className="space-y-3">
-                        {/* Display the message text */}
-                        <div className="whitespace-pre-wrap text-sm">
-                          {extractFileInfo(message.content).text}
-                        </div>
-
-                        {/* Display attached image if present */}
-                        {/* eslint-disable @typescript-eslint/no-explicit-any */}
-                        {message.raw_api_response?.fileMetadata &&
-                         (message.raw_api_response.fileMetadata as any).isImage && (
-                          <div className="mt-2">
-                            <div className="relative w-full max-w-[300px] h-[200px] rounded-md overflow-hidden border border-primary/10">
-                              <Image
-                                src={(message.raw_api_response.fileMetadata as any).fileUrl}
-                                alt={(message.raw_api_response.fileMetadata as any).fileName || "Attached image"}
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {(message.raw_api_response.fileMetadata as any).fileName}
-                            </p>
-                          </div>
-                        )}
-                        {/* eslint-enable @typescript-eslint/no-explicit-any */}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </AnimatedSection>
             ))}
 
             {isStreaming && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-xl p-4 bg-card border border-border/50 text-foreground">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Brain className="h-4 w-4 text-primary" />
+              <AnimatedSection
+                className="flex justify-start"
+                direction="right"
+                once={true}
+              >
+                <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-card to-card/90 border border-border/50 text-foreground shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-accent/10 p-1 rounded-full">
+                      <Brain className="h-3.5 w-3.5 text-accent" />
+                    </div>
                     <span className="font-medium text-sm">Radiance AI</span>
-                    <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+                    <Badge
+                      variant="outline"
+                      className="bg-primary/5 text-primary/80 border-primary/10 px-1.5 py-0 text-[10px]"
+                    >
+                      Diagnosis Expert
+                    </Badge>
+                    <div className="ml-1 flex items-center">
+                      <span className="sr-only">Loading</span>
+                      <div className="h-1 w-1 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="h-1 w-1 bg-primary rounded-full animate-bounce [animation-delay:-0.15s] mx-0.5"></div>
+                      <div className="h-1 w-1 bg-primary rounded-full animate-bounce"></div>
+                    </div>
                   </div>
                   <div className="prose prose-invert prose-sm max-w-none">
                     {streamingContent && streamingContent.trim().length > 0 ? (
@@ -527,70 +607,125 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
                         {streamingContent}
                       </ReactMarkdown>
                     ) : (
-                      <Badge
-                        variant="outline"
-                        className="bg-purple-600/10 text-purple-500 border-purple-500/20 px-3 py-1 text-sm font-normal"
-                      >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Thinking...
-                      </Badge>
+                      <div className="flex flex-col items-start">
+                        <Badge
+                          variant="outline"
+                          className="bg-gradient-to-r from-primary/10 to-accent/10 text-primary border-primary/20 px-3 py-1 text-sm font-normal mb-2 animate-pulse"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Analyzing your question...
+                        </Badge>
+                        <div className="flex space-x-2 items-center">
+                          <div className="h-1 w-16 bg-primary/20 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary animate-[pulse_1.5s_ease-in-out_infinite] rounded-full"></div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">Preparing response</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
+              </AnimatedSection>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* File selector */}
+          {/* File selector with animation */}
           {showFileSelector && (
-            <div className="mb-4">
+            <AnimatedSection className="mb-4 bg-card/30 p-4 rounded-lg border border-primary/10" delay={0.1} direction="up">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <Paperclip className="h-4 w-4 text-primary mr-2" />
+                  <span className="text-sm font-medium">Upload Medical Files</span>
+                </div>
+                <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 text-xs">
+                  Max 1 file
+                </Badge>
+              </div>
               <FileSelector
                 userId={currentSession?.user_id || ''}
                 onFilesSelected={setSelectedFiles}
                 selectedFiles={selectedFiles}
                 multiple={false}
+                maxFiles={1}
+                acceptedFileTypes={[
+                  'image/jpeg',
+                  'image/png',
+                  'image/gif',
+                  'application/pdf',
+                  'text/plain',
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                  'application/msword'
+                ]}
               />
-            </div>
+            </AnimatedSection>
           )}
 
-          <div className="flex flex-col space-y-2">
+          {/* Enhanced input area with animations */}
+          <div className="flex flex-col space-y-3 p-4 bg-card/30 backdrop-blur-sm rounded-lg border border-primary/10 mt-2">
             <div className="flex items-center space-x-2">
-              <Input
-                value={inputMessage}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyPress}
-                placeholder="Ask a question about your diagnosis..."
-                className="flex-1"
-                disabled={isProcessing || isLoading || !currentSession}
-              />
-              <Button
-                onClick={() => setShowFileSelector(!showFileSelector)}
-                variant="outline"
-                className="bg-card hover:bg-card/90"
-                disabled={isProcessing || isLoading || !currentSession}
-                title="Attach files"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
+              <div className="relative flex-1 group">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-focus-within:opacity-100 rounded-md -m-0.5 transition-opacity duration-300 pointer-events-none"></div>
+                <Input
+                  value={inputMessage}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Ask a question about your diagnosis results..."
+                  className="flex-1 bg-card border-primary/20 focus:border-primary/40 transition-all duration-300 pl-10"
+                  disabled={isProcessing || isLoading || !currentSession}
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <MessageSquare className="h-4 w-4 text-primary/60" />
+                </div>
+              </div>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setShowFileSelector(!showFileSelector)}
+                      variant="outline"
+                      className="bg-gradient-to-br from-card/80 to-card hover:from-card/90 hover:to-card/80 border-primary/20 hover:border-primary/30 transition-all duration-300"
+                      disabled={isProcessing || isLoading || !currentSession}
+                    >
+                      <Paperclip className="h-4 w-4 text-primary/80" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Attach medical files</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               <Button
                 onClick={handleSendMessage}
                 disabled={((!inputMessage.trim() && selectedFiles.length === 0) || isProcessing || isLoading || !currentSession)}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-300"
               >
                 {isProcessing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
+                <span className="ml-2 hidden sm:inline">Send</span>
               </Button>
             </div>
 
             {selectedFiles.length > 0 && (
-              <div className="flex items-center text-xs text-muted-foreground">
-                <Paperclip className="h-3 w-3 mr-1" />
-                {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} attached
+              <div className="flex flex-wrap gap-2 mt-1 animate-in fade-in duration-300">
+                {selectedFiles.map((file) => (
+                  <Badge
+                    key={file.id}
+                    variant="outline"
+                    className="bg-gradient-to-r from-primary/10 to-primary/5 text-primary border-primary/20 px-3 py-1 flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {file.name}
+                  </Badge>
+                ))}
               </div>
             )}
           </div>

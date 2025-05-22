@@ -26,24 +26,6 @@ export default async function AskRadiancePage() {
       <div className="relative overflow-hidden py-10 px-4">
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-background to-accent/5 z-0" />
         <div className="container relative z-10 mx-auto max-w-5xl">
-          <AnimatedSection className="mb-8">
-            <div className="flex items-center gap-4 mb-6">
-              <FloatingElement>
-                <div className="p-3 rounded-xl bg-primary/10 text-primary">
-                  <MessageSquare className="h-6 w-6" />
-                </div>
-              </FloatingElement>
-              <div>
-                <GradientHeading as="h1" size="xl" className="mb-1">
-                  Virtual Health Assistant
-                </GradientHeading>
-                <p className="text-muted-foreground">
-                  Consult with Radiance AI&apos;s medical expert about your health questions and receive evidence-based guidance
-                </p>
-              </div>
-            </div>
-          </AnimatedSection>
-
           <StandaloneAskRadiance userId={data.user.id} />
         </div>
       </div>

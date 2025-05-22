@@ -3164,7 +3164,8 @@ Remember that you are having a conversation with the user, so maintain a convers
  */
 export async function processRadianceAI(
   userMessage: string,
-  userId: string
+  userId: string,
+  medicalReport?: any
 ): Promise<{ content: string; raw_response: any } | null> {
   try {
     // Create a simple system prompt for health-related questions
@@ -3194,12 +3195,43 @@ IMPORTANT DISCLAIMERS (include in responses when appropriate):
 
 Remember that your purpose is to provide helpful health information while encouraging appropriate professional medical care.`;
 
+    // Check if we have a medical report with an image URL
+    const hasImageUrl = !!medicalReport?.image_url;
+    let userPromptContent: string | Array<{type: string, text?: string, image_url?: {url: string}}>;
+
+    if (medicalReport) {
+      if (hasImageUrl) {
+        // For image files, create a multimodal prompt
+        userPromptContent = [
+          {
+            type: "text",
+            text: `${userMessage}\n\nI've attached a medical image for you to analyze.`
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: medicalReport.image_url || ""
+            }
+          }
+        ];
+        console.log("Using image URL in prompt:", medicalReport.image_url);
+      } else {
+        // For text-based medical reports
+        userPromptContent = `${userMessage}\n\nI've attached a medical report for you to analyze:\n\n${medicalReport.text || ""}`;
+      }
+    } else {
+      // Regular text message
+      userPromptContent = userMessage;
+    }
+
     // Make the API request
     const response = await makePerplexityRequest(
       'sonar-pro',
       systemPrompt,
-      userMessage,
-      false // No streaming for standalone API
+      userPromptContent,
+      false, // No streaming for standalone API
+      undefined,
+      hasImageUrl
     );
 
     if (!response.choices || !response.choices[0]) {

@@ -239,7 +239,8 @@ export async function getStandaloneRadianceChatMessages(
 export async function addStandaloneRadianceUserMessage(
   sessionId: string,
   userId: string,
-  content: string
+  content: string,
+  raw_api_response?: Record<string, any>
 ): Promise<string | null> {
   try {
     if (!sessionId || !userId || !content) {
@@ -263,7 +264,8 @@ export async function addStandaloneRadianceUserMessage(
         session_id: sessionId,
         user_id: userId,
         role: 'user',
-        content
+        content,
+        raw_api_response
       });
 
     if (error) {
@@ -288,7 +290,8 @@ export async function addStandaloneRadianceUserMessage(
 export async function processStandaloneRadianceAIMessage(
   sessionId: string,
   userId: string,
-  userMessage: string
+  userMessage: string,
+  medicalReport?: any
 ): Promise<string | null> {
   try {
     if (!sessionId || !userId || !userMessage) {
@@ -296,13 +299,17 @@ export async function processStandaloneRadianceAIMessage(
     }
 
     // First, add the user message
-    const userMessageId = await addStandaloneRadianceUserMessage(sessionId, userId, userMessage);
+    // Extract file metadata from the medical report if available
+    const fileMetadata = medicalReport?.fileMetadata || undefined;
+    const raw_api_response = fileMetadata ? { fileMetadata } : undefined;
+
+    const userMessageId = await addStandaloneRadianceUserMessage(sessionId, userId, userMessage, raw_api_response);
     if (!userMessageId) {
       return null;
     }
 
     // Process the message with Radiance AI
-    const aiResponse = await processRadianceAI(userMessage, userId);
+    const aiResponse = await processRadianceAI(userMessage, userId, medicalReport);
     if (!aiResponse) {
       return "I'm sorry, I encountered an error processing your request. Please try again.";
     }
