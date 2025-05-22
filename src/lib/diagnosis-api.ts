@@ -2070,9 +2070,9 @@ Respond in JSON format with the following structure:
           type: "text",
           text: `Please analyze this medical image in the context of the following information:
 Patient Info:
-- Age: ${userInput.user_details.age}
-- Gender: ${userInput.user_details.gender}
-- Symptoms: ${userInput.symptoms_info.symptoms_list.join(', ')}
+- Age: ${userInput.user_details?.age || 'Unknown'}
+- Gender: ${userInput.user_details?.gender || 'Unknown'}
+- Symptoms: ${userInput.symptoms_info?.symptoms_list?.join(', ') || 'None specified'}
 ${userInput.medical_info?.medical_conditions ? `- Medical History: ${userInput.medical_info.medical_conditions}` : ''}
 
 Please provide a detailed analysis of the medical image, including:
@@ -2094,9 +2094,9 @@ Please provide a detailed analysis of the medical image, including:
       // For text-only reports, use the standard format
       userPromptContent = JSON.stringify({
         patient_info: {
-          age: userInput.user_details.age,
-          gender: userInput.user_details.gender,
-          symptoms: userInput.symptoms_info.symptoms_list,
+          age: userInput.user_details?.age || 'Unknown',
+          gender: userInput.user_details?.gender || 'Unknown',
+          symptoms: userInput.symptoms_info?.symptoms_list || [],
           medical_history: userInput.medical_info?.medical_conditions || ''
         },
         medical_report: {
@@ -3068,9 +3068,9 @@ export async function saveRadianceChatMessage(message: Omit<RadianceChatMessage,
  */
 function getRadianceAIChatSystemPrompt(session: ChainDiagnosisSession): string {
   // Extract key information from the session
-  const userDetails = session.user_input.user_details;
-  const symptoms = session.user_input.symptoms_info.symptoms_list.join(', ');
-  const medicalInfo = session.user_input.medical_info || {};
+  const userDetails = session.user_input?.user_details || {};
+  const symptoms = session.user_input?.symptoms_info?.symptoms_list?.join(', ') || 'None specified';
+  const medicalInfo = session.user_input?.medical_info || {};
 
   // Extract information from previous AI roles
   let previousRolesInfo = '';

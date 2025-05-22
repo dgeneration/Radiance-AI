@@ -290,7 +290,7 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
             }
 
             // Get the primary symptoms with fallback for missing data
-            const primarySymptoms = session.user_input.symptoms_info.symptoms_list.slice(0, 3);
+            const primarySymptoms = session.user_input?.symptoms_info?.symptoms_list?.slice(0, 3) || [];
 
             // Ensure session status is valid
             if (!session.status) {
@@ -373,9 +373,9 @@ export function ChainDiagnosisHistory({ initialSessions, userId }: ChainDiagnosi
                             {symptom}
                           </Badge>
                         ))}
-                        {session.user_input.symptoms_info.symptoms_list.length > 3 && (
+                        {(session.user_input?.symptoms_info?.symptoms_list?.length || 0) > 3 && (
                           <Badge variant="outline" className="bg-background/50 border-primary/20 px-2 py-0.5 rounded-md">
-                            +{session.user_input.symptoms_info.symptoms_list.length - 3} more
+                            +{(session.user_input?.symptoms_info?.symptoms_list?.length || 0) - 3} more
                           </Badge>
                         )}
                       </div>

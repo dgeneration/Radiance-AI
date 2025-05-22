@@ -19,7 +19,12 @@ export interface FileMetadata {
  * @param userId The user ID to associate with the file
  * @returns The file metadata
  */
-export async function uploadFile(file: File, userId: string): Promise<FileMetadata | null> {
+export async function uploadFile(file: File, userId?: string): Promise<FileMetadata | null> {
+  // If userId is undefined, generate a temporary ID
+  if (!userId) {
+    userId = `temp-${uuidv4()}`;
+    console.warn('uploadFile called with undefined userId, using temporary ID:', userId);
+  }
   try {
     const supabase = createClient();
 
@@ -164,7 +169,7 @@ export async function uploadFile(file: File, userId: string): Promise<FileMetada
  * @param userId The user ID to associate with the files
  * @returns Array of file metadata
  */
-export async function uploadMultipleFiles(files: File[], userId: string): Promise<FileMetadata[]> {
+export async function uploadMultipleFiles(files: File[], userId?: string): Promise<FileMetadata[]> {
   const results: FileMetadata[] = [];
 
   for (const file of files) {
@@ -182,8 +187,14 @@ export async function uploadMultipleFiles(files: File[], userId: string): Promis
  * @param userId The user ID to get files for
  * @returns Array of file metadata
  */
-export async function getUserFiles(userId: string): Promise<FileMetadata[]> {
+export async function getUserFiles(userId?: string): Promise<FileMetadata[]> {
   try {
+    // If userId is undefined, return an empty array
+    if (!userId) {
+      console.warn('getUserFiles called with undefined userId, returning empty array');
+      return [];
+    }
+
     const supabase = createClient();
 
     const { data, error } = await supabase
@@ -210,7 +221,12 @@ export async function getUserFiles(userId: string): Promise<FileMetadata[]> {
  * @param userId The user ID to verify ownership
  * @returns Whether the deletion was successful
  */
-export async function deleteFile(fileId: string, userId: string): Promise<boolean> {
+export async function deleteFile(fileId: string, userId?: string): Promise<boolean> {
+  // If userId is undefined, return false
+  if (!userId) {
+    console.warn('deleteFile called with undefined userId, returning false');
+    return false;
+  }
   try {
     const supabase = createClient();
 

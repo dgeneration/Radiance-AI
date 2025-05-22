@@ -15,13 +15,22 @@ import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
 interface FileManagerProps {
-  userId: string;
+  userId?: string;
   selectable?: boolean;
   onSelect?: (files: FileMetadata[]) => void;
   multiple?: boolean;
+  maxFiles?: number;
+  acceptedFileTypes?: string[];
 }
 
-export function FileManager({ userId, selectable = false, onSelect, multiple = true }: FileManagerProps) {
+export function FileManager({
+  userId,
+  selectable = false,
+  onSelect,
+  multiple = true,
+  maxFiles,
+  acceptedFileTypes
+}: FileManagerProps) {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +125,11 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
       if (isSelected) {
         setSelectedFiles(prev => prev.filter(f => f.id !== file.id));
       } else {
+        // Check if we've reached the maximum number of files
+        if (maxFiles && selectedFiles.length >= maxFiles) {
+          // If we're at the limit, don't add more files
+          return;
+        }
         setSelectedFiles(prev => [...prev, file]);
       }
     } else {
@@ -457,6 +471,7 @@ export function FileManager({ userId, selectable = false, onSelect, multiple = t
                   handleUploadComplete(newFiles);
                 }}
                 multiple={true}
+                acceptedFileTypes={acceptedFileTypes}
               />
             </DialogContent>
           </Dialog>

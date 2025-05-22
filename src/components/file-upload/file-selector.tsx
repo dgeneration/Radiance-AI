@@ -10,13 +10,22 @@ import { ProfessionalButton } from '@/components/ui/professional-button';
 import Image from 'next/image';
 
 interface FileSelectorProps {
-  userId: string;
+  userId?: string;
   onFilesSelected: (files: FileMetadata[]) => void;
   selectedFiles: FileMetadata[];
   multiple?: boolean;
+  maxFiles?: number;
+  acceptedFileTypes?: string[];
 }
 
-export function FileSelector({ userId, onFilesSelected, selectedFiles, multiple = true }: FileSelectorProps) {
+export function FileSelector({
+  userId,
+  onFilesSelected,
+  selectedFiles,
+  multiple = true,
+  maxFiles,
+  acceptedFileTypes
+}: FileSelectorProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleFileSelection = (files: FileMetadata[]) => {
@@ -67,6 +76,8 @@ export function FileSelector({ userId, onFilesSelected, selectedFiles, multiple 
             selectable={true}
             onSelect={handleFileSelection}
             multiple={multiple}
+            maxFiles={maxFiles}
+            acceptedFileTypes={acceptedFileTypes}
           />
         </DialogContent>
       </Dialog>

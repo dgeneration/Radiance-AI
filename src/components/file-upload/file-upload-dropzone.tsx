@@ -25,12 +25,18 @@ const ACCEPTED_FILE_TYPES = {
 };
 
 interface FileUploadDropzoneProps {
-  userId: string;
+  userId?: string;
   onUploadComplete: (files: FileMetadata[]) => void;
   multiple?: boolean;
+  acceptedFileTypes?: string[];
 }
 
-export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }: FileUploadDropzoneProps) {
+export function FileUploadDropzone({
+  userId,
+  onUploadComplete,
+  multiple = true,
+  acceptedFileTypes
+}: FileUploadDropzoneProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -58,9 +64,26 @@ export function FileUploadDropzone({ userId, onUploadComplete, multiple = true }
     }
   }, [multiple]);
 
+  // Convert string array to object format required by react-dropzone
+  const getAcceptedTypes = () => {
+    if (!acceptedFileTypes || acceptedFileTypes.length === 0) {
+      return ACCEPTED_FILE_TYPES;
+    }
+
+    const acceptObj: Record<string, string[]> = {};
+    acceptedFileTypes.forEach(type => {
+      // For each MIME type, add the corresponding extensions
+      if (type in ACCEPTED_FILE_TYPES) {
+        acceptObj[type] = ACCEPTED_FILE_TYPES[type as keyof typeof ACCEPTED_FILE_TYPES];
+      }
+    });
+
+    return Object.keys(acceptObj).length > 0 ? acceptObj : ACCEPTED_FILE_TYPES;
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: ACCEPTED_FILE_TYPES,
+    accept: getAcceptedTypes(),
     maxSize: MAX_FILE_SIZE,
     multiple,
   });

@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { SubNavbar } from "@/components/sub-navbar";
 import { StandaloneAskRadiance } from "@/components/diagnosis/standalone-ask-radiance";
-import { AnimatedSection, FloatingElement, AnimatedIcon } from "@/components/animations";
+import { AnimatedSection, FloatingElement } from "@/components/animations";
 import { GradientHeading } from "@/components/ui/gradient-heading";
 import { MessageSquare } from "lucide-react";
 
@@ -38,7 +38,7 @@ export default async function AskRadiancePage() {
                   Virtual Health Assistant
                 </GradientHeading>
                 <p className="text-muted-foreground">
-                  Consult with Radiance AI's medical expert about your health questions and receive evidence-based guidance
+                  Consult with Radiance AI&apos;s medical expert about your health questions and receive evidence-based guidance
                 </p>
               </div>
             </div>

@@ -10,6 +10,7 @@ interface GradientHeadingProps {
   children: React.ReactNode;
   className?: string;
   level?: 1 | 2 | 3 | 4 | 5 | 6;
+  as?: string; // Add support for the 'as' prop
   size?: "sm" | "md" | "lg" | "xl" | "2xl";
   animate?: boolean;
   staggerChildren?: number;
@@ -23,6 +24,7 @@ export function GradientHeading({
   children,
   className,
   level = 2,
+  as,
   size = "lg",
   animate = true,
   staggerChildren = 0.01,
@@ -50,8 +52,8 @@ export function GradientHeading({
     className
   );
 
-  // Create the heading element based on the level
-  const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+  // Create the heading element based on the level or 'as' prop
+  const HeadingTag = (as || `h${level}`) as keyof JSX.IntrinsicElements;
 
   // If animation is enabled, wrap the content in AnimatedText
   if (animate && typeof children === "string") {

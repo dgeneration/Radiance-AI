@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RadianceChatMessage } from '@/types/diagnosis';
 import { FileMetadata } from '@/utils/supabase/file-storage';
 import { prepareMedicalReportData } from '@/utils/diagnosis-file-utils';
 import { FileSelector } from '@/components/file-upload/file-selector';
-import Image from 'next/image';
 import {
   Card,
   CardContent
@@ -27,8 +26,7 @@ import {
   MessageSquare,
   Sparkles,
   Paperclip,
-  Trash2,
-  RefreshCw
+  Trash2
 } from 'lucide-react';
 import {
   AnimatedSection,
@@ -255,7 +253,7 @@ async function makePerplexityRequest(
           finish_reason: 'error',
           message: {
             role: 'assistant',
-            content: "I'm sorry, I encountered an error processing your request. Please try again later."
+            content: "I&apos;m sorry, I encountered an error processing your request. Please try again later."
           }
         }
       ]
@@ -265,6 +263,7 @@ async function makePerplexityRequest(
 
 /**
  * Custom function to process a chat message with Radiance AI using a health doctor-focused system prompt
+ * This function is kept for reference but currently not used in the component.
  * @param sessionId The session ID
  * @param userMessage The user's message
  * @param previousMessages Previous chat messages
@@ -273,12 +272,14 @@ async function makePerplexityRequest(
  * @param medicalReport Optional medical report data from file uploads
  * @returns The AI response
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function customProcessRadianceAIChat(
   sessionId: string,
   userMessage: string,
   previousMessages: RadianceChatMessage[],
   streaming: boolean = false,
   onStreamingResponse?: (chunk: string, isComplete?: boolean) => void,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   medicalReport?: any
 ): Promise<string> {
   try {
@@ -293,7 +294,7 @@ ROLE AND RESPONSIBILITIES:
 
 GUIDELINES:
 1. Only answer questions related to health, medicine, wellness, nutrition, fitness, and medical conditions
-2. Politely decline to answer questions unrelated to healthcare with: "I'm designed to assist with health-related questions. Could you please ask me something about your health or medical concerns?"
+2. Politely decline to answer questions unrelated to healthcare with: "I&apos;m designed to assist with health-related questions. Could you please ask me something about your health or medical concerns?"
 3. Provide balanced, evidence-based information reflecting current medical consensus
 4. Acknowledge when multiple valid medical perspectives exist on a topic
 5. Be transparent about limitations and emphasize the importance of in-person medical care
@@ -397,13 +398,14 @@ Remember that your purpose is to provide helpful health information while encour
     // If there's a streaming handler, notify it about the error
     if (streaming && onStreamingResponse) {
       try {
-        onStreamingResponse("I'm sorry, I encountered an error processing your message. Please try again.", true);
-      } catch (_) {
+        onStreamingResponse("I&apos;m sorry, I encountered an error processing your message. Please try again.", true);
+      } catch (error) {
         // Silently handle callback errors
+        console.error("Error in streaming response callback:", error);
       }
     }
 
-    return "I'm sorry, I encountered an error processing your message. Please try again.";
+    return "I&apos;m sorry, I encountered an error processing your message. Please try again.";
   }
 }
 
@@ -417,7 +419,7 @@ import type { Components } from 'react-markdown';
 // Define custom components for ReactMarkdown
 const markdownComponents: Components = {
   // Style links
-  a: ({ node, ...props }) => (
+  a: ({ ...props }) => (
     <a
       {...props}
       className="text-primary hover:text-primary/80 underline transition-colors"
@@ -426,46 +428,48 @@ const markdownComponents: Components = {
     />
   ),
   // Style paragraphs
-  p: ({ node, ...props }) => <p {...props} className="mb-4 last:mb-0" />,
+  p: ({ ...props }) => <p {...props} className="mb-4 last:mb-0" />,
   // Style headings
-  h1: ({ node, ...props }) => (
+  h1: ({ ...props }) => (
     <h1 {...props} className="text-xl font-bold mb-4 text-foreground" />
   ),
-  h2: ({ node, ...props }) => (
+  h2: ({ ...props }) => (
     <h2 {...props} className="text-lg font-bold mb-3 text-foreground" />
   ),
-  h3: ({ node, ...props }) => (
+  h3: ({ ...props }) => (
     <h3 {...props} className="text-md font-bold mb-3 text-foreground" />
   ),
   // Style lists
-  ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-6 mb-4" />,
-  ol: ({ node, ...props }) => (
+  ul: ({ ...props }) => <ul {...props} className="list-disc pl-6 mb-4" />,
+  ol: ({ ...props }) => (
     <ol {...props} className="list-decimal pl-6 mb-4" />
   ),
   // Style list items
-  li: ({ node, ...props }) => <li {...props} className="mb-1" />,
+  li: ({ ...props }) => <li {...props} className="mb-1" />,
   // Style code blocks
-  code: ({ node, inline, ...props }) =>
-    inline ? (
+  code: (props: any) => {
+    const { inline, ...rest } = props;
+    return inline ? (
       <code
-        {...props}
+        {...rest}
         className="bg-primary/10 text-primary px-1 py-0.5 rounded text-sm font-mono"
       />
     ) : (
       <code
-        {...props}
+        {...rest}
         className="block bg-card p-3 rounded-md text-sm font-mono overflow-x-auto mb-4"
       />
-    ),
+    );
+  },
   // Style blockquotes
-  blockquote: ({ node, ...props }) => (
+  blockquote: ({ ...props }) => (
     <blockquote
       {...props}
       className="border-l-4 border-primary/30 pl-4 italic mb-4"
     />
   ),
   // Style tables
-  table: ({ node, ...props }) => (
+  table: ({ ...props }) => (
     <div className="overflow-x-auto mb-4">
       <table
         {...props}
@@ -473,35 +477,36 @@ const markdownComponents: Components = {
       />
     </div>
   ),
-  thead: ({ node, ...props }) => (
+  thead: ({ ...props }) => (
     <thead {...props} className="bg-card/50" />
   ),
-  tbody: ({ node, ...props }) => (
+  tbody: ({ ...props }) => (
     <tbody
       {...props}
       className="divide-y divide-border/30 bg-transparent"
     />
   ),
-  tr: ({ node, ...props }) => (
+  tr: ({ ...props }) => (
     <tr
       {...props}
       className="transition-colors hover:bg-card/70"
     />
   ),
-  th: ({ node, ...props }) => (
+  th: ({ ...props }) => (
     <th
       {...props}
       className="px-4 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider"
     />
   ),
-  td: ({ node, ...props }) => (
+  td: ({ ...props }) => (
     <td {...props} className="px-4 py-3 text-sm" />
   ),
 };
 
 export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [session, setSession] = useState<StandaloneRadianceChatSession | null>(null);
+  // We keep the session state even though it's not directly used, as it might be needed in future updates
+  const [, setSession] = useState<StandaloneRadianceChatSession | null>(null);
   const [messages, setMessages] = useState<StandaloneRadianceChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -653,14 +658,14 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       }
 
       // Prepare medical report data if files are selected
-      let medicalReport = null;
+      // Note: medicalReport is currently not used but kept for future implementation
       if (selectedFiles.length > 0) {
-        medicalReport = await prepareMedicalReportData(selectedFiles);
+        await prepareMedicalReportData(selectedFiles);
       }
 
       // Create a temporary user message for immediate display
       const userMessageContent = inputMessage.trim() ||
-        (selectedFiles.length > 0 ? "I've uploaded some medical files for analysis." : "");
+        (selectedFiles.length > 0 ? "I&apos;ve uploaded some medical files for analysis." : "");
 
       const tempUserMessage: StandaloneRadianceChatMessage = {
         id: 'temp-user-' + Date.now(),
@@ -682,11 +687,6 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       setIsStreaming(true);
       setStreamingContent('');
 
-      // Wrapper function for streaming updates
-      const streamingWrapper = (chunk: string) => {
-        setStreamingContent(prev => prev + chunk);
-      };
-
       // Process the message with Radiance AI
       let content = '';
       let responseReceived = false;
@@ -696,7 +696,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
         const timeoutPromise = new Promise<string>((resolve) => {
           setTimeout(() => {
             if (!responseReceived) {
-              resolve("I'm sorry, I wasn't able to generate a response in time. Please try asking your question again.");
+              resolve("I&apos;m sorry, I wasn&apos;t able to generate a response in time. Please try asking your question again.");
             }
           }, 30000); // 30 second timeout
         });
@@ -708,10 +708,10 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
         ]);
 
         responseReceived = true;
-        content = aiResponse || "I'm sorry, I encountered an error while processing your request.";
+        content = aiResponse || "I&apos;m sorry, I encountered an error while processing your request.";
       } catch (error) {
         console.error("Error processing AI chat:", error);
-        content = "I'm sorry, I encountered an error while processing your request. Please try again later.";
+        content = "I&apos;m sorry, I encountered an error while processing your request. Please try again later.";
       }
 
       // Stop streaming indicator
@@ -825,7 +825,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                   delay={0.2}
                 />
                 <AnimatedText
-                  text="I'm a medical AI assistant trained to provide evidence-based health information."
+                  text="I&apos;m a medical AI assistant trained to provide evidence-based health information."
                   className="text-sm max-w-md mb-6"
                   delay={0.4}
                 />
