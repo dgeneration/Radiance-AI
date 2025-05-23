@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useChainDiagnosis } from '@/contexts/diagnosis-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -38,8 +38,12 @@ import {
   FaAllergies,
   FaNotesMedical as FaMedicalNotes,
   FaEdit,
-  FaInfoCircle
+  FaInfoCircle,
+  FaMicrophone
 } from 'react-icons/fa';
+
+// Import speech recognition types
+import { SpeechRecognition, SpeechRecognitionEvent } from '@/types/speech-recognition';
 
 // Form schema
 const formSchema = z.object({
@@ -86,6 +90,12 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isProfileExpanded, setIsProfileExpanded] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionSupported, setRecognitionSupported] = useState(true);
+  const [userInitiatedStop, setUserInitiatedStop] = useState(false);
+  const [recognitionRestartCount, setRecognitionRestartCount] = useState(0);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const lastStopTimeRef = useRef<number>(0);
   // Test states removed
 
   // Fetch user profile on component mount
@@ -129,6 +139,343 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
       durationUnit: "days",
     },
   });
+
+  // Initialize speech recognition
+  useEffect(() => {
+    try {
+      // Check if browser supports speech recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        setRecognitionSupported(false);
+        console.warn('Speech Recognition is not supported in this browser');
+        return;
+      }
+
+      // Create speech recognition instance
+      const recognition = new SpeechRecognition();
+
+      try {
+        // Configure recognition with error handling
+        recognition.continuous = true; // Set back to true for better user experience
+        recognition.interimResults = true; // Set back to true for real-time feedback
+        recognition.lang = 'en-US';
+        recognition.maxAlternatives = 1;
+      } catch (configError) {
+        console.warn('Error configuring speech recognition:', configError);
+        setRecognitionSupported(false);
+        return;
+      }
+
+      // Set up event handlers with error handling
+      try {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          try {
+            // Track if we have a final result
+            let finalTranscript = '';
+
+            // Process all results
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+
+              if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+              }
+            }
+
+            // Only update if we have a final transcript
+            if (finalTranscript) {
+              // Get the current value from the form
+              const currentValue = form.getValues('symptoms');
+
+              // Prepare the new value with proper spacing
+              let newValue = '';
+
+              // If we have a current value
+              if (currentValue && currentValue.trim()) {
+                // Add a space only if the current value doesn't end with one
+                newValue = currentValue.endsWith(' ') ? currentValue : currentValue + ' ';
+              }
+
+              // Add the transcript
+              newValue += finalTranscript.trim();
+
+              // Update the form field
+              form.setValue('symptoms', newValue);
+            }
+          } catch (resultError) {
+            console.warn('Error processing speech recognition result:', resultError);
+          }
+        };
+      } catch (handlerError) {
+        console.warn('Error setting up speech recognition result handler:', handlerError);
+        setRecognitionSupported(false);
+        return;
+      }
+
+      try {
+        recognition.onend = () => {
+          try {
+            // If the user manually stopped recording, don't restart
+            if (userInitiatedStop) {
+              setIsRecording(false);
+              setUserInitiatedStop(false);
+              return;
+            }
+
+            // If we're still in recording mode, restart it
+            // This ensures continuous recording until the user manually stops
+            if (isRecording && recognitionRef.current) {
+              // Increment restart count to track potential issues
+              setRecognitionRestartCount(prevCount => {
+                const newCount = prevCount + 1;
+
+                // If we've had too many restarts in a short time, we might need a new instance
+                if (newCount > 3) {
+                  try {
+                    // Create a new SpeechRecognition instance
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                      // Create a new instance
+                      const newRecognition = new SpeechRecognition();
+
+                      // Configure it
+                      newRecognition.continuous = true; // Set back to true for better user experience
+                      newRecognition.interimResults = true; // Set back to true for real-time feedback
+                      newRecognition.lang = 'en-US';
+
+                      // Copy over the event handlers from the old instance
+                      if (recognitionRef.current) {
+                        newRecognition.onresult = recognitionRef.current.onresult;
+                        newRecognition.onend = recognitionRef.current.onend;
+                        newRecognition.onerror = recognitionRef.current.onerror;
+                      }
+
+                      // Replace the old instance
+                      recognitionRef.current = newRecognition;
+
+                      // Try to start the new instance with a delay
+                      setTimeout(() => {
+                        try {
+                          if (isRecording && recognitionRef.current && !userInitiatedStop) {
+                            recognitionRef.current.start();
+                          }
+                        } catch (newInstanceStartError) {
+                          // If even the new instance fails, give up
+                          setIsRecording(false);
+                        }
+                      }, 200);
+
+                      // Reset the counter
+                      return 0;
+                    }
+                  } catch (newInstanceError) {
+                    // If creating a new instance fails, continue with the old one
+                  }
+                }
+
+                // Try to restart with the current instance
+                try {
+                  // Use different delays based on restart count
+                  const delay = newCount * 50; // Increase delay with each restart
+
+                  setTimeout(() => {
+                    try {
+                      if (isRecording && recognitionRef.current && !userInitiatedStop) {
+                        recognitionRef.current.start();
+                      } else {
+                        setIsRecording(false);
+                      }
+                    } catch (delayedRestartError) {
+                      // If delayed restart fails, stop recording
+                      setIsRecording(false);
+                    }
+                  }, delay);
+                } catch (restartError) {
+                  // If scheduling the restart fails, stop recording
+                  setIsRecording(false);
+                }
+
+                return newCount;
+              });
+            } else {
+              setIsRecording(false);
+            }
+          } catch (endError) {
+            // Silently handle end errors
+            setIsRecording(false);
+          }
+        };
+      } catch (endHandlerError) {
+        console.warn('Error setting up speech recognition end handler:', endHandlerError);
+        setRecognitionSupported(false);
+        return;
+      }
+
+      try {
+        recognition.onerror = (event: any) => {
+          try {
+            // Handle specific error types
+            if (event.error === 'not-allowed') {
+              console.warn('Microphone access denied by user or browser settings');
+            } else if (event.error === 'no-speech') {
+              // This is common and not a real error, so we don't need to log it
+              // console.warn('No speech detected');
+            } else if (event.error === 'aborted') {
+              // Aborted errors are common and usually not problematic
+              // We'll completely suppress these warnings as they're expected behavior
+              // in many browsers and don't affect functionality
+
+              // Reset the flag
+              setUserInitiatedStop(false);
+            } else {
+              console.warn('Speech recognition error:', event.error || 'unknown error');
+            }
+
+            // Stop recording state
+            setIsRecording(false);
+          } catch (errorHandlingError) {
+            console.warn('Error in speech recognition error handler:', errorHandlingError);
+            setIsRecording(false);
+          }
+        };
+      } catch (errorHandlerError) {
+        console.warn('Error setting up speech recognition error handler:', errorHandlerError);
+        setRecognitionSupported(false);
+        return;
+      }
+
+      // Store the recognition instance in the ref
+      recognitionRef.current = recognition;
+
+      // Clean up on unmount
+      return () => {
+        try {
+          if (recognitionRef.current) {
+            recognitionRef.current.abort();
+          }
+        } catch (cleanupError) {
+          console.warn('Error cleaning up speech recognition:', cleanupError);
+        }
+      };
+
+    } catch (initError) {
+      console.warn('Error initializing speech recognition:', initError);
+      setRecognitionSupported(false);
+    }
+  }, [isRecording, userInitiatedStop, form]);
+
+  // Handle toggling speech recognition
+  const toggleSpeechRecognition = () => {
+    try {
+      if (!recognitionRef.current) {
+        console.warn('Speech recognition not initialized');
+        return;
+      }
+
+      if (isRecording) {
+        try {
+          // Set flag to indicate this is a user-initiated stop
+          setUserInitiatedStop(true);
+
+          // Store the time when we stopped
+          lastStopTimeRef.current = Date.now();
+
+          // Stop the recognition
+          recognitionRef.current.stop();
+
+          // Reset restart count
+          setRecognitionRestartCount(0);
+
+          // Ensure recording state is updated
+          setIsRecording(false);
+        } catch (stopError) {
+          // If stop fails, try abort
+          try {
+            recognitionRef.current.abort();
+          } catch (abortError) {
+            // Ignore abort errors
+          } finally {
+            setIsRecording(false);
+            setRecognitionRestartCount(0);
+          }
+        }
+      } else {
+        try {
+          // Check if we need to recreate the recognition instance
+          // If it's been less than 1 second since we stopped, we might need a new instance
+          const timeSinceLastStop = Date.now() - lastStopTimeRef.current;
+          const needsNewInstance = timeSinceLastStop < 1000;
+
+          // If we need a new instance or we've had restart issues
+          if (needsNewInstance || recognitionRestartCount > 0) {
+            // Create a new SpeechRecognition instance
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+              // Create a new instance
+              const newRecognition = new SpeechRecognition();
+
+              // Configure it
+              newRecognition.continuous = true; // Set back to true for better user experience
+              newRecognition.interimResults = true; // Set back to true for real-time feedback
+              newRecognition.lang = 'en-US';
+
+              // Copy over the event handlers from the old instance
+              if (recognitionRef.current) {
+                newRecognition.onresult = recognitionRef.current.onresult;
+                newRecognition.onend = recognitionRef.current.onend;
+                newRecognition.onerror = recognitionRef.current.onerror;
+              }
+
+              // Replace the old instance
+              recognitionRef.current = newRecognition;
+            }
+          }
+
+          // Make sure any previous instance is fully stopped
+          try {
+            recognitionRef.current.abort();
+          } catch (abortError) {
+            // Ignore abort errors
+          }
+
+          // Set recording state before starting
+          setIsRecording(true);
+
+          // Use a longer delay for a more reliable start
+          setTimeout(() => {
+            try {
+              // Start new recognition session
+              if (recognitionRef.current) {
+                recognitionRef.current.start();
+                // Reset restart count on successful start
+                setRecognitionRestartCount(0);
+              }
+            } catch (delayedStartError) {
+              console.warn('Error starting speech recognition after delay:', delayedStartError);
+
+              // Increment restart count and try again with a new instance if needed
+              const newCount = recognitionRestartCount + 1;
+              setRecognitionRestartCount(newCount);
+
+              if (newCount <= 2) {  // Limit retries to prevent infinite loops
+                // Try again after a longer delay
+                setTimeout(() => toggleSpeechRecognition(), 500);
+              } else {
+                setIsRecording(false);
+              }
+            }
+          }, 100);  // Increased delay for more reliability
+        } catch (startError) {
+          console.warn('Error in speech recognition start process:', startError);
+          setIsRecording(false);
+        }
+      }
+    } catch (error) {
+      console.warn('Error in speech recognition toggle:', error);
+      setIsRecording(false);
+    }
+  };
 
   // Test functions removed
 
@@ -455,13 +802,49 @@ export function ChainDiagnosisForm({ userId }: ChainDiagnosisFormProps) {
                       <div className="relative">
                         <FormControl>
                           <Textarea
-                            placeholder="Describe your symptoms in detail..."
-                            className="resize-none min-h-[180px] bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20"
+                            placeholder={isRecording ? "Listening... speak clearly (pauses will complete your sentence)" : "Describe your symptoms in detail..."}
+                            className={`resize-none min-h-[180px] bg-card/50 border-primary/10 focus:border-primary/30 focus:ring-primary/20 ${
+                              isRecording ? "border-primary/40 bg-primary/5 shadow-[0_0_0_1px_rgba(0,198,215,0.3)]" : ""
+                            }`}
                             {...field}
                           />
                         </FormControl>
+
+                        {/* Microphone button */}
+                        <div className="absolute right-3 bottom-3">
+                          <button
+                            type="button"
+                            onClick={toggleSpeechRecognition}
+                            className={`p-2 rounded-full transition-all duration-300 ${
+                              isRecording
+                                ? "bg-primary/20 text-primary"
+                                : "bg-card/80 text-primary/60 hover:bg-primary/10 hover:text-primary"
+                            }`}
+                            disabled={!recognitionSupported}
+                            title={recognitionSupported ? (isRecording ? "Stop recording" : "Start voice input") : "Speech recognition not supported"}
+                          >
+                            {isRecording ? (
+                              <div className="relative">
+                                <FaMicrophone className="h-5 w-5" />
+                                <div className="absolute -right-1 -top-1 flex space-x-0.5">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease-in-out_infinite]"></span>
+                                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease-in-out_0.3s_infinite]"></span>
+                                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-[pulse_1s_ease-in-out_0.6s_infinite]"></span>
+                                </div>
+                              </div>
+                            ) : (
+                              <FaMicrophone className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+
                         <FormDescription className="mt-2">
                           Be as specific as possible about what you&apos;re experiencing.
+                          {recognitionSupported && (
+                            <span className="ml-1 text-primary/70">
+                              Click the microphone icon to use voice input.
+                            </span>
+                          )}
                         </FormDescription>
                       </div>
                       <FormMessage />
