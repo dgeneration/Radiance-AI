@@ -69,12 +69,16 @@ export function MobileMenu() {
         <Link
           href="/rai"
           className={`flex flex-col items-center relative ${
-            pathname === '/rai' || pathname.startsWith('/diagnosis') || pathname === '/ask-radiance'
+            pathname === '/rai' ||
+            (pathname.startsWith('/diagnosis') && pathname !== '/diagnosis/history') ||
+            pathname === '/ask-radiance'
               ? "text-primary"
               : "text-muted-foreground hover:text-primary"
           } transition-colors`}
         >
-          {(pathname === '/rai' || pathname.startsWith('/diagnosis') || pathname === '/ask-radiance') && (
+          {(pathname === '/rai' ||
+            (pathname.startsWith('/diagnosis') && pathname !== '/diagnosis/history') ||
+            pathname === '/ask-radiance') && (
             <motion.div
               layoutId="activeTab"
               className="absolute -top-3 w-1/2 h-1 bg-gradient-to-r from-primary to-accent rounded-full"
@@ -85,7 +89,9 @@ export function MobileMenu() {
           )}
 
           <div className={`p-2 rounded-full ${
-            pathname === '/rai' || pathname.startsWith('/diagnosis') || pathname === '/ask-radiance'
+            pathname === '/rai' ||
+            (pathname.startsWith('/diagnosis') && pathname !== '/diagnosis/history') ||
+            pathname === '/ask-radiance'
               ? "bg-primary/10"
               : "bg-transparent hover:bg-primary/5"
           } transition-colors`}>
@@ -98,7 +104,11 @@ export function MobileMenu() {
         </Link>
 
         {/* History Link - Special handling for reliable navigation */}
-        <div className="flex flex-col items-center relative">
+        <div className={`flex flex-col items-center relative ${
+          pathname === '/diagnosis/history'
+            ? "text-primary"
+            : "text-muted-foreground hover:text-primary"
+        } transition-colors`}>
           {pathname === '/diagnosis/history' && (
             <motion.div
               layoutId="activeTab"

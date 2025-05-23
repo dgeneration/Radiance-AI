@@ -67,7 +67,9 @@ export function Header({ user }: HeaderProps) {
                   <Link
                     href="/rai"
                     className={`px-5 py-2 rounded-md text-sm font-medium transition-colors duration-200 cursor-pointer flex items-center ${
-                      pathname === '/rai' || pathname.startsWith('/diagnosis') || pathname === '/ask-radiance'
+                      pathname === '/rai' ||
+                      (pathname.startsWith('/diagnosis') && pathname !== '/diagnosis/history') ||
+                      pathname === '/ask-radiance'
                         ? 'text-primary bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/20 shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 hover:border hover:border-primary/10'
                     }`}

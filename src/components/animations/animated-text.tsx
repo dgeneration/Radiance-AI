@@ -16,10 +16,10 @@ export function AnimatedText({
   className = "",
   delay = 0,
   duration = 0.05,
-  staggerChildren = 0.02,
+  staggerChildren = 0.01, // Reduced stagger time for faster animation
 }: AnimatedTextProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(true); // Start with true to show text immediately
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("down");
   const { scrollY } = useScroll();
   const [prevScrollY, setPrevScrollY] = useState(0);
@@ -36,11 +36,14 @@ export function AnimatedText({
 
   // Set up intersection observer to track when element is in view
   useEffect(() => {
+    // Skip observer setup if we're already showing the text
+    if (inView) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setInView(entry.isIntersecting);
       },
-      { threshold: 0.2 }
+      { threshold: 0.05, rootMargin: "50px" } // Lower threshold and add margin for earlier detection
     );
 
     const currentRef = ref.current;
@@ -53,7 +56,7 @@ export function AnimatedText({
         observer.unobserve(currentRef);
       }
     };
-  }, []);
+  }, [inView]);
 
   // Handle both string and React element cases
   const isReactElement = typeof text !== 'string';

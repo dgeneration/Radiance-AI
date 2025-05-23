@@ -27,6 +27,7 @@ export function HistoryLink({ isActive, isMobile = false }: HistoryLinkProps) {
       <button
         onClick={handleClick}
         className="flex items-center justify-center"
+        aria-label="History"
       >
         <MessageSquare className="h-5 w-5" />
       </button>

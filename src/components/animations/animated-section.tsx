@@ -17,12 +17,12 @@ export function AnimatedSection({
   className = "",
   delay = 0,
   direction = "up",
-  threshold = 0.1,
-  once = false, // Default to false to maintain backward compatibility
+  threshold = 0.05, // Lower threshold for earlier detection
+  once = true, // Default to true to prevent re-animations when scrolling
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  const [hasBeenViewed, setHasBeenViewed] = useState(false); // Track if element has been viewed
+  const [inView, setInView] = useState(true); // Start with true to show content immediately
+  const [hasBeenViewed, setHasBeenViewed] = useState(true); // Start with true to show content immediately
   const [scrollDirection, setScrollDirection] = useState<"up" | "down">("down");
   const { scrollY } = useScroll();
   const [prevScrollY, setPrevScrollY] = useState(0);
@@ -39,15 +39,21 @@ export function AnimatedSection({
 
   // Set up intersection observer to track when element is in view
   useEffect(() => {
+    // Skip observer setup if we're already showing the content
+    if (inView && hasBeenViewed) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         setInView(entry.isIntersecting);
-        // If the element is in view and once is true, mark it as viewed
+        // If the element is in view, mark it as viewed
         if (entry.isIntersecting) {
           setHasBeenViewed(true);
         }
       },
-      { threshold }
+      {
+        threshold,
+        rootMargin: "100px" // Add margin for earlier detection
+      }
     );
 
     const currentRef = ref.current;
@@ -60,10 +66,10 @@ export function AnimatedSection({
         observer.unobserve(currentRef);
       }
     };
-  }, [threshold, once]);
+  }, [threshold, once, inView, hasBeenViewed]);
 
   const getDirectionVariants = (): Variants => {
-    const distance = 50;
+    const distance = 30; // Reduced distance for faster animation
 
     // Determine animation based on scroll direction and configured animation direction
     const animationDirection = scrollDirection === "up" ?
@@ -75,58 +81,62 @@ export function AnimatedSection({
     switch (animationDirection) {
       case "down":
         return {
-          hidden: { y: -distance, opacity: 0, scale: 0.95 },
+          hidden: { y: -distance, opacity: 0, scale: 0.98 },
           visible: {
             y: 0,
             opacity: 1,
             scale: 1,
             transition: {
               type: "spring",
-              stiffness: 260,
-              damping: 20,
+              stiffness: 300,
+              damping: 25,
+              duration: 0.3, // Faster animation
             }
           },
         };
       case "left":
         return {
-          hidden: { x: distance, opacity: 0, scale: 0.95 },
+          hidden: { x: distance, opacity: 0, scale: 0.98 },
           visible: {
             x: 0,
             opacity: 1,
             scale: 1,
             transition: {
               type: "spring",
-              stiffness: 260,
-              damping: 20,
+              stiffness: 300,
+              damping: 25,
+              duration: 0.3, // Faster animation
             }
           },
         };
       case "right":
         return {
-          hidden: { x: -distance, opacity: 0, scale: 0.95 },
+          hidden: { x: -distance, opacity: 0, scale: 0.98 },
           visible: {
             x: 0,
             opacity: 1,
             scale: 1,
             transition: {
               type: "spring",
-              stiffness: 260,
-              damping: 20,
+              stiffness: 300,
+              damping: 25,
+              duration: 0.3, // Faster animation
             }
           },
         };
       case "up":
       default:
         return {
-          hidden: { y: distance, opacity: 0, scale: 0.95 },
+          hidden: { y: distance, opacity: 0, scale: 0.98 },
           visible: {
             y: 0,
             opacity: 1,
             scale: 1,
             transition: {
               type: "spring",
-              stiffness: 260,
-              damping: 20,
+              stiffness: 300,
+              damping: 25,
+              duration: 0.3, // Faster animation
             }
           },
         };

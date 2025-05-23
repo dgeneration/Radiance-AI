@@ -26,8 +26,8 @@ export function GradientHeading({
   level = 2,
   as,
   size = "lg",
-  animate = true,
-  staggerChildren = 0.01,
+  animate = false, // Default to false to prevent animation delay
+  staggerChildren = 0.005, // Faster stagger for quicker animation
   delay = 0,
   textShadow = true,
   fromColor = "from-primary",
@@ -71,10 +71,9 @@ export function GradientHeading({
   // For non-animated or non-string children
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.7, delay }}
+      initial={{ opacity: 0, y: 10 }} // Reduced distance
+      animate={{ opacity: 1, y: 0 }} // Use animate instead of whileInView for immediate display
+      transition={{ duration: 0.3, delay }} // Faster animation
     >
       <HeadingTag className={headingClasses}>{children}</HeadingTag>
     </motion.div>
