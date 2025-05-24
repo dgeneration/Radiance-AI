@@ -105,6 +105,8 @@ export function FileSelector({
                         <Image
                           src={file.public_url}
                           alt={file.name}
+                          width={40}
+                          height={40}
                           className="h-full w-full object-cover"
                         />
                       ) : (

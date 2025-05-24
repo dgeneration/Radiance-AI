@@ -18,6 +18,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Send,
@@ -27,7 +29,12 @@ import {
   Sparkles,
   Paperclip,
   Trash2,
-  Mic
+  Mic,
+  Volume2,
+  Play,
+  Pause,
+  MicIcon,
+  Bot
 } from 'lucide-react';
 import {
   AnimatedSection,
@@ -81,6 +88,21 @@ import type { Components } from 'react-markdown';
 
 // Import speech recognition types
 import { SpeechRecognition, SpeechRecognitionEvent } from '@/types/speech-recognition';
+
+// Import audio utilities for TTS functionality
+import {
+  createAudioChunks,
+  createAudioQueueManager,
+  playAudioQueue,
+  pauseAudioQueue,
+  resumeAudioQueue,
+  stopAudioQueue,
+  cleanupAudioChunks,
+  AudioQueueManager,
+  AudioChunk
+} from '@/utils/audio-utils';
+
+// Removed highlighted text component import
 
 // Define custom components for ReactMarkdown
 const markdownComponents: Components = {
@@ -185,10 +207,30 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
   const [recognitionSupported, setRecognitionSupported] = useState(true);
   const [userInitiatedStop, setUserInitiatedStop] = useState(false);
   const [recognitionRestartCount, setRecognitionRestartCount] = useState(0);
+
+  // TTS state variables
+  const [audioChunks, setAudioChunks] = useState<AudioChunk[]>([]);
+  const [audioManager, setAudioManager] = useState<AudioQueueManager | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isConvertingToSpeech, setIsConvertingToSpeech] = useState<{ [messageId: string]: boolean }>({});
+  const [audioForMessage, setAudioForMessage] = useState<{ [messageId: string]: AudioQueueManager }>({});
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  // Removed highlighting-related state variables
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const lastStopTimeRef = useRef<number>(0);
+
+  // Voice Assistant state
+  const [isVoiceAssistantMode, setIsVoiceAssistantMode] = useState(false);
+  const [speechTimeout, setSpeechTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const voiceAssistantTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSpeechTimeRef = useRef<number>(0);
+  const currentInputMessageRef = useRef<string>('');
 
   // Initialize speech recognition
   useEffect(() => {
@@ -198,7 +240,6 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
       if (!SpeechRecognition) {
         setRecognitionSupported(false);
-        console.warn('Speech Recognition is not supported in this browser');
         return;
       }
 
@@ -251,7 +292,27 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
               // Add the final transcript
               if (finalTranscript) {
                 newMessage += finalTranscript;
+
+                // In Voice Assistant mode, reset the timeout when we get final transcript
+                if (isVoiceAssistantMode) {
+                  if (voiceAssistantTimeoutRef.current) {
+                    clearTimeout(voiceAssistantTimeoutRef.current);
+                  }
+
+                  // Set new 10-second timeout for auto-submit
+                  voiceAssistantTimeoutRef.current = setTimeout(() => {
+                    // Use the ref to get the current input message
+                    const currentMessage = currentInputMessageRef.current;
+
+                    if (isVoiceAssistantMode && currentMessage.trim() && !isWaitingForResponse && !isAutoPlaying) {
+                      handleSendMessage();
+                    }
+                  }, 10000);
+                }
               }
+
+              // Update the ref with the new message
+              currentInputMessageRef.current = newMessage;
 
               return newMessage;
             });
@@ -273,6 +334,25 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
           if (userInitiatedStop) {
             setIsRecording(false);
             setUserInitiatedStop(false);
+            return;
+          }
+
+          // In Voice Assistant mode, handle restart differently
+          if (isVoiceAssistantMode) {
+            // Only restart if we're not waiting for response or playing audio
+            if (!isWaitingForResponse && !isAutoPlaying && isRecording) {
+              setTimeout(() => {
+                if (isVoiceAssistantMode && !isWaitingForResponse && !isAutoPlaying && recognitionRef.current) {
+                  try {
+                    recognitionRef.current.start();
+                  } catch (restartError) {
+                    setIsRecording(false);
+                  }
+                }
+              }, 100);
+            } else {
+              setIsRecording(false);
+            }
             return;
           }
 
@@ -416,10 +496,13 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       console.warn('Error initializing speech recognition:', initError);
       setRecognitionSupported(false);
     }
-  }, [isRecording]); // Added isRecording as a dependency
+  }, [isRecording, isVoiceAssistantMode, isWaitingForResponse, isAutoPlaying]); // Added Voice Assistant dependencies
 
   // Handle toggling speech recognition
   const toggleSpeechRecognition = () => {
+    // Don't allow manual speech recognition toggle in Voice Assistant mode
+    if (isVoiceAssistantMode) return;
+
     try {
       if (!recognitionRef.current) {
         console.warn('Speech recognition not initialized');
@@ -530,6 +613,320 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
     }
   };
 
+  // Voice Assistant functions
+  const startVoiceAssistantListening = (skipInitialTimeout = false, forceStart = false) => {
+    if (!recognitionRef.current || !isVoiceAssistantMode) {
+      return;
+    }
+
+    try {
+      // Clear any existing timeout
+      if (voiceAssistantTimeoutRef.current) {
+        clearTimeout(voiceAssistantTimeoutRef.current);
+        voiceAssistantTimeoutRef.current = null;
+      }
+
+      // Start speech recognition if not already recording, or force restart if resuming after audio
+      if (!isRecording || skipInitialTimeout) {
+        // Make sure any previous instance is fully stopped
+        try {
+          recognitionRef.current.abort();
+        } catch (abortError) {
+          // Ignore abort errors
+        }
+
+        // Set recording state before starting
+        setIsRecording(true);
+
+        // Use a small delay for more reliable start
+        setTimeout(() => {
+          try {
+            // Allow forceStart to bypass isAutoPlaying check
+            const canStart = recognitionRef.current && isVoiceAssistantMode && !isWaitingForResponse && (forceStart || !isAutoPlaying);
+
+            if (canStart && recognitionRef.current) {
+              recognitionRef.current.start();
+            } else {
+              setIsRecording(false);
+            }
+          } catch (startError) {
+            // If start fails, reset recording state
+            setIsRecording(false);
+          }
+        }, 100);
+      }
+
+      // Only set timeout if not skipping (i.e., not resuming after audio)
+      if (!skipInitialTimeout) {
+        // Set up 10-second timeout for auto-submit
+        voiceAssistantTimeoutRef.current = setTimeout(() => {
+          const currentMessage = currentInputMessageRef.current;
+
+          if (isVoiceAssistantMode && currentMessage.trim() && !isWaitingForResponse && !isAutoPlaying) {
+            handleSendMessage();
+          }
+        }, 10000);
+      }
+
+    } catch (error) {
+      // Error starting voice assistant listening
+      setIsRecording(false);
+    }
+  };
+
+  const stopVoiceAssistantListening = () => {
+    try {
+      // Clear timeout
+      if (voiceAssistantTimeoutRef.current) {
+        clearTimeout(voiceAssistantTimeoutRef.current);
+        voiceAssistantTimeoutRef.current = null;
+      }
+
+      // Stop speech recognition
+      if (isRecording && recognitionRef.current) {
+        setUserInitiatedStop(true);
+        recognitionRef.current.stop();
+        setIsRecording(false);
+      }
+    } catch (error) {
+      // Error stopping voice assistant listening
+    }
+  };
+
+  const handleVoiceAssistantToggle = (enabled: boolean) => {
+    if (enabled) {
+      // Start Voice Assistant mode
+      setIsVoiceAssistantMode(true);
+      setIsWaitingForResponse(false);
+      setIsAutoPlaying(false);
+
+      // Start speech recognition directly without relying on state
+      if (recognitionRef.current) {
+        try {
+          // Make sure any previous instance is fully stopped
+          recognitionRef.current.abort();
+        } catch (abortError) {
+          // Ignore abort errors
+        }
+
+        // Set recording state
+        setIsRecording(true);
+
+        // Start recognition with a small delay
+        setTimeout(() => {
+          try {
+            if (recognitionRef.current) {
+              recognitionRef.current.start();
+            }
+          } catch (startError) {
+            setIsRecording(false);
+          }
+        }, 100);
+      }
+    } else {
+      // Stop Voice Assistant mode
+      setIsVoiceAssistantMode(false);
+      stopVoiceAssistantListening();
+      setIsWaitingForResponse(false);
+      setIsAutoPlaying(false);
+
+      // Stop any playing audio
+      if (playingMessageId && audioForMessage[playingMessageId]) {
+        stopAudioQueue(audioForMessage[playingMessageId]);
+        setIsPlaying(false);
+        setIsPaused(false);
+        setPlayingMessageId(null);
+      }
+    }
+  };
+
+  // Auto-convert response to speech in Voice Assistant mode
+  const autoConvertToSpeech = async (messageId: string, text: string) => {
+    if (!isVoiceAssistantMode) return;
+
+    setIsAutoPlaying(true);
+
+    try {
+      // Remove markdown styling from text before TTS conversion
+      const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+
+      // Use streaming TTS API for faster audio playback
+      const response = await fetch('/api/tts/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          voice: 'tt-en_us_001'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Streaming TTS request failed: ${response.status}`);
+      }
+
+      // Process streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Failed to get response reader');
+      }
+
+      const decoder = new TextDecoder();
+      const audioChunks: string[] = [];
+      const textChunks: string[] = [];
+      let totalChunks = 0;
+      let manager: AudioQueueManager | null = null;
+      let hasStartedPlaying = false;
+      let buffer = ''; // Buffer for incomplete JSON data
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Add new data to buffer
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines
+          const lines = buffer.split('\n');
+          // Keep the last line in buffer (might be incomplete)
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6).trim();
+                if (jsonStr) {
+                  const data = JSON.parse(jsonStr);
+
+                  if (data.type === 'metadata') {
+                    totalChunks = data.totalChunks;
+                    textChunks.push(...data.textChunks);
+                  }
+                  else if (data.type === 'chunk' && data.success && data.audioData) {
+                    audioChunks[data.index] = data.audioData;
+
+                    // Start playing as soon as we have the first chunk
+                    if (data.index === 0 && !hasStartedPlaying) {
+                      hasStartedPlaying = true;
+
+                      // Create initial audio chunks with what we have
+                      const initialChunks = createAudioChunks([data.audioData], [textChunks[0] || '']);
+
+                      // Create audio manager
+                      manager = createAudioQueueManager(initialChunks, {
+                        onChunkStart: () => {
+                          setIsPlaying(true);
+                          setIsPaused(false);
+                          setPlayingMessageId(messageId);
+                        },
+                        onChunkEnd: () => {
+                          // Chunk ended, continue to next
+                        },
+                        onQueueComplete: () => {
+                          setIsPlaying(false);
+                          setIsPaused(false);
+                          setPlayingMessageId(null);
+                          setIsAutoPlaying(false);
+
+                          // Resume listening after audio completes (only in Voice Assistant mode)
+                          if (isVoiceAssistantMode) {
+                            setTimeout(() => {
+                              // Clear the input before resuming listening
+                              setInputMessage('');
+                              currentInputMessageRef.current = '';
+
+                              // Force stop current recognition and restart
+                              if (recognitionRef.current) {
+                                try {
+                                  recognitionRef.current.stop();
+                                  setIsRecording(false);
+                                } catch (stopError) {
+                                  // Ignore stop errors
+                                }
+
+                                // Wait a bit then restart
+                                setTimeout(() => {
+                                  startVoiceAssistantListening(true); // Skip initial timeout when resuming
+                                }, 500);
+                              }
+                            }, 1000);
+                          }
+                        },
+                        onError: (error) => {
+                          setIsPlaying(false);
+                          setIsPaused(false);
+                          setPlayingMessageId(null);
+                          setIsAutoPlaying(false);
+
+                          // Resume listening after error (only in Voice Assistant mode)
+                          if (isVoiceAssistantMode) {
+                            setTimeout(() => {
+                              // Clear the input before resuming listening
+                              setInputMessage('');
+                              currentInputMessageRef.current = '';
+
+                              // Force stop current recognition and restart
+                              if (recognitionRef.current) {
+                                try {
+                                  recognitionRef.current.stop();
+                                  setIsRecording(false);
+                                } catch (stopError) {
+                                  // Ignore stop errors
+                                }
+
+                                // Wait a bit then restart
+                                setTimeout(() => {
+                                  startVoiceAssistantListening(true); // Skip initial timeout when resuming
+                                }, 500);
+                              }
+                            }, 1000);
+                          }
+                        }
+                      });
+
+                      if (manager) {
+                        setAudioForMessage(prev => ({ ...prev, [messageId]: manager as AudioQueueManager }));
+
+                        // Start playing the first chunk immediately
+                        playAudioQueue(manager);
+                      }
+                    }
+                    // Add subsequent chunks to the queue
+                    else if (manager && data.index > 0) {
+                      const newChunk = createAudioChunks([data.audioData], [textChunks[data.index] || ''])[0];
+                      manager.chunks.push(newChunk);
+                    }
+                  }
+                  else if (data.type === 'complete') {
+                    // All chunks received
+                  }
+                  else if (data.type === 'error') {
+                    // TTS error occurred
+                  }
+                }
+              } catch (parseError) {
+                // Ignore parse errors and continue
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      setIsAutoPlaying(false);
+
+      // Resume listening after error (only in Voice Assistant mode)
+      if (isVoiceAssistantMode) {
+        setTimeout(() => {
+          startVoiceAssistantListening();
+        }, 500);
+      }
+    }
+  };
+
   // Get or create a standalone chat session when the component mounts
   useEffect(() => {
     async function initializeSession() {
@@ -588,6 +985,32 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
     scrollToBottom();
   }, [messages, streamingContent]);
 
+  // Cleanup audio and Voice Assistant on unmount
+  useEffect(() => {
+    return () => {
+      // Stop any playing audio
+      if (playingMessageId && audioForMessage[playingMessageId]) {
+        stopAudioQueue(audioForMessage[playingMessageId]);
+      }
+
+      // Clean up all audio chunks
+      Object.values(audioForMessage).forEach(manager => {
+        if (manager.chunks) {
+          cleanupAudioChunks(manager.chunks);
+        }
+      });
+
+      if (audioChunks.length > 0) {
+        cleanupAudioChunks(audioChunks);
+      }
+
+      // Clean up Voice Assistant timeout
+      if (voiceAssistantTimeoutRef.current) {
+        clearTimeout(voiceAssistantTimeoutRef.current);
+      }
+    };
+  }, [playingMessageId, audioForMessage, audioChunks]);
+
   // Scroll to the bottom of the chat
   const scrollToBottom = () => {
     const container = chatContainerRef.current;
@@ -601,7 +1024,9 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputMessage(e.target.value);
+    const value = e.target.value;
+    setInputMessage(value);
+    currentInputMessageRef.current = value;
   };
 
   // Handle key press (Enter to send)
@@ -629,15 +1054,43 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       setIsRecording(false);
     }
 
+    // Stop any playing audio
+    if (playingMessageId && audioForMessage[playingMessageId]) {
+      stopAudioQueue(audioForMessage[playingMessageId]);
+    }
+
     try {
       setIsProcessing(true);
+
+      // Collect all AI message texts for TTS cache clearing
+      const aiMessageTexts = messages
+        .filter(msg => msg.role === 'assistant')
+        .map(msg => msg.content);
 
       try {
         // Clear messages from the database
         await clearStandaloneRadianceChatMessages(sessionId, userId);
       } catch (error) {
-        console.error("Error clearing chat messages from database:", error);
         // Continue with UI clearing even if database operation fails
+      }
+
+      // Clear TTS cache for AI messages
+      if (aiMessageTexts.length > 0) {
+        try {
+          const response = await fetch('/api/tts/clear-cache', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              texts: aiMessageTexts,
+              voice: 'tt-en_us_001'
+            }),
+          });
+          // Continue with UI clearing even if TTS cache clearing fails
+        } catch (error) {
+          // Continue with UI clearing even if TTS cache clearing fails
+        }
       }
 
       // Clear all messages in the UI
@@ -652,8 +1105,22 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       setShowFileSelector(false);
       // Clear input message
       setInputMessage('');
+
+      // Clear audio-related state
+      setAudioForMessage({});
+      setPlayingMessageId(null);
+      setIsPlaying(false);
+      setIsPaused(false);
+      setIsConvertingToSpeech({});
+
+      // Clean up any remaining audio chunks
+      if (audioChunks.length > 0) {
+        cleanupAudioChunks(audioChunks);
+        setAudioChunks([]);
+      }
+
     } catch (error) {
-      console.error("Error in clear chat flow:", error);
+      // Error in clear chat flow
     } finally {
       setIsProcessing(false);
     }
@@ -661,7 +1128,10 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
   // Handle sending a message and saving to the database
   const handleSendMessage = async () => {
-    if (!sessionId || (!inputMessage.trim() && selectedFiles.length === 0)) return;
+    // For Voice Assistant mode, use the ref value; otherwise use state
+    const messageToSend = isVoiceAssistantMode ? currentInputMessageRef.current : inputMessage;
+
+    if (!sessionId || (!messageToSend.trim() && selectedFiles.length === 0)) return;
 
     // Stop recording if active
     if (isRecording && recognitionRef.current) {
@@ -670,15 +1140,25 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       setIsRecording(false);
     }
 
+    // Clear any Voice Assistant timeout
+    if (voiceAssistantTimeoutRef.current) {
+      clearTimeout(voiceAssistantTimeoutRef.current);
+      voiceAssistantTimeoutRef.current = null;
+    }
+
     try {
       setIsProcessing(true);
+
+      // Set waiting state for Voice Assistant mode
+      if (isVoiceAssistantMode) {
+        setIsWaitingForResponse(true);
+      }
 
       // Get the current user
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        console.error("User not authenticated");
         setIsProcessing(false);
         return;
       }
@@ -705,7 +1185,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       }
 
       // Create a temporary user message for immediate display
-      const userMessageContent = (inputMessage.trim() ||
+      const userMessageContent = (messageToSend.trim() ||
         (selectedFiles.length > 0 ? "I've uploaded some medical files for analysis." : "")) + fileContent;
 
       const tempUserMessage: StandaloneRadianceChatMessage = {
@@ -723,6 +1203,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
 
       // Clear the input and selected files
       setInputMessage('');
+      currentInputMessageRef.current = '';
       setSelectedFiles([]);
 
       // Start streaming indicator
@@ -752,7 +1233,6 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
         responseReceived = true;
         content = aiResponse || "I&apos;m sorry, I encountered an error while processing your request.";
       } catch (error) {
-        console.error("Error processing AI chat:", error);
         content = "I&apos;m sorry, I encountered an error while processing your request. Please try again later.";
       }
 
@@ -780,8 +1260,6 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
           setMessages(prev => [...prev, tempAiMessage]);
         }
       } catch (error) {
-        console.error("Error refreshing messages:", error);
-
         // Add the AI response to the local state
         const tempAiMessage: StandaloneRadianceChatMessage = {
           id: 'temp-ai-' + Date.now(),
@@ -798,10 +1276,226 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
       // Clear streaming content
       setStreamingContent('');
 
+      // Auto-convert to speech in Voice Assistant mode
+      if (isVoiceAssistantMode && content) {
+        // Find the latest AI message to get its ID
+        const latestMessages = await getStandaloneRadianceChatMessages(sessionId, userId);
+        const latestAiMessage = latestMessages?.find(msg => msg.role === 'assistant' && msg.content === content);
+
+        if (latestAiMessage) {
+          setTimeout(() => {
+            autoConvertToSpeech(latestAiMessage.id, content);
+          }, 500); // Small delay to ensure UI is updated
+        }
+      }
+
     } catch (error) {
-      console.error("Error in send message flow:", error);
+      // Error in send message flow
     } finally {
       setIsProcessing(false);
+
+      // Reset waiting state for Voice Assistant mode
+      if (isVoiceAssistantMode) {
+        setIsWaitingForResponse(false);
+      }
+    }
+  };
+
+  // TTS conversion function
+  const convertMessageToSpeech = async (messageId: string, text: string) => {
+    try {
+      // If this message is already playing, pause/resume it
+      if (playingMessageId === messageId && audioForMessage[messageId]) {
+        handlePlayPause(messageId);
+        return;
+      }
+
+      setIsConvertingToSpeech(prev => ({ ...prev, [messageId]: true }));
+
+      // Stop any currently playing audio
+      if (playingMessageId && audioForMessage[playingMessageId]) {
+        stopAudioQueue(audioForMessage[playingMessageId]);
+      }
+      setPlayingMessageId(null);
+      setIsPlaying(false);
+      setIsPaused(false);
+
+      // Clean up previous audio chunks
+      if (audioChunks.length > 0) {
+        cleanupAudioChunks(audioChunks);
+        setAudioChunks([]);
+      }
+
+      // Convert text to speech using the same TTS API as voice assistant
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          voice: 'tt-en_us_001'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'TTS conversion failed');
+      }
+
+      // Create audio chunks if available
+      if (data.audioChunks && data.audioChunks.length > 0) {
+        const textChunks = data.textChunks || [];
+        const wordCounts = data.wordCounts || [];
+
+
+        // If we don't have text chunks from API, split the message text to match audio chunks
+        let finalTextChunks = textChunks;
+        let finalWordCounts = wordCounts;
+
+        if (textChunks.length === 0 && data.audioChunks.length > 1) {
+          // Split the message into roughly equal parts to match audio chunks
+          const words = text.split(' ');
+          const wordsPerChunk = Math.ceil(words.length / data.audioChunks.length);
+          finalTextChunks = [];
+          finalWordCounts = [];
+
+          for (let i = 0; i < data.audioChunks.length; i++) {
+            const start = i * wordsPerChunk;
+            const end = Math.min(start + wordsPerChunk, words.length);
+            const chunkText = words.slice(start, end).join(' ');
+            finalTextChunks.push(chunkText);
+            finalWordCounts.push(end - start);
+          }
+
+
+        }
+
+        const chunks = createAudioChunks(data.audioChunks, finalTextChunks);
+        setAudioChunks(chunks);
+
+
+
+        // Create audio manager for this message
+        const manager = createAudioQueueManager(chunks, {
+          onChunkStart: (chunkIndex) => {
+            setIsPlaying(true);
+            setIsPaused(false);
+            setPlayingMessageId(messageId);
+          },
+          onChunkEnd: () => {
+            // Chunk ended, continue to next
+          },
+          onQueueComplete: () => {
+            setIsPlaying(false);
+            setIsPaused(false);
+            setPlayingMessageId(null);
+          },
+          onError: () => {
+            setIsPlaying(false);
+            setIsPaused(false);
+            setPlayingMessageId(null);
+          }
+        });
+
+        setAudioManager(manager);
+        setAudioForMessage(prev => ({ ...prev, [messageId]: manager }));
+
+        // Start playing immediately
+        playAudioQueue(manager);
+      }
+
+    } catch (error) {
+      // TTS conversion failed silently
+    } finally {
+      setIsConvertingToSpeech(prev => ({ ...prev, [messageId]: false }));
+    }
+  };
+
+  // Audio control functions
+  const handlePlayPause = (messageId: string) => {
+    const manager = audioForMessage[messageId];
+    if (!manager) return;
+
+    if (playingMessageId === messageId && isPlaying) {
+      pauseAudioQueue(manager);
+      setIsPlaying(false);
+      setIsPaused(true);
+
+      // Update Voice Assistant state when manually pausing
+      if (isVoiceAssistantMode) {
+        setIsAutoPlaying(false);
+
+        // Resume listening after manual pause with longer delay to ensure state updates
+        setTimeout(() => {
+          // Clear the input before resuming listening
+          setInputMessage('');
+          currentInputMessageRef.current = '';
+
+          // Force stop current recognition and restart
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+              setIsRecording(false);
+            } catch (stopError) {
+              // Ignore stop errors
+            }
+
+            // Wait a bit then restart with force flag
+            setTimeout(() => {
+              startVoiceAssistantListening(true, true); // Skip timeout and force start
+            }, 500);
+          }
+        }, 100); // Shorter initial delay, longer restart delay
+      }
+    } else if (playingMessageId === messageId && isPaused) {
+      resumeAudioQueue(manager);
+      setIsPlaying(true);
+      setIsPaused(false);
+
+      // Update Voice Assistant state when manually resuming
+      if (isVoiceAssistantMode) {
+        setIsAutoPlaying(true);
+
+        // Stop listening while audio is playing
+        if (recognitionRef.current && isRecording) {
+          try {
+            recognitionRef.current.stop();
+            setIsRecording(false);
+          } catch (stopError) {
+            console.log('Stop error when pausing for manual resume (expected):', stopError);
+          }
+        }
+      }
+    } else {
+      // Stop any currently playing audio
+      if (playingMessageId && audioForMessage[playingMessageId]) {
+        stopAudioQueue(audioForMessage[playingMessageId]);
+      }
+
+      // Start playing this message
+      setPlayingMessageId(messageId);
+      playAudioQueue(manager);
+
+      // Update Voice Assistant state when manually starting audio
+      if (isVoiceAssistantMode) {
+        setIsAutoPlaying(true);
+
+        // Stop listening while audio is playing
+        if (recognitionRef.current && isRecording) {
+          try {
+            recognitionRef.current.stop();
+            setIsRecording(false);
+          } catch (stopError) {
+            console.log('Stop error when starting manual audio (expected):', stopError);
+          }
+        }
+      }
     }
   };
 
@@ -1020,6 +1714,43 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                         >
                           Health Expert
                         </Badge>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                onClick={() => convertMessageToSpeech(message.id, message.content)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 ml-2 hover:bg-primary/10 transition-colors"
+                                disabled={isConvertingToSpeech[message.id]}
+                              >
+                                {isConvertingToSpeech[message.id] ? (
+                                  <Loader2 className="h-3 w-3 animate-spin text-primary/60" />
+                                ) : playingMessageId === message.id && isPlaying ? (
+                                  <Pause className="h-3 w-3 text-primary" />
+                                ) : playingMessageId === message.id && isPaused ? (
+                                  <Play className="h-3 w-3 text-primary" />
+                                ) : (
+                                  <Volume2 className="h-3 w-3 text-primary/60 hover:text-primary" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {isConvertingToSpeech[message.id]
+                                  ? "Converting to speech..."
+                                  : playingMessageId === message.id && isPlaying
+                                    ? "Pause audio"
+                                    : playingMessageId === message.id && isPaused
+                                      ? "Resume audio"
+                                      : audioForMessage[message.id]
+                                        ? "Play audio"
+                                        : "Convert to speech"
+                                }
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </>
                     )}
                   </div>
@@ -1155,7 +1886,7 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
           )}
 
           {/* Enhanced input area with animations */}
-          <div className="flex flex-col space-y-3 p-4 bg-card/30 backdrop-blur-sm rounded-lg border border-primary/10 mt-2">
+          <div className="flex flex-col space-y-3 p-4 bg-card/30 backdrop-blur-sm rounded-lg border border-primary/10 my-5 mx-3">
             <div className="flex items-center space-x-2">
               <div className="relative flex-1 group">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-focus-within:opacity-100 rounded-md -m-0.5 transition-opacity duration-300 pointer-events-none"></div>
@@ -1163,7 +1894,15 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                   value={inputMessage}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyPress}
-                  placeholder={isRecording ? "Listening... speak clearly (pauses will complete your sentence)" : "Ask me about symptoms, conditions, treatments, or health advice..."}
+                  placeholder={
+                    isVoiceAssistantMode
+                      ? (isRecording
+                          ? "Voice Assistant listening... speak naturally"
+                          : "Voice Assistant active - start speaking")
+                      : (isRecording
+                          ? "Listening... speak clearly (pauses will complete your sentence)"
+                          : "Ask me about symptoms, conditions, treatments, or health advice...")
+                  }
                   className={`flex-1 bg-card transition-all duration-300 pl-10 ${
                     isRecording
                       ? "border-primary/40 bg-primary/5 shadow-[0_0_0_1px_rgba(0,198,215,0.3)]"
@@ -1196,17 +1935,19 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
                       className={`bg-gradient-to-br ${isRecording
                         ? "from-primary/20 to-primary/10 border-primary/40"
                         : "from-card/80 to-card hover:from-card/90 hover:to-card/80 border-primary/20 hover:border-primary/30"
-                      } transition-all duration-300`}
-                      disabled={isProcessing || !sessionId || !recognitionSupported}
+                      } transition-all duration-300 ${isVoiceAssistantMode ? "opacity-50" : ""}`}
+                      disabled={isProcessing || !sessionId || !recognitionSupported || isVoiceAssistantMode}
                     >
                       <Mic className={`h-4 w-4 ${isRecording ? "text-primary animate-pulse" : "text-primary/80"}`} />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {recognitionSupported ? (
-                      <p>{isRecording ? "Stop recording" : "Start voice input"}</p>
-                    ) : (
+                    {!recognitionSupported ? (
                       <p>Speech recognition not supported in your browser</p>
+                    ) : isVoiceAssistantMode ? (
+                      <p>Voice input managed by Voice Assistant</p>
+                    ) : (
+                      <p>{isRecording ? "Stop recording" : "Start voice input"}</p>
                     )}
                   </TooltipContent>
                 </Tooltip>
@@ -1281,6 +2022,63 @@ export function StandaloneAskRadiance({ userId }: StandaloneAskRadianceProps) {
               </div>
             )}
           </div>
+
+          {/* Voice Assistant Toggle */}
+          <AnimatedSection className="mb-3" delay={0.1} direction="up">
+            <div className="flex items-center justify-between p-3 bg-card/20 backdrop-blur-sm rounded-lg border border-primary/10 mx-3">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 rounded-full transition-all duration-300 ${
+                  isVoiceAssistantMode
+                    ? "bg-primary/20 text-primary"
+                    : "bg-muted/50 text-muted-foreground"
+                }`}>
+                  <Bot className="h-4 w-4" />
+                </div>
+                <div>
+                  <Label htmlFor="voice-assistant-toggle" className="text-sm font-medium cursor-pointer">
+                    Voice Assistant (Beta)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {isVoiceAssistantMode
+                      ? "Hands-free conversation mode active"
+                      : "Enable continuous voice interaction"
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                {isVoiceAssistantMode && (
+                  <div className="flex items-center space-x-1 text-xs text-primary">
+                    {isWaitingForResponse && (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Processing...</span>
+                      </>
+                    )}
+                    {isAutoPlaying && (
+                      <>
+                        <Volume2 className="h-3 w-3 animate-pulse" />
+                        <span>Speaking...</span>
+                      </>
+                    )}
+                    {!isWaitingForResponse && !isAutoPlaying && isRecording && (
+                      <>
+                        <MicIcon className="h-3 w-3 animate-pulse" />
+                        <span>Listening...</span>
+                      </>
+                    )}
+                  </div>
+                )}
+                <Switch
+                  id="voice-assistant-toggle"
+                  checked={isVoiceAssistantMode}
+                  onCheckedChange={handleVoiceAssistantToggle}
+                  disabled={isProcessing || !sessionId || !recognitionSupported}
+                  className="data-[state=checked]:bg-primary"
+                />
+              </div>
+            </div>
+          </AnimatedSection>
         </CardContent>
       </Card>
     </AnimatedSection>

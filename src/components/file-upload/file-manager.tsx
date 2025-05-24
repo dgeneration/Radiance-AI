@@ -166,10 +166,11 @@ export function FileManager({
       return (
         <div className="relative h-full w-full flex items-center justify-center">
           {previewBlob ? (
-            // Use regular img tag for blob URLs since Next.js Image doesn't support them
             <Image
               src={previewBlob}
               alt={previewFile.name}
+              width={600}
+              height={400}
               className="max-h-[70vh] w-auto object-contain"
             />
           ) : (
@@ -388,7 +389,6 @@ export function FileManager({
           const text = await blob.text();
           setContent(text);
         } catch (err: unknown) {
-          console.error('Error fetching text content:', err);
           setError(err instanceof Error ? err.message : 'Failed to load text content');
         } finally {
           setLoading(false);
@@ -509,33 +509,38 @@ export function FileManager({
       <AnimatedSection direction="up" delay={0.2}>
         <div className="bg-card/30 backdrop-blur-sm p-1 rounded-xl border border-primary/10 shadow-lg">
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 bg-card/50 p-1">
-              <TabsTrigger
-                value="all"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
-              >
-                All Files
-              </TabsTrigger>
-              <TabsTrigger
-                value="images"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
-              >
-                Images
-              </TabsTrigger>
-              <TabsTrigger
-                value="documents"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
-              >
-                Documents
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="all" className="mt-4 px-2 pb-2">
+            <div className="flex justify-center mb-6">
+              <TabsList className="w-full max-w-xl grid grid-cols-1 sm:grid-cols-3 gap-1 p-1.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm h-auto">
+                <TabsTrigger
+                  value="all"
+                  className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-300"
+                >
+                  <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="whitespace-nowrap">All Files</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="images"
+                  className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-300"
+                >
+                  <ImageIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Images</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="documents"
+                  className="rounded-lg py-3 px-4 h-full flex items-center justify-center data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-300"
+                >
+                  <FileText className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Documents</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="all" className="mt-0 px-2 pb-2 animate-in fade-in-50 duration-300">
               {renderFileGrid(filteredFiles)}
             </TabsContent>
-            <TabsContent value="images" className="mt-4 px-2 pb-2">
+            <TabsContent value="images" className="mt-0 px-2 pb-2 animate-in fade-in-50 duration-300">
               {renderFileGrid(filteredFiles)}
             </TabsContent>
-            <TabsContent value="documents" className="mt-4 px-2 pb-2">
+            <TabsContent value="documents" className="mt-0 px-2 pb-2 animate-in fade-in-50 duration-300">
               {renderFileGrid(filteredFiles)}
             </TabsContent>
           </Tabs>
@@ -734,6 +739,8 @@ export function FileManager({
                       <Image
                         src={file.public_url}
                         alt={file.name}
+                        width={200}
+                        height={200}
                         className="h-full w-full object-cover"
                       />
                     ) : (

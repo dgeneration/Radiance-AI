@@ -334,7 +334,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
     try {
       // Prevent multiple simultaneous calls
       if (isLoadingSessionsRef.current) {
-        console.log("Already loading sessions, skipping duplicate call");
         return true;
       }
 
@@ -345,7 +344,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
 
       // If we already have sessions, don't reload
       if (Array.isArray(userSessions) && userSessions.length > 0) {
-        console.log("Sessions already loaded, skipping fetch");
         return true;
       }
 
@@ -355,7 +353,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
 
       // Use a try-catch block to handle potential network errors
       try {
-        console.log("Fetching sessions for user:", userId);
         const sessions = await getUserChainDiagnosisSessions(userId);
 
         // Ensure sessions is an array
@@ -365,12 +362,10 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
           return false;
         }
 
-        console.log(`Loaded ${sessions.length} sessions`);
         // Update the state with the fetched sessions
         setUserSessions(sessions);
         return true;
       } catch (fetchError) {
-        console.error("Error fetching sessions:", fetchError);
 
         // If we have initial sessions from server-side rendering, don't show an error
         if (Array.isArray(userSessions) && userSessions.length > 0) {
@@ -381,7 +376,6 @@ export function ChainDiagnosisProvider({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (error) {
-      console.error("Unexpected error in loadUserSessions:", error);
       setError('Failed to load your diagnosis history. Please try again.');
       return false;
     } finally {

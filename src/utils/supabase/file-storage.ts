@@ -132,8 +132,6 @@ export async function uploadFile(file: File, userId?: string): Promise<FileMetad
         .insert(metadata);
 
       if (dbError) {
-        console.error('Error storing file metadata:', dbError);
-
         // Only try to delete the file if it was actually uploaded to Supabase
         // (not a local URL)
         if (!publicUrl.startsWith('blob:')) {
@@ -142,23 +140,19 @@ export async function uploadFile(file: File, userId?: string): Promise<FileMetad
               .from('medical-reports')
               .remove([filePath]);
           } catch (removeError) {
-            console.error('Error removing file after metadata storage failure:', removeError);
+            // Silently handle removal errors
           }
         }
 
         // For testing purposes, still return the metadata even if DB storage failed
-        console.log('Returning file metadata despite database error for testing purposes');
         return metadata;
       }
     } catch (dbException) {
-      console.error('Exception during metadata storage:', dbException);
       // For testing purposes, still return the metadata
-      console.log('Returning file metadata despite exception for testing purposes');
     }
 
     return metadata;
   } catch (error) {
-    console.error('Error in uploadFile:', error);
     return null;
   }
 }

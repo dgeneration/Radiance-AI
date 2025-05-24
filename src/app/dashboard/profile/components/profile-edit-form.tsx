@@ -308,7 +308,6 @@ export default function ProfileEditForm({
         onComplete();
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);

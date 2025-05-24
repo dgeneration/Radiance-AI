@@ -89,14 +89,10 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
 
     // Set the initial state
     setDeveloperMode(initialValue);
-
-    console.log('Profile: Developer mode initialized to', initialValue);
   }, []);
 
   // Toggle developer mode
   const handleDeveloperModeToggle = (enabled: boolean) => {
-    console.log('Profile: Developer mode toggled to', enabled);
-
     // Update local state
     setDeveloperMode(enabled);
 
@@ -152,7 +148,6 @@ export default function ProfileView({ profile, userId }: ProfileViewProps) {
       router.push('/');
       router.refresh();
     } catch (error) {
-      console.error('Error deleting account:', error);
       setError('Failed to delete account. Please try again later.');
       setIsDeleting(false);
     }

@@ -7,7 +7,7 @@ import { HeaderButton } from "@/components/ui/header-button";
 import { usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import { FaArrowRight } from "react-icons/fa";
-import { Sparkles, Brain, Zap } from "lucide-react";
+import { Sparkles, Brain, Zap, Mic } from "lucide-react";
 import { LandingNav } from "@/components/landing-nav";
 import { LandingMobileMenu } from "@/components/landing-mobile-menu";
 import { ProfileDropdown } from "@/components/profile-dropdown";
@@ -79,6 +79,8 @@ export function Header({ user }: HeaderProps) {
                     <Brain className="h-4 w-4 ml-1.5 text-accent" />
                   </Link>
                 </div>
+
+
 
                 <HistoryLink isActive={pathname === '/diagnosis/history'} />
               </div>
