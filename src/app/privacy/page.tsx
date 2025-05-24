@@ -205,9 +205,9 @@ export default function PrivacyPolicyPage() {
                     If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:
                   </p>
                   <p>
-                    <strong className="text-foreground">Email:</strong> privacy@radianceai.health<br />
-                    <strong className="text-foreground">Address:</strong> 123 Innovation Drive, Health Valley, CA 94103<br />
-                    <strong className="text-foreground">Phone:</strong> +1 (800) 123-4567
+                    <strong className="text-foreground">Email:</strong> support@dgeneration.io<br />
+                    <strong className="text-foreground">Address:</strong> Developed By  Jay Patel & Shraddha Gautam<br />
+                    <strong className="text-foreground">Phone:</strong> +91 95121 91655
                   </p>
                 </div>
               </div>

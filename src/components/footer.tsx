@@ -186,7 +186,7 @@ export function Footer() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <FaMapMarkerAlt className="text-primary" size={14} />
                 </div>
-                <span>123 Innovation Drive, Health Valley, CA 94103</span>
+                <span>Developed By  Jay Patel & Shraddha Gautam</span>
               </motion.div>
               <motion.div
                 className="flex items-center gap-3 text-muted-foreground group"
@@ -197,7 +197,7 @@ export function Footer() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <FaEnvelope className="text-primary" size={14} />
                 </div>
-                <span>contact@radianceai.health</span>
+                <span>support@dgeneration.io</span>
               </motion.div>
               <motion.div
                 className="flex items-center gap-3 text-muted-foreground group"
@@ -208,7 +208,7 @@ export function Footer() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                   <FaPhone className="text-primary" size={14} />
                 </div>
-                <span>+1 (800) 123-4567</span>
+                <span>+91 95121 91655</span>
               </motion.div>
             </div>
           </motion.div>
@@ -364,25 +364,7 @@ export function Footer() {
               transition={{ duration: 0.2 }}
               variants={socialVariants}
             >
-              <Link href="#" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
-                <FaFacebookF size={16} />
-              </Link>
-            </motion.div>
-            <motion.div
-              whileHover={{ y: -5, scale: 1.1 }}
-              transition={{ duration: 0.2 }}
-              variants={socialVariants}
-            >
-              <Link href="#" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
-                <FaTwitter size={16} />
-              </Link>
-            </motion.div>
-            <motion.div
-              whileHover={{ y: -5, scale: 1.1 }}
-              transition={{ duration: 0.2 }}
-              variants={socialVariants}
-            >
-              <Link href="#" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
+              <Link href="https://www.instagram.com/grims_25/" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
                 <FaInstagram size={16} />
               </Link>
             </motion.div>
@@ -391,7 +373,16 @@ export function Footer() {
               transition={{ duration: 0.2 }}
               variants={socialVariants}
             >
-              <Link href="#" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
+              <Link href="https://www.linkedin.com/in/grims/" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
+                <FaLinkedinIn size={16} />
+              </Link>
+            </motion.div>
+            <motion.div
+              whileHover={{ y: -5, scale: 1.1 }}
+              transition={{ duration: 0.2 }}
+              variants={socialVariants}
+            >
+              <Link href="https://www.linkedin.com/in/shraddha-gautam-654b862b2/" className="w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-all shadow-sm hover:shadow-md">
                 <FaLinkedinIn size={16} />
               </Link>
             </motion.div>
