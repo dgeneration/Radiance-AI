@@ -971,7 +971,7 @@ export function AskRadianceView({ sessionId }: AskRadianceViewProps) {
           if (isVoiceAssistantMode && currentMessage.trim() && !isWaitingForResponse && !isAutoPlaying) {
             handleSendMessage();
           }
-        }, 10000);
+        }, 5000);
       }
 
     } catch (error) {
