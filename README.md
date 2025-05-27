@@ -403,77 +403,6 @@ const ACCEPTED_FILE_TYPES = {
 }
 ```
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ and npm/yarn
-- Supabase account and project
-- Perplexity API key
-- Cloudflare Turnstile site key (optional)
-
-### Environment Variables
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Perplexity API
-PERPLEXITY_API_KEY=your_perplexity_api_key
-PERPLEXITY_API_URL=https://api.perplexity.ai/chat/completions
-
-# Security
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
-
-# Application
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-### Installation & Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/radiance-ai.git
-   cd radiance-ai
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
-   ```
-
-4. **Initialize database**
-   ```bash
-   npm run init-db
-   ```
-
-5. **Run development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Access the application**
-   Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Database Setup
-
-#### **Automatic Setup**
-```bash
-# Run the database initialization script
-npm run init-db
-```
-
-#### **Manual Setup**
-1. Create Supabase project
-2. Run SQL migrations from `supabase/migrations/`
-3. Configure Row Level Security policies
-4. Set up storage buckets
 
 ## 📱 Usage Guide
 
@@ -507,34 +436,6 @@ npm run init-db
 - **Transparency**: Clear privacy policy and data usage disclosure
 - **Consent Management**: Explicit consent for data processing
 
-## 🧪 Testing & Quality Assurance
-
-### Testing Strategy
-- **Unit Tests**: Component and function-level testing
-- **Integration Tests**: API and database integration testing
-- **E2E Tests**: Complete user journey testing
-- **Accessibility Testing**: WCAG compliance verification
-
-### Performance Monitoring
-- **Real-time Analytics**: User interaction and performance metrics
-- **Error Tracking**: Comprehensive error logging and monitoring
-- **API Monitoring**: Perplexity API usage and response time tracking
-- **Database Performance**: Query optimization and monitoring
-
-## 🤝 Contributing
-
-### Development Guidelines
-- **Code Style**: ESLint and Prettier configuration
-- **TypeScript**: Strict type checking enabled
-- **Component Structure**: Modular, reusable component architecture
-- **Documentation**: Comprehensive code documentation
-
-### Pull Request Process
-1. Fork the repository
-2. Create feature branch
-3. Implement changes with tests
-4. Submit pull request with detailed description
-5. Code review and approval process
 
 ## 📄 License & Legal
 
@@ -546,20 +447,6 @@ Radiance AI is designed as a preliminary health assessment tool and should not r
 - **Data Responsibility**: Users responsible for accuracy of input data
 - **Service Availability**: Best-effort service availability
 - **Limitation of Liability**: Standard software liability limitations
-
----
-
-## 📞 Support & Contact
-
-### Technical Support
-- **Documentation**: Comprehensive guides and API documentation
-- **Issue Tracking**: GitHub Issues for bug reports and feature requests
-- **Community**: Discord/Slack community for discussions
-
-### Medical Inquiries
-- **Professional Consultation**: Always consult healthcare providers
-- **Emergency Situations**: Contact emergency services immediately
-- **Medical Questions**: Radiance AI is not a substitute for professional medical advice
 
 ---
 
