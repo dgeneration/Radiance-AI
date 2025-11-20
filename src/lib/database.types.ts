@@ -164,6 +164,12 @@ export interface Database {
           zip_code_edit_count: number | null
           gender_edit_count: number | null
           birth_year_edit_count: number | null
+          height: number | null
+          weight: number | null
+          dietary_preference: string | null
+          height_edit_count: number | null
+          weight_edit_count: number | null
+          dietary_preference_edit_count: number | null
         }
         Insert: {
           id: string
@@ -188,6 +194,12 @@ export interface Database {
           zip_code_edit_count?: number | null
           gender_edit_count?: number | null
           birth_year_edit_count?: number | null
+          height?: number | null
+          weight?: number | null
+          dietary_preference?: string | null
+          height_edit_count?: number | null
+          weight_edit_count?: number | null
+          dietary_preference_edit_count?: number | null
         }
         Update: {
           id?: string
@@ -212,6 +224,12 @@ export interface Database {
           zip_code_edit_count?: number | null
           gender_edit_count?: number | null
           birth_year_edit_count?: number | null
+          height?: number | null
+          weight?: number | null
+          dietary_preference?: string | null
+          height_edit_count?: number | null
+          weight_edit_count?: number | null
+          dietary_preference_edit_count?: number | null
         }
       },
       chain_diagnosis_sessions: {

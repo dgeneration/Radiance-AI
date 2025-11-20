@@ -23,7 +23,7 @@ export default async function ProfilePage() {
     .from('user_profiles')
     .select('*')
     .eq('id', data.user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error("Error fetching user profile:", profileError);
@@ -41,9 +41,16 @@ export default async function ProfilePage() {
           {profile ? (
             <ProfileView profile={profile} userId={data.user.id} />
           ) : (
-            <div className="flex items-center justify-center py-16 bg-card/30 backdrop-blur-sm rounded-xl border border-primary/10 shadow-lg">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-              <span className="ml-4 text-muted-foreground font-medium">Loading your profile...</span>
+            <div className="flex flex-col items-center justify-center py-16 bg-card/30 backdrop-blur-sm rounded-xl border border-primary/10 shadow-lg">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-foreground mb-4">Profile Not Found</h2>
+                <p className="text-muted-foreground mb-6">
+                  It looks like your profile hasn't been created yet. This can happen if there was an issue during signup.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please try refreshing the page or contact support if the problem persists.
+                </p>
+              </div>
             </div>
           )}
         </div>
