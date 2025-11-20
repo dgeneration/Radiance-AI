@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"my-mcp-server-824753da": {
+			"url": "https://mcp.supabase.com/mcp?project_ref=abxktcrevcqwjcizcnpx",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}
