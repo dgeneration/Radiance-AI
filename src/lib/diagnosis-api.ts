@@ -1996,7 +1996,7 @@ export async function processMedicalAnalyst(
       await updateChainDiagnosisSession(sessionId, {
         current_step: 1,
         status: 'in_progress',
-        medical_analyst_response: null
+        medical_analyst_response: undefined
       });
 
       return undefined;
