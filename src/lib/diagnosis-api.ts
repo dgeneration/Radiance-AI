@@ -1996,7 +1996,7 @@ export async function processMedicalAnalyst(
       await updateChainDiagnosisSession(sessionId, {
         current_step: 1,
         status: 'in_progress',
-        medical_analyst_response: undefined
+        medical_analyst_response: null
       });
 
       return undefined;
@@ -3176,7 +3176,7 @@ export async function processRadianceAI(
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (!error && profile) {
         userProfileData = profile;

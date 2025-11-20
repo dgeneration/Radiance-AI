@@ -29,7 +29,7 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
           .from('user_profiles')
           .select('first_name, last_name')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (!error && profile) {
           setFirstName(profile.first_name);
