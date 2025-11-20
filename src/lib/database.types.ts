@@ -213,6 +213,118 @@ export interface Database {
           gender_edit_count?: number | null
           birth_year_edit_count?: number | null
         }
+      },
+      chain_diagnosis_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+          user_input: Json
+          medical_analyst_response: Json | null
+          general_physician_response: Json | null
+          specialist_doctor_response: Json | null
+          pathologist_response: Json | null
+          nutritionist_response: Json | null
+          pharmacist_response: Json | null
+          follow_up_specialist_response: Json | null
+          summarizer_response: Json | null
+          status: string
+          current_step: number
+          error_message: string | null
+          raw_medical_analyst_response: string | null
+          raw_general_physician_response: string | null
+          raw_specialist_doctor_response: string | null
+          raw_pathologist_response: string | null
+          raw_nutritionist_response: string | null
+          raw_pharmacist_response: string | null
+          raw_follow_up_specialist_response: string | null
+          raw_summarizer_response: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+          user_input: Json
+          medical_analyst_response?: Json | null
+          general_physician_response?: Json | null
+          specialist_doctor_response?: Json | null
+          pathologist_response?: Json | null
+          nutritionist_response?: Json | null
+          pharmacist_response?: Json | null
+          follow_up_specialist_response?: Json | null
+          summarizer_response?: Json | null
+          status?: string
+          current_step?: number
+          error_message?: string | null
+          raw_medical_analyst_response?: string | null
+          raw_general_physician_response?: string | null
+          raw_specialist_doctor_response?: string | null
+          raw_pathologist_response?: string | null
+          raw_nutritionist_response?: string | null
+          raw_pharmacist_response?: string | null
+          raw_follow_up_specialist_response?: string | null
+          raw_summarizer_response?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+          user_input?: Json
+          medical_analyst_response?: Json | null
+          general_physician_response?: Json | null
+          specialist_doctor_response?: Json | null
+          pathologist_response?: Json | null
+          nutritionist_response?: Json | null
+          pharmacist_response?: Json | null
+          follow_up_specialist_response?: Json | null
+          summarizer_response?: Json | null
+          status?: string
+          current_step?: number
+          error_message?: string | null
+          raw_medical_analyst_response?: string | null
+          raw_general_physician_response?: string | null
+          raw_specialist_doctor_response?: string | null
+          raw_pathologist_response?: string | null
+          raw_nutritionist_response?: string | null
+          raw_pharmacist_response?: string | null
+          raw_follow_up_specialist_response?: string | null
+          raw_summarizer_response?: string | null
+        }
+      },
+      tts_audio_cache: {
+        Row: {
+          id: string
+          text_hash: string
+          original_text: string
+          audio_chunks: string[]
+          text_chunks: string[]
+          word_counts: number[]
+          voice: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          text_hash: string
+          original_text: string
+          audio_chunks: string[]
+          text_chunks: string[]
+          word_counts: number[]
+          voice?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          text_hash?: string
+          original_text?: string
+          audio_chunks?: string[]
+          text_chunks?: string[]
+          word_counts?: number[]
+          voice?: string
+          created_at?: string
+          updated_at?: string
+        }
       }
     }
     Views: {
